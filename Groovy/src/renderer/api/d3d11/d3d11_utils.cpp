@@ -8,6 +8,7 @@ ID3D11DeviceContext* d3dUtils::gContext = nullptr;
 
 #pragma comment(lib, "d3d11.lib")
 #pragma comment(lib, "d3dcompiler.lib")
+#pragma comment(lib, "dxguid.lib")
 
 #endif
 
@@ -24,7 +25,7 @@ ID3D11Texture2D* d3dUtils::GetBackBuffer()
     return backBuffer;
 }
 
-ID3D11Texture2D* d3dUtils::CreateTexture(uint32 width, uint32 height, UINT bindFlags, DXGI_FORMAT format, void* data, size_t size)
+ID3D11Texture2D* d3dUtils::CreateTexture(uint32 width, uint32 height, UINT bindFlags, DXGI_FORMAT format, const void* data, size_t size)
 {
 	D3D11_TEXTURE2D_DESC desc = {};
     desc.Usage = D3D11_USAGE_DEFAULT;
@@ -79,7 +80,7 @@ ID3D11RenderTargetView* d3dUtils::CreateRenderTargetView(ID3D11Texture2D* color)
 
 #define SHADER_ENTRY_POINT "main"
 
-ID3DBlob* d3dUtils::CompileShader(const char* target, void* src, size_t srcLength)
+ID3DBlob* d3dUtils::CompileShader(const char* target, const void* src, size_t srcLength)
 {
     ID3DBlob* bytecode;
     ID3DBlob* error;
@@ -118,7 +119,7 @@ ID3D11InputLayout* d3dUtils::CreateInputLayout(ID3DBlob* vertexBytecode, D3D11_I
     return result;
 }
 
-ID3D11Buffer* d3dUtils::CreateBuffer(UINT bindFlags, UINT cpuAccessFlags, D3D11_USAGE usage, size_t size, void* data)
+ID3D11Buffer* d3dUtils::CreateBuffer(UINT bindFlags, UINT cpuAccessFlags, D3D11_USAGE usage, size_t size, const void* data)
 {
     D3D11_BUFFER_DESC desc = {};
     desc.ByteWidth = size;
@@ -143,7 +144,7 @@ ID3D11Buffer* d3dUtils::CreateBuffer(UINT bindFlags, UINT cpuAccessFlags, D3D11_
     return result;
 }
 
-void d3dUtils::OverwriteBuffer(ID3D11Buffer* buffer, void* data, size_t size)
+void d3dUtils::OverwriteBuffer(ID3D11Buffer* buffer, const void* data, size_t size)
 {
     D3D11_MAPPED_SUBRESOURCE tmpBuffer = {};
     d3dcheckslow(gContext->Map(buffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &tmpBuffer));

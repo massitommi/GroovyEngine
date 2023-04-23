@@ -39,11 +39,11 @@ String FileDialog::OpenFileDialog(const String& titleBar, const ExtensionFilters
 	ofn.nMaxFile = sizeof(szFile);
 	if (GetCurrentDirectoryA(256, currentDir))
 		ofn.lpstrInitialDir = currentDir;
-	ofn.lpstrFilter = nativeFilters.length() > 0 ? *nativeFilters : nullptr;
+	ofn.lpstrFilter = nativeFilters.length() > 0 ? nativeFilters.c_str() : nullptr;
 	ofn.nFilterIndex = 0;
 	ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST | OFN_NOCHANGEDIR;
 
-	ofn.lpstrTitle = *titleBar;
+	ofn.lpstrTitle = titleBar.c_str();
 
 	if (GetOpenFileNameA(&ofn) == TRUE)
 		return ofn.lpstrFile;
@@ -64,7 +64,7 @@ String FileDialog::SaveFileDialog(const String& titleBar)
 		ofn.lpstrInitialDir = currentDir;
 	ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST | OFN_NOCHANGEDIR;
 
-	ofn.lpstrTitle = *titleBar;
+	ofn.lpstrTitle = titleBar.c_str();
 	
 	if (!GetSaveFileNameA(&ofn))
 	{

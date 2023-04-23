@@ -26,4 +26,7 @@ class SysMessageBox
 {
 public:
 	static EMessageBoxResponse Show(const char* caption, const char* msg, EMessageBoxType type, EMessageBoxOptions options);
+	inline static EMessageBoxResponse Show_Info(const char* caption, const char* msg) { return Show(caption, msg, MESSAGE_BOX_TYPE_INFO, MESSAGE_BOX_OPTIONS_OK); }
+	inline static EMessageBoxResponse Show_Warning(const char* caption, const char* msg) { return Show(caption, msg, MESSAGE_BOX_TYPE_WARNING, MESSAGE_BOX_OPTIONS_OK); }
+	inline static EMessageBoxResponse Show_Error(const char* caption, const char* msg) { return Show(caption, msg, MESSAGE_BOX_TYPE_ERROR, MESSAGE_BOX_OPTIONS_OK); }
 };

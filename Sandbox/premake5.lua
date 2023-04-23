@@ -1,6 +1,7 @@
 project "Sandbox"
-    kind "StaticLib"
+    kind "WindowedApp"
     language "C++"
+    cppdialect "C++17"
 
     files
     {
@@ -12,4 +13,9 @@ project "Sandbox"
     {
         "src",
         "%{wks.location}/Groovy/src"
+    }
+
+    links
+    {
+        "Groovy"
     }

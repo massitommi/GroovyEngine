@@ -3,17 +3,17 @@
 #include "d3d11_texture.h"
 #include "d3d11_utils.h"
 
-static DXGI_FORMAT GetNativeFormat(ETextureFormat format)
+static DXGI_FORMAT GetNativeFormat(EColorFormat format)
 {
 	switch (format)
 	{
-		case TEXTURE_FORMAT_RGBA:	return DXGI_FORMAT_R8G8B8A8_UNORM;
+		case COLOR_FORMAT_R8G8B8A8_UNORM:	return DXGI_FORMAT_R8G8B8A8_UNORM;
 	}
 	check(0);
 	return DXGI_FORMAT::DXGI_FORMAT_UNKNOWN;
 }
 
-D3D11Texture::D3D11Texture(TextureSpec specs, void* data, size_t size)
+D3D11Texture::D3D11Texture(TextureSpec specs, const void* data, size_t size)
 	: mSpecs(specs)
 {
 	mHandle = d3dUtils::CreateTexture(specs.width, specs.height, D3D11_BIND_SHADER_RESOURCE, GetNativeFormat(specs.format), data, size);

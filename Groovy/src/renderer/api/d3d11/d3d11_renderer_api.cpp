@@ -66,6 +66,8 @@ D3D11RendererAPI::D3D11RendererAPI(Window* wnd)
         d3dcheckslow(d3dUtils::gDevice->CreateSamplerState(&samplerDesc, &sampler));
 
         d3dUtils::gContext->PSSetSamplers(0, 1, &sampler);
+        
+        sampler->Release();
     }
 
     // primitive topology
@@ -86,6 +88,11 @@ void D3D11RendererAPI::Present(uint32 syncInteval)
 
 D3D11RendererAPI::~D3D11RendererAPI()
 {
+#if REF_COUNT_WARNINGS
+    ID3D11Debug* boh;
+    d3dUtils::gDevice->QueryInterface(__uuidof(ID3D11Debug), reinterpret_cast<void**>(&boh));
+    boh->ReportLiveDeviceObjects(D3D11_RLDO_DETAIL);
+#endif
     d3dUtils::gSwapChain->Release();
     d3dUtils::gContext->Release();
     d3dUtils::gDevice->Release();

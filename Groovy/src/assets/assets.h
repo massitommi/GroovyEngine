@@ -1,12 +1,23 @@
 #pragma once
 
 #include "core/core.h"
+#include "renderer/color.h"
 
-#define GROOVY_MAGIC_LENGTH 16
-#define GROOVY_TEXTURE_HEADER_MAGIC "groovy_a_texture"
-#define GROOVY_MODEL3D_HEADER_MAGIC "groovy_a_model3d"
+#define GROOVY_MAGIC_LENGTH             16
+#define GROOVY_TEXTURE_HEADER_MAGIC     "groovy_texture__"
+#define GROOVY_MODEL3D_HEADER_MAGIC     "groovy_model3d__"
 
-struct GroovyTextureHeader
+#define GROOVY_TEXTURE_EXT  ".groovytexture"
+#define GROOVY_MODEL_EXT    ".groovymodel3d"
+
+enum EAssetType
+{
+    ASSET_TYPE_NONE,
+    ASSET_TYPE_TEXTURE,
+    ASSET_TYPE_MODEL3D
+};
+
+struct TextureHeader
 {
     char magic[GROOVY_MAGIC_LENGTH];
     uint32 width;
@@ -14,23 +25,34 @@ struct GroovyTextureHeader
     uint32 channels;
 };
 
-struct Model3DHeader
+struct MeshHeader
 {
     char magic[GROOVY_MAGIC_LENGTH];
-    uint64 numIndices;
-    uint64 numVertices;
+    uint32 submeshCount;
+};
+
+struct SubmeshHeader
+{
+    uint64 vertexCount;
+    uint64 indexCount;
+    EColorFormat vertexFormat;
+    EColorFormat indexFormat;
 };
 
 namespace assetUtils
 {
-    inline bool IsGroovyAssetGeneric(void* file, size_t fileSize, size_t groovyHeaderSize, const char* groovyMagic)
+    inline bool IsGroovyAsset(const Buffer& file, size_t groovyHeaderSize, const char* groovyMagic)
     {
-        return (fileSize >= groovyHeaderSize) && (strncmp((char*)file, groovyMagic, GROOVY_MAGIC_LENGTH) == 0);
+        return (file.data()) && (file.size() >= groovyHeaderSize) && (strncmp((char*)file.data(), groovyMagic, GROOVY_MAGIC_LENGTH) == 0);
     }
 
-    template<typename T>
-    inline bool IsGroovyAsset(void* file, size_t fileSize)
+    inline bool IsGroovyAsset_Texture(const Buffer& file)
     {
-        return IsGroovyAssetGeneric(file, fileSize, sizeof(GroovyTextureHeader), GROOVY_TEXTURE_HEADER_MAGIC);
+        return IsGroovyAsset(file, sizeof(TextureHeader), GROOVY_TEXTURE_HEADER_MAGIC);
+    }
+
+    inline bool IsGroovyAsset_Mesh(const Buffer& file)
+    {
+        return IsGroovyAsset(file, sizeof(MeshHeader), GROOVY_MODEL3D_HEADER_MAGIC);
     }
 }

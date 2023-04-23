@@ -11,6 +11,8 @@ enum ERendererAPI
 class RendererAPI
 {
 public:
+	virtual ~RendererAPI() = default;
+
 	virtual void DrawIndexed(uint64 indexCount) = 0;
 	virtual void Present(uint32 syncInteval) = 0;
 

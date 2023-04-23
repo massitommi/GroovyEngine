@@ -68,9 +68,9 @@
 
 #include "core/core.h"
 #include "platform/platform.h"
-#include "renderer/renderer_api.h"
-#include "renderer/framebuffer.h"
-#include "engine.h"
+#include "renderer/api/renderer_api.h"
+#include "renderer/api/framebuffer.h"
+#include "application.h"
 
 bool gEngineShouldRun = true;
 
@@ -110,7 +110,7 @@ int32 GroovyEntryPoint(const char* args)
 	screenBufferSpec.swapchainTarget = true;
 	screenBufferSpec.width = wnd.GetProps().width;
 	screenBufferSpec.height = wnd.GetProps().height;
-	screenBufferSpec.colorAttachments = { FRAME_BUFFER_TEXTURE_FORMAT_RGBA };
+	screenBufferSpec.colorAttachments = { COLOR_FORMAT_R8G8B8A8_UNORM };
 	screenBufferSpec.hasDepthAttachment = true;
 
 	screenFrameBuffer = FrameBuffer::Create(screenBufferSpec);
@@ -200,18 +200,18 @@ int32 GroovyEntryPoint(const char* args)
 
 	ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_DockingEnable;*/
 
-	Engine::Init();
+	Application::Init();
 
 	while (gEngineShouldRun)
 	{
 		wnd.ProcessEvents();
 
-		Engine::Update(1.0f / 60.0f);
+		Application::Update(1.0f / 60.0f);
 
 		screenFrameBuffer->ClearColorAttachment(0, screenClearColor);
 		screenFrameBuffer->ClearDepthAttachment();
 
-		Engine::Render();
+		Application::Render();
 
 		/*screenFrameBuffer->ClearColorAttachment(0, clearColor);
 		screenFrameBuffer->ClearDepthAttachment();
@@ -255,14 +255,16 @@ int32 GroovyEntryPoint(const char* args)
 		
 		ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());*/
 
-#if 1
+#if WITH_EDITOR
 		screenFrameBuffer->Bind();
+		Application::Render2EditorOnly();
 #endif
-		Engine::Render2();
 		RendererAPI::Get().Present(0);
 	}
 
-	Engine::Shutdown();
+	delete screenFrameBuffer;
+	Application::Shutdown();
+	delete &RendererAPI::Get();
 
 	return 0;
 }

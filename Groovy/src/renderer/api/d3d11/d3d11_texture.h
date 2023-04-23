@@ -1,15 +1,15 @@
 #pragma once
 
-#include "renderer/texture.h"
+#include "../texture.h"
 
 class D3D11Texture : public Texture
 {
 public:
-	D3D11Texture(TextureSpec specs, void* data, size_t size);
+	D3D11Texture(TextureSpec specs, const void* data, size_t size);
 	virtual ~D3D11Texture();
 
 	virtual void Bind(uint32 slot) override;
-	virtual uint64 GetRendererID() const override { return (uint64)mView; }
+	virtual void* GetRendererID() const override { return mView; }
 	virtual void SetData(void* data, size_t size) override;
 	virtual TextureSpec GetSpecs() const override { return mSpecs; }
 

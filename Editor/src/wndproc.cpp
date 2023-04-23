@@ -2,7 +2,6 @@
 #include "vendor/imgui/imgui.h"
 #include "vendor/imgui/backends/imgui_impl_win32.h"
 #include "core/core.h"
-#include "editor_events.h"
 
 static std::vector<String> GetDroppedFiles(HDROP boh)
 {
@@ -22,6 +21,8 @@ static std::vector<String> GetDroppedFiles(HDROP boh)
 
 IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
+void OnFilesDropped(const std::vector<String>& files);
+
 LRESULT Win32_EditorWndProcCallback(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
 	switch (uMsg)
@@ -29,7 +30,7 @@ LRESULT Win32_EditorWndProcCallback(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM 
 		case WM_DROPFILES:
 		{
 			std::vector<String> filesDropped = GetDroppedFiles((HDROP)wParam);
-			DISPATCH_EVENT(DropFilesEvent, filesDropped);
+			OnFilesDropped(filesDropped);
 			break;
 		}
 	}

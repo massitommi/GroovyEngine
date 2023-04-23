@@ -3,7 +3,7 @@
 
 #include "d3d11/d3d11_texture.h"
 
-Texture* Texture::Create(TextureSpec specs, void* data, size_t size)
+Texture* Texture::Create(TextureSpec specs, const void* data, size_t size)
 {
     switch (RendererAPI::GetAPI())
     {

@@ -5,7 +5,7 @@
 
 static const char* sWndClassName = "groovyWnd";
 
-#if !WITH_EDITOR
+#if WITH_EDITOR
 	#define WINDOW_FLAGS	WS_EX_ACCEPTFILES
 #else
 	#define WINDOW_FLAGS	0
@@ -45,7 +45,7 @@ Window::Window(const WindowProps& props)
 {
 	HWND handle = CreateWindowExA
 	(
-		WINDOW_FLAGS, sWndClassName, *props.title, WS_CAPTION | WS_MAXIMIZEBOX | WS_MINIMIZEBOX | WS_SIZEBOX | WS_SYSMENU,
+		WINDOW_FLAGS, sWndClassName, props.title.c_str(), WS_CAPTION | WS_MAXIMIZEBOX | WS_MINIMIZEBOX | WS_SIZEBOX | WS_SYSMENU,
 		CW_USEDEFAULT, CW_USEDEFAULT, props.width, props.height, nullptr, nullptr, gInstance, nullptr
 	);
 	SetWindowLongPtrA(handle, GWLP_USERDATA, (LONG_PTR)this);

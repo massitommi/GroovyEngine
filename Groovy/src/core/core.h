@@ -3,7 +3,9 @@
 #include <stdint.h>
 #include <vector>
 
+#include <string>
 #include "coreminimal.h"
-#include "string.h"
 #include "assert.h"
 #include "buffer.h"
+
+typedef std::string String;

@@ -10,9 +10,10 @@ workspace "GroovyEngine"
         "Win64"
     }
 
-    startproject "Groovy"
+    startproject "Editor"
 
     defines { "PLATFORM_WIN32" }
+    defines { "WITH_EDITOR" }
 
     filter "configurations:Debug"
         defines { "BUILD_DEBUG" }

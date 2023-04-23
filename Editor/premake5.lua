@@ -1,6 +1,7 @@
 project "Editor"
-    kind "StaticLib"
+    kind "WindowedApp"
     language "C++"
+    cppdialect "C++17"
 
     files
     {
@@ -12,4 +13,9 @@ project "Editor"
     {
         "src",
         "%{wks.location}/Groovy/src"
+    }
+
+    links
+    {
+        "Groovy"
     }

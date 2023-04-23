@@ -1,6 +1,7 @@
 project "Groovy"
-    kind "WindowedApp"
+    kind "StaticLib"
     language "C++"
+    cppdialect "C++17"
 
     files
     {
@@ -11,9 +12,4 @@ project "Groovy"
     includedirs
     {
         "src"
-    }
-
-    links
-    {
-        "Editor"
     }
