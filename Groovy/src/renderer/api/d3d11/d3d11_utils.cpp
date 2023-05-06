@@ -143,11 +143,3 @@ ID3D11Buffer* d3dUtils::CreateBuffer(UINT bindFlags, UINT cpuAccessFlags, D3D11_
     d3dcheckslow(gDevice->CreateBuffer(&desc, initalDataPtr, &result));
     return result;
 }
-
-void d3dUtils::OverwriteBuffer(ID3D11Buffer* buffer, const void* data, size_t size)
-{
-    D3D11_MAPPED_SUBRESOURCE tmpBuffer = {};
-    d3dcheckslow(gContext->Map(buffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &tmpBuffer));
-    memcpy(tmpBuffer.pData, data, size);
-    gContext->Unmap(buffer, 0);
-}

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "core/core.h"
+
 enum EMessageBoxType
 {
 	MESSAGE_BOX_TYPE_INFO,
@@ -25,8 +27,8 @@ enum EMessageBoxResponse
 class SysMessageBox
 {
 public:
-	static EMessageBoxResponse Show(const char* caption, const char* msg, EMessageBoxType type, EMessageBoxOptions options);
-	inline static EMessageBoxResponse Show_Info(const char* caption, const char* msg) { return Show(caption, msg, MESSAGE_BOX_TYPE_INFO, MESSAGE_BOX_OPTIONS_OK); }
-	inline static EMessageBoxResponse Show_Warning(const char* caption, const char* msg) { return Show(caption, msg, MESSAGE_BOX_TYPE_WARNING, MESSAGE_BOX_OPTIONS_OK); }
-	inline static EMessageBoxResponse Show_Error(const char* caption, const char* msg) { return Show(caption, msg, MESSAGE_BOX_TYPE_ERROR, MESSAGE_BOX_OPTIONS_OK); }
+	static EMessageBoxResponse Show(const std::string& caption, const std::string& msg, EMessageBoxType type, EMessageBoxOptions options);
+	inline static EMessageBoxResponse Show_Info(const std::string& caption, const std::string msg) { return Show(caption, msg, MESSAGE_BOX_TYPE_INFO, MESSAGE_BOX_OPTIONS_OK); }
+	inline static EMessageBoxResponse Show_Warning(const std::string& caption, const std::string msg) { return Show(caption, msg, MESSAGE_BOX_TYPE_WARNING, MESSAGE_BOX_OPTIONS_OK); }
+	inline static EMessageBoxResponse Show_Error(const std::string& caption, const std::string msg) { return Show(caption, msg, MESSAGE_BOX_TYPE_ERROR, MESSAGE_BOX_OPTIONS_OK); }
 };

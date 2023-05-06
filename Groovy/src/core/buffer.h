@@ -48,6 +48,18 @@ public:
 	inline const byte* data() const { return mData; }
 	inline size_t size() const { return mSize; }
 
+	template<typename T>
+	inline T* as()
+	{
+		return (T*)mData;
+	}
+
+	template<typename T>
+	inline const T* as() const
+	{
+		return (T*)mData;
+	}
+
 	inline byte* operator*() { return mData; }
 	inline const byte* operator*() const { return mData; }
 

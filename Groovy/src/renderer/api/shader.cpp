@@ -3,12 +3,12 @@
 
 #include "d3d11/d3d11_shader.h"
 
-Shader* Shader::Create(ShaderSrc vertexSrc, ShaderSrc pixelSrc, const std::vector<ShaderVariable>& input)
+Shader* Shader::Create(const void* vertexSrc, size_t vertexSize, const void* pixelSrc, size_t pixelSize)
 {
     switch (RendererAPI::GetAPI())
     {
 #if PLATFORM_WIN32
-        case RENDERER_API_D3D11:    return new D3D11Shader(vertexSrc, pixelSrc, input);
+        case RENDERER_API_D3D11:    return new D3D11Shader(vertexSrc, vertexSize, pixelSrc, pixelSize);
 #endif
     }
     checkslow("?!?");

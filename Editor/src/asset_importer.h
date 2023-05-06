@@ -1,15 +1,18 @@
 #pragma once
 
 #include "core/core.h"
-#include "assets/assets.h"
+#include "assets/asset.h"
 #include "renderer/api/texture.h"
 
 class AssetImporter
 {
 public:
-	static EAssetType GetTypeFromFilename(const String& filename);
+	static EAssetType GetTypeFromFilename(const std::string& filename);
 
+	static bool GetRawTexture(const std::string& compressedFile, Buffer& outBuffer, TextureSpec& outSpec);
+	
 
-	static bool GetRawTexture(const String& compressedFile, Buffer& outBuffer, TextureSpec& outSpec);
-	static bool ImportTexture(const String& originalFile, const String& outFolder);
+	static bool ImportTexture(const std::string& originalFile, const std::string& newFile);
+
+	static bool ImportModel3D(const std::string& originalFile, const std::string& newFile);
 };

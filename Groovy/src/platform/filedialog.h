@@ -6,8 +6,8 @@
 
 struct ExtensionFilter
 {
-	String description; // whatever you want
-	std::vector<String> extensions; // *.png allows every png file, specific.png allows only specifig.png
+	std::string description; // whatever you want
+	std::vector<std::string> extensions; // *.png allows every png file, specific.png allows only specifig.png
 };
 
 typedef std::vector<ExtensionFilter> ExtensionFilters;
@@ -15,6 +15,6 @@ typedef std::vector<ExtensionFilter> ExtensionFilters;
 class FileDialog
 {
 public:
-	static String OpenFileDialog(const String& titleBar, const ExtensionFilters& filters);
-	static String SaveFileDialog(const String& titleBar);
+	static std::string OpenFileDialog(const std::string& titleBar, const ExtensionFilters& filters);
+	static std::string SaveFileDialog(const std::string& titleBar);
 };

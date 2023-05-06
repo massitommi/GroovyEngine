@@ -7,5 +7,3 @@
 #include "coreminimal.h"
 #include "assert.h"
 #include "buffer.h"
-
-typedef std::string String;

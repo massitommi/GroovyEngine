@@ -7,25 +7,40 @@
 #include "renderer/api/texture.h"
 #include "renderer/api/shader.h"
 
-#include "assets/assets.h"
+#include "assets/asset.h"
+#include "assets/asset_manager.h"
 #include "assets/asset_loader.h"
 #include "asset_importer.h"
 
 #include "vendor/imgui/imgui.h"
 #include "vendor/imgui/backends/imgui_impl_win32.h"
 #include "vendor/imgui/backends/imgui_impl_dx11.h"
+#include "vendor/imgui/misc/cpp/imgui_stdlib.h"
 
 #include "imgui_renderer/imgui_renderer.h"
+
+#include "renderer/material.h"
+#include "project/Project.h"
+
+#include "editor_window.h"
+
+#include "renderer/renderer.h"
+
+#include "math/matrix.h"
+
 
 static ImGuiRenderer* sRenderer = nullptr;
 extern bool gEngineShouldRun;
 
 void EditorInit();
+void EditorUpdate(float deltaTime);
 void EditorRender();
 void EditorShutdown();
 
 void Application::Init()
 {
+	Window::Get()->SetTitle(Project::GetMain()->GetName());
+
 	ImGui::CreateContext();
 	ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 	ImGui::StyleColorsDark();
@@ -37,7 +52,7 @@ void Application::Init()
 
 void Application::Update(float deltaTime)
 {
-
+	EditorUpdate(deltaTime);
 }
 
 void Application::Render()
@@ -65,60 +80,88 @@ void Application::Shutdown()
 	ImGui::DestroyContext();
 }
 
-static std::vector<std::pair<String, EAssetType>> sAssets;
-
-void RefreshAssetList()
+void OnFilesDropped(const std::vector<std::string>& files)
 {
-	sAssets = decltype(sAssets)();
-	std::vector<String> assetFiles = FileSystem::GetFilesInDir("assets", { ".groovytexture", ".groovymodel3d" });
-	for (const auto& file : assetFiles)
+	for (const std::string& file : files)
 	{
-		sAssets.push_back({ file, AssetImporter::GetTypeFromFilename(file) });
-	}
-}
-
-void OnFilesDropped(const std::vector<String>& files)
-{
-	for (const String& file : files)
-	{
+		std::string newFileName = Project::GetMain()->GetAssetPath() + FileSystem::GetFilenameNoExt(file) + GROOVY_ASSET_EXT;
 		EAssetType assetType = AssetImporter::GetTypeFromFilename(file);
 
 		switch (assetType)
 		{
 			case ASSET_TYPE_TEXTURE:	
-			{
-				auto res = SysMessageBox::Show_Info("Importer", "Click OK to import the texture");
-				if (res == MESSAGE_BOX_RESPONSE_YES)
-				{
-					if (AssetImporter::ImportTexture(file, "assets"))
-					{
-						RefreshAssetList();
-					}
-					else
-					{
-						SysMessageBox::Show_Error("Import error", "Unable to import the asset");
-					}
-				}
-			}
-			break;
+				AssetImporter::ImportTexture(file, newFileName);
+				break;
 
-			default:
-				SysMessageBox::Show_Error("Import error", "Not an importable asset : (");
+			case ASSET_TYPE_MESH:
+				AssetImporter::ImportModel3D(file, newFileName);
 				break;
 		}
 	}
 }
 
+static std::vector<EditorWindow*> sWindows;
+static std::vector<EditorWindow*> sInsertQueue;
+static std::vector<EditorWindow*> sRemoveQueue;
+
 static Texture* sAssetIcon;
 static FrameBuffer* sGameViewportFrameBuffer;
 static ImVec2 sGameViewportSize;
 
-Texture* LoadEditorIcon(const String& path)
+static Shader* testShader;
+static Mesh* testMesh;
+static Texture* testTexture;
+static Vec3 camLoc = {0,1.0f,-3};
+static Vec3 camRot = {0,0,0};
+static float camFOV = 60;
+
+Texture* LoadEditorIcon(const std::string& path)
 {
 	Buffer data;
 	TextureSpec spec;
 	AssetImporter::GetRawTexture(path, data, spec);
 	return Texture::Create(spec, data.data(), data.size());
+}
+
+template<typename WndType, typename ...Args>
+void AddWindow(Args... args)
+{
+	WndType* wnd = new WndType(args...);
+;	sInsertQueue.push_back(wnd);
+}
+
+void RemoveWindow(EditorWindow* wnd)
+{
+	check(wnd);
+	sRemoveQueue.push_back(wnd);
+}
+
+void UpdateWindows()
+{
+	// update the windows
+	for (EditorWindow* wnd : sWindows)
+	{
+		wnd->RenderWindow();
+		if (wnd->ShouldClose())
+		{
+			sRemoveQueue.push_back(wnd);
+		}
+	}
+	
+	// delete windows that should be deleted
+	for (EditorWindow* wnd : sRemoveQueue)
+	{
+		delete wnd;
+		sWindows.erase(std::find(sWindows.begin(), sWindows.end(), wnd));
+	}
+	sRemoveQueue.clear();
+
+	// add the windows that should be added
+	for (EditorWindow* wnd : sInsertQueue)
+	{
+		sWindows.push_back(wnd);
+	}
+	sInsertQueue.clear();
 }
 
 void EditorInit()
@@ -136,34 +179,23 @@ void EditorInit()
 
 	sGameViewportFrameBuffer = FrameBuffer::Create(gameViewportSpec);
 
-	// trigger useful stuff
-	RefreshAssetList();
+	AssetHandle modelHandle, shaderHandle, textureHandle;
 
-	// test
-	Buffer vertexSrc, pixelSrc;
-	check(FileSystem::ReadFileBinary("assets/shaders/vertex.hlsl", vertexSrc) == FILE_OPEN_RESULT_OK);
-	check(FileSystem::ReadFileBinary("assets/shaders/pixel.hlsl", pixelSrc) == FILE_OPEN_RESULT_OK);
+	for (const auto& asset : AssetManager::GetAssets())
+		if (asset.type == ASSET_TYPE_MESH)
+			modelHandle = asset;
+		else if (asset.type == ASSET_TYPE_SHADER)
+			shaderHandle = asset;
+		else if (asset.type == ASSET_TYPE_TEXTURE)
+			textureHandle = asset;
 
-	ShaderVariable att1;
-	att1.name = "POSITION";
-	att1.size = sizeof(float) * 4;
-	att1.alignedOffset = 0;
-	att1.type = SHADER_VARIABLE_TYPE_FLOAT4;
+	testShader = AssetLoader::LoadShader(shaderHandle.path);
+	testShader->Bind();
 
-	ShaderVariable att2;
-	att2.name = "COLOR";
-	att2.size = sizeof(float) * 4;
-	att2.alignedOffset = 4;
-	att2.type = SHADER_VARIABLE_TYPE_FLOAT4;
+	testMesh = AssetLoader::LoadMesh(modelHandle.path);
 
-	ShaderVariable att3;
-	att3.name = "TEXTCOORDS";
-	att3.size = sizeof(float) * 2;
-	att3.alignedOffset = 8;
-	att3.type = SHADER_VARIABLE_TYPE_FLOAT2;
-
-	Shader* shader = Shader::Create( { *vertexSrc, vertexSrc.size() }, { *pixelSrc, pixelSrc.size() }, { att1, att2, att3 });
-	int br = 1;
+	testTexture = AssetLoader::LoadTexture(textureHandle.path);
+	testTexture->Bind(0);
 }
 
 namespace panels
@@ -180,11 +212,41 @@ namespace panels
 		ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, { 2,2 });
 		ImGui::Begin("Asset manager");
 		ImGui::Columns(numColumns, 0, false);
-
-		for (const auto& asset : sAssets)
+		for (const auto& asset : AssetManager::GetAssets())
 		{
-			ImGui::ImageButton(asset.first.c_str(), sAssetIcon->GetRendererID(), { iconSize, iconSize }, { 0,0 }, { 1,1 }, { 1,1,1,1 });
-			ImGui::TextWrapped(asset.first.c_str());
+			std::string fileName = FileSystem::GetFilenameNoExt(asset.path);
+			if (ImGui::ImageButton(asset.path.c_str(), sAssetIcon->GetRendererID(), { iconSize, iconSize }, { 0,0 }, { 1,1 }, { 1,1,1,1 }))
+			{
+				switch (asset.type)
+				{
+					case ASSET_TYPE_MATERIAL:
+						AddWindow<EditMaterialWindow>("Edit material: " + fileName, asset);
+						break;
+				}
+			}
+			if (ImGui::BeginPopupContextItem(fileName.c_str(), ImGuiPopupFlags_MouseButtonRight))
+			{
+				ImGui::SameLine();
+				ImGui::SeparatorText("Actions...");
+				if (asset.type == ASSET_TYPE_SHADER)
+				{
+					if (ImGui::Selectable("New material"))
+					{
+						AddWindow<EditMaterialWindow>("New material", asset);
+					}
+				}
+				ImGui::EndPopup();
+			}
+
+			switch (asset.type)
+			{
+				case ASSET_TYPE_TEXTURE:	fileName += " (TEXTURE)"; break;
+				case ASSET_TYPE_SHADER:		fileName += " (SHADER)"; break;
+				case ASSET_TYPE_MATERIAL:	fileName += " (MATERIAL)"; break;
+				case ASSET_TYPE_MESH:		fileName += " (MESH)"; break;
+				default:					fileName += " (UNKNOWN?!?)"; break;
+			}
+			ImGui::TextWrapped(fileName.c_str());
 			ImGui::NextColumn();
 		}
 
@@ -194,12 +256,8 @@ namespace panels
 		ImGui::SetNextItemWidth(200.0f);
 		ImGui::SliderFloat("Zoom level", &zoom, 0.5f, 2.0f);
 
-		if (ImGui::Button("Refresh assets"))
-		{
-			RefreshAssetList();
-		}
-
 		ImGui::End();
+
 		ImGui::PopStyleVar();
 	}
 	void EntityList()
@@ -210,6 +268,9 @@ namespace panels
 	void Properties()
 	{
 		ImGui::Begin("Properties");
+		ImGui::Text("Window size: %ix%i", Window::Get()->GetProps().width, Window::Get()->GetProps().height);
+		ImGui::DragFloat3("cam loc", &camLoc.x);
+		ImGui::DragFloat3("cam rot", &camRot.x);
 		ImGui::End();
 	}
 	void GameViewport()
@@ -228,11 +289,38 @@ namespace panels
 		sGameViewportFrameBuffer->ClearDepthAttachment();
 		sGameViewportFrameBuffer->ClearColorAttachment(0, { 0.76f, 0.84f, 0.725f, 1.0f });
 
-		// imgui stuff...
+		sGameViewportFrameBuffer->Bind();
+		Renderer::RenderMesh(testMesh);
+
+		// draw framebuffer
 		ImGui::Image(sGameViewportFrameBuffer->GetRendererID(0), wndSize);
+		
+		// on screen text
+		ImGui::SetCursorPosY( ImGui::GetWindowSize().y - wndSize.y + 8);
+		ImGui::SetCursorPosX(8);
+		ImGui::Text("Framebuffer %ix%i", sGameViewportFrameBuffer->GetSpecs().width, sGameViewportFrameBuffer->GetSpecs().height);
+		
 		ImGui::End();
 		ImGui::PopStyleVar();
 	}
+}
+
+void EditorUpdate(float deltaTime)
+{
+	Mat4 mvp;
+
+	const auto& specs = sGameViewportFrameBuffer->GetSpecs();
+	float aspectRatio = (float)specs.width / specs.height;
+
+	mvp = math::GetModelMatrix({ 0,0,0 }, { 0,180,0 }, {1,1,1})
+		*
+		math::GetViewMatrix(camLoc, camRot)
+		*
+		math::GetPerspectiveMatrix(aspectRatio, camFOV, 0.1f, 1000.0f);
+
+	mvp = math::GetMatrixTransposed(mvp);
+
+	testShader->OverwriteVertexConstBuffer(0, &mvp);
 }
 
 void EditorRender()
@@ -272,12 +360,11 @@ void EditorRender()
         ImGui::EndMenuBar();
     }
 
-    // Render windows here!
-	
+	panels::Assets();
 	panels::GameViewport();
 	panels::EntityList();
 	panels::Properties();
-	panels::Assets();
+	UpdateWindows();
 
 	ImGui::End();
 }

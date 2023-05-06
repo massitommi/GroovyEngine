@@ -5,11 +5,11 @@
 
 #include <fileapi.h>
 
-String FileSystem::DIR_SEPARATOR = "\\";
+const std::string FileSystem::DIR_SEPARATOR = "\\";
 
-static std::vector<String> GetFilesInDir(const String& dir)
+static std::vector<std::string> GetFilesInDir(const std::string& dir)
 {
-	std::vector<String> result;
+	std::vector<std::string> result;
 
 	WIN32_FIND_DATAA fileData = {};
 
@@ -30,19 +30,19 @@ static std::vector<String> GetFilesInDir(const String& dir)
 	return result;
 }
 
-std::vector<String> FileSystem::GetFilesInDir(const String& dir, const std::vector<String>& extensionsFilters)
+std::vector<std::string> FileSystem::GetFilesInDir(const std::string& dir, const std::vector<std::string>& extensionsFilters)
 {
 	if (extensionsFilters.empty())
 	{
-		String noFilterDir = dir;
+		std::string noFilterDir = dir;
 		noFilterDir.append("\\*");
 		return ::GetFilesInDir(noFilterDir);
 	}
 
-	std::vector<String> result;
+	std::vector<std::string> result;
 	for (uint32 i = 0; i < extensionsFilters.size(); i++)
 	{
-		String extDir = dir;
+		std::string extDir = dir;
 		extDir.append("\\*");
 		extDir.append(extensionsFilters[i]);
 		auto extResult = ::GetFilesInDir(extDir.c_str());
@@ -52,27 +52,51 @@ std::vector<String> FileSystem::GetFilesInDir(const String& dir, const std::vect
 	return result;
 }
 
-EFileOpenResult FileSystem::ReadFileBinary(const String& path, Buffer& outBuffer)
+EFileOpenResult FileSystem::ReadFileBinary(const std::string& path, void* outBuffer, size_t bufferSize, size_t& outBytesRead)
 {
-	HANDLE handle = CreateFileA(path.c_str(), GENERIC_READ, 0, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
-	if (handle == INVALID_HANDLE_VALUE)
-	{
-		return FILE_OPEN_RESULT_UNKNOWN_ERROR;
-	}
+	check(outBuffer && bufferSize);
 
-	DWORD fileSize = GetFileSize(handle, 0);
-	outBuffer.resize(fileSize);
-	DWORD bytesRead = 0;
-	if (!ReadFile(handle, outBuffer.data(), fileSize, &bytesRead, nullptr))
-	{
+	HANDLE handle = CreateFileA(path.c_str(), GENERIC_READ, 0, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
+	
+	if (handle == INVALID_HANDLE_VALUE)
 		return FILE_OPEN_RESULT_UNKNOWN_ERROR;
-	}
+
+	DWORD fileSize = ::GetFileSize(handle, 0);
+	DWORD bytesToRead = bufferSize < fileSize ? bufferSize : fileSize;
+	DWORD bytesRead = 0;
+
+	if (!ReadFile(handle, outBuffer, bytesToRead, &bytesRead, nullptr))
+		return FILE_OPEN_RESULT_UNKNOWN_ERROR;
+
+	outBytesRead = bytesRead;
+	
 	CloseHandle(handle);
 
 	return FILE_OPEN_RESULT_OK;
 }
 
-EFileOpenResult FileSystem::WriteFileBinary(const String& path, const Buffer& data)
+EFileOpenResult FileSystem::ReadFileBinary(const std::string& path, Buffer& outBuffer)
+{
+	HANDLE handle = CreateFileA(path.c_str(), GENERIC_READ, 0, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
+
+	if (handle == INVALID_HANDLE_VALUE)
+		return FILE_OPEN_RESULT_UNKNOWN_ERROR;
+
+	DWORD fileSize = GetFileSize(handle, 0);
+	DWORD bytesToRead = fileSize;
+	DWORD bytesRead = 0;
+
+	outBuffer.resize(bytesToRead);
+
+	if (!ReadFile(handle, outBuffer.data(), bytesToRead, &bytesRead, nullptr))
+		return FILE_OPEN_RESULT_UNKNOWN_ERROR;
+
+	CloseHandle(handle);
+
+	return FILE_OPEN_RESULT_OK;
+}
+
+EFileOpenResult FileSystem::WriteFileBinary(const std::string& path, const Buffer& data)
 {
 	HANDLE handle = CreateFileA(path.c_str(), GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
 	if (handle == INVALID_HANDLE_VALUE)

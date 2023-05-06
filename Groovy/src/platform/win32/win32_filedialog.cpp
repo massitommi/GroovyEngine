@@ -5,16 +5,16 @@
 #include "win32_globals.h"
 
 
-static String GetNativeFilters(const ExtensionFilters& filters)
+static std::string GetNativeFilters(const ExtensionFilters& filters)
 {
 	if (filters.empty()) return "";
-	String finalFilter;
+	std::string finalFilter;
 
 	for (const ExtensionFilter& filter : filters)
 	{
 		finalFilter.append(filter.description);
 		finalFilter.append("\0", 1);
-		for (const String& extension : filter.extensions)
+		for (const std::string& extension : filter.extensions)
 		{
 			finalFilter.append(extension);
 			finalFilter.append(";");
@@ -26,9 +26,9 @@ static String GetNativeFilters(const ExtensionFilters& filters)
 	return finalFilter;
 }
 
-String FileDialog::OpenFileDialog(const String& titleBar, const ExtensionFilters& filters)
+std::string FileDialog::OpenFileDialog(const std::string& titleBar, const ExtensionFilters& filters)
 {
-	String nativeFilters = GetNativeFilters(filters);
+	std::string nativeFilters = GetNativeFilters(filters);
 
 	OPENFILENAMEA ofn = {};
 	CHAR szFile[260] = { 0 };
@@ -51,7 +51,7 @@ String FileDialog::OpenFileDialog(const String& titleBar, const ExtensionFilters
 	return "";
 }
 
-String FileDialog::SaveFileDialog(const String& titleBar)
+std::string FileDialog::SaveFileDialog(const std::string& titleBar)
 {
 	OPENFILENAMEA ofn = {};
 	CHAR szFile[260] = { 0 };
@@ -62,6 +62,7 @@ String FileDialog::SaveFileDialog(const String& titleBar)
 	ofn.nMaxFile = sizeof(szFile);
 	if (GetCurrentDirectoryA(256, currentDir))
 		ofn.lpstrInitialDir = currentDir;
+	ofn.nFilterIndex = 0;
 	ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST | OFN_NOCHANGEDIR;
 
 	ofn.lpstrTitle = titleBar.c_str();

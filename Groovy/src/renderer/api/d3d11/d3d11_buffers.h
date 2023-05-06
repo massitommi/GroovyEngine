@@ -10,7 +10,6 @@ public:
 
 	virtual void Bind() override;
 	virtual size_t GetSize() const override { return mSize; }
-	virtual void SetData(void* data, size_t size) override;
 
 private:
 	struct ID3D11Buffer* mBuffer;
@@ -26,7 +25,6 @@ public:
 
 	virtual void Bind() override;
 	virtual size_t GetSize() const override { return mSize; }
-	virtual void SetData(void* data, size_t size) override;
 
 private:
 	struct ID3D11Buffer* mBuffer;

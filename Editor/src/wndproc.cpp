@@ -3,11 +3,11 @@
 #include "vendor/imgui/backends/imgui_impl_win32.h"
 #include "core/core.h"
 
-static std::vector<String> GetDroppedFiles(HDROP boh)
+static std::vector<std::string> GetDroppedFiles(HDROP boh)
 {
-	std::vector<String> result;
+	std::vector<std::string> result;
 
-	uint32 numFilesDropped = DragQueryFileA(boh, 0xFFFFFFFF, nullptr, 0);
+	uint32 numFilesDropped = DragQueryFileA(boh, 0xffffffff, nullptr, 0);
 	for (uint32 i = 0; i < numFilesDropped; i++)
 	{
 		uint32 fileNameSize = DragQueryFileA(boh, i, nullptr, 0);
@@ -21,7 +21,7 @@ static std::vector<String> GetDroppedFiles(HDROP boh)
 
 IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
-void OnFilesDropped(const std::vector<String>& files);
+void OnFilesDropped(const std::vector<std::string>& files);
 
 LRESULT Win32_EditorWndProcCallback(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
@@ -29,7 +29,7 @@ LRESULT Win32_EditorWndProcCallback(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM 
 	{
 		case WM_DROPFILES:
 		{
-			std::vector<String> filesDropped = GetDroppedFiles((HDROP)wParam);
+			std::vector<std::string> filesDropped = GetDroppedFiles((HDROP)wParam);
 			OnFilesDropped(filesDropped);
 			break;
 		}

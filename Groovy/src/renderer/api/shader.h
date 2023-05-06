@@ -13,30 +13,23 @@ enum EShaderVariableType
 
 struct ShaderVariable
 {
-	String name;
+	std::string name;
 	size_t size;
 	size_t alignedOffset;
 	EShaderVariableType type;
 };
 
-enum EConstBufferTarget
+struct ConstBufferDesc
 {
-	CONSTBUFFER_TARGET_VERTEX = BITFLAG(1),
-	CONSTBUFFER_TARGET_PIXEL = BITFLAG(2)
-};
-
-struct ShaderConstBuffer
-{
-	String name;
+	std::string name;
 	size_t size;
-	uint32 bufferTarget;
 	std::vector<ShaderVariable> variables;
 };
 
-struct ShaderSrc
+struct ShaderResTexture
 {
-	void* data;
-	size_t length;
+	std::string name;
+	uint32 bindSlot;
 };
 
 class Shader
@@ -45,10 +38,16 @@ public:
 	virtual ~Shader() = default;
 
 	virtual void Bind() = 0;
-	virtual void SetConstBuffer(uint32 index, void* data, size_t size) = 0;
-	virtual const std::vector<ShaderConstBuffer>& GetSets() const = 0;
-	virtual void SetAttribute(uint32 setIndex, uint32 varIndex, void* data, size_t dataSize) = 0;
-	virtual void SetAttribute(const char* varName, void* data, size_t dataSize) = 0;
 
-	static Shader* Create(ShaderSrc vertexSrc, ShaderSrc pixelSrc, const std::vector<ShaderVariable>& input);
+	virtual const std::vector<ConstBufferDesc>& GetVertexConstBuffersDesc() const = 0;
+	virtual const std::vector<ConstBufferDesc>& GetPixelConstBuffersDesc() const = 0;
+	virtual const std::vector<ShaderResTexture>& GetPixelTexturesRes() const = 0;
+
+	virtual size_t GetVertexConstBufferIndex(const std::string& bufferName) = 0;
+	virtual size_t GetPixelConstBufferIndex(const std::string& bufferName) = 0;
+
+	virtual void OverwriteVertexConstBuffer(uint32 index, void* data) = 0;
+	virtual void OverwritePixelConstBuffer(uint32 index, void* data) = 0;
+
+	static Shader* Create(const void* vertexSrc, size_t vertexSize, const void* pixelSrc, size_t pixelSize);
 };

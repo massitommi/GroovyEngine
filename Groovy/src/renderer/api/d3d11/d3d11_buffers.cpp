@@ -21,11 +21,6 @@ void D3D11VertexBuffer::Bind()
 	d3dUtils::gContext->IASetVertexBuffers(0, 1, &mBuffer, &strides, &offsets);
 }
 
-void D3D11VertexBuffer::SetData(void* data, size_t size)
-{
-	//d3dUtils::OverwriteBuffer(mBuffer, data, size);
-}
-
 D3D11IndexBuffer::D3D11IndexBuffer(size_t size, void* data)
 	: mSize(size)
 {
@@ -40,11 +35,6 @@ D3D11IndexBuffer::~D3D11IndexBuffer()
 void D3D11IndexBuffer::Bind()
 {
 	d3dUtils::gContext->IASetIndexBuffer(mBuffer, DXGI_FORMAT_R32_UINT, 0);
-}
-
-void D3D11IndexBuffer::SetData(void* data, size_t size)
-{
-	//d3dUtils::OverwriteBuffer(mBuffer, data, size);
 }
 
 #endif

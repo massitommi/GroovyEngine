@@ -13,7 +13,7 @@ class RendererAPI
 public:
 	virtual ~RendererAPI() = default;
 
-	virtual void DrawIndexed(uint64 indexCount) = 0;
+	virtual void DrawIndexed(uint32 vertexOffset, uint32 indexOffset, uint32 indexCount) = 0;
 	virtual void Present(uint32 syncInteval) = 0;
 
 	inline static RendererAPI& Get() { return *sInstance; }

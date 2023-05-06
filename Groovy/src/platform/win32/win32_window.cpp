@@ -5,17 +5,22 @@
 
 static const char* sWndClassName = "groovyWnd";
 
+#define WINDOW_STYLE		WS_CAPTION | WS_MAXIMIZEBOX | WS_MINIMIZEBOX | WS_SIZEBOX | WS_SYSMENU
+#define WINDOW_STYLE_EX		0
+
 #if WITH_EDITOR
-	#define WINDOW_FLAGS	WS_EX_ACCEPTFILES
+	#define WINDOW_STYLE_EDITOR		WS_MAXIMIZE
+	#define WINDOW_STYLE_EX_EDITOR	WS_EX_ACCEPTFILES
 #else
-	#define WINDOW_FLAGS	0
+	#define WINDOW_STYLE_EDITOR		0
+	#define WINDOW_STYLE_EX_EDITOR	0
 #endif
 
 extern bool gEngineShouldRun;
 
 LRESULT Win32_EditorWndProcCallback(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
-static LRESULT CALLBACK groovyWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+static LRESULT CALLBACK GroovyWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
 	Win32_EditorWndProcCallback(hWnd, uMsg, wParam, lParam);
 
@@ -35,6 +40,13 @@ static LRESULT CALLBACK groovyWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARA
 			gEngineShouldRun = false;
 		}
 		break;
+
+		case WM_CREATE:
+		{
+			CREATESTRUCTA* params = (CREATESTRUCTA*)lParam;
+			SetWindowLongPtrA(hWnd, GWLP_USERDATA, (LONG_PTR)params->lpCreateParams);
+		}
+		break;
 	}
 
 	return DefWindowProcA(hWnd, uMsg, wParam, lParam);
@@ -43,13 +55,6 @@ static LRESULT CALLBACK groovyWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARA
 Window::Window(const WindowProps& props)
 	: mProps(props), mHandle(nullptr)
 {
-	HWND handle = CreateWindowExA
-	(
-		WINDOW_FLAGS, sWndClassName, props.title.c_str(), WS_CAPTION | WS_MAXIMIZEBOX | WS_MINIMIZEBOX | WS_SIZEBOX | WS_SYSMENU,
-		CW_USEDEFAULT, CW_USEDEFAULT, props.width, props.height, nullptr, nullptr, gInstance, nullptr
-	);
-	SetWindowLongPtrA(handle, GWLP_USERDATA, (LONG_PTR)this);
-	mHandle = handle;
 }
 
 Window::~Window()
@@ -57,24 +62,45 @@ Window::~Window()
 	DestroyWindow((HWND)mHandle);
 }
 
+void Window::Spawn()
+{
+	HWND handle = CreateWindowExA
+	(
+		WINDOW_STYLE_EX | WINDOW_STYLE_EX_EDITOR, sWndClassName, mProps.title.c_str(),
+		WINDOW_STYLE | WINDOW_STYLE_EDITOR, CW_USEDEFAULT, CW_USEDEFAULT,
+		mProps.width, mProps.height, nullptr, nullptr, gInstance, this
+	);
+	mHandle = handle;
+}
+
 void Window::Show()
 {
-	ShowWindow((HWND)mHandle, SW_SHOW);
+	if(mHandle)
+		ShowWindow((HWND)mHandle, SW_SHOW);
 }
 
 void Window::Hide()
 {
-	ShowWindow((HWND)mHandle, SW_HIDE);
+	if(mHandle)
+		ShowWindow((HWND)mHandle, SW_HIDE);
 }
 
 void Window::ProcessEvents()
 {
+	if (!mHandle) return;
 	MSG msg;
 	while (PeekMessageA(&msg, (HWND)mHandle, 0, 0, PM_REMOVE))
 	{
 		TranslateMessage(&msg);
 		DispatchMessageA(&msg);
 	}
+}
+
+void Window::SetTitle(const std::string& newTitle)
+{
+	mProps.title = newTitle;
+	if(mHandle)
+		SetWindowTextA((HWND)mHandle, newTitle.c_str());
 }
 
 void Window::OnResize(uint32 width, uint32 height)
@@ -93,7 +119,7 @@ void Window::InitSystem()
 	WNDCLASSEXA wndClass = {};
 	wndClass.cbSize = sizeof(WNDCLASSEXA);
 	wndClass.hInstance = gInstance;
-	wndClass.lpfnWndProc = groovyWndProc;
+	wndClass.lpfnWndProc = GroovyWndProc;
 	wndClass.lpszClassName = sWndClassName;
 	wndClass.style = CS_OWNDC;
 	checkslow(RegisterClassExA(&wndClass));

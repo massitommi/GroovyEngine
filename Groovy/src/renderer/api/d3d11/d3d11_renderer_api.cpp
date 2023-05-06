@@ -4,7 +4,7 @@
 #include "d3d11_utils.h"
 #include "platform/window.h"
 
-#if BUILD_DEBUG
+#if 0
     #define SWAPCHAIN_FLAG_DEBUG D3D11_CREATE_DEVICE_DEBUG
 #else
     #define SWAPCHAIN_FLAG_DEBUG 0
@@ -76,9 +76,9 @@ D3D11RendererAPI::D3D11RendererAPI(Window* wnd)
     }
 }
 
-void D3D11RendererAPI::DrawIndexed(uint64 indexCount)
+void D3D11RendererAPI::DrawIndexed(uint32 vertexOffset, uint32 indexOffset, uint32 indexCount)
 {
-    d3dUtils::gContext->DrawIndexed(indexCount, 0, 0);
+    d3dUtils::gContext->DrawIndexed(indexCount, indexOffset, vertexOffset);
 }
 
 void D3D11RendererAPI::Present(uint32 syncInteval)

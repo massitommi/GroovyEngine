@@ -38,11 +38,11 @@ static EMessageBoxResponse GetResponse(int32 code)
 	return MESSAGE_BOX_RESPONSE_CANCEL;
 }
 
-EMessageBoxResponse SysMessageBox::Show(const char* caption, const char* msg, EMessageBoxType type, EMessageBoxOptions options)
+EMessageBoxResponse SysMessageBox::Show(const std::string& caption, const std::string& msg, EMessageBoxType type, EMessageBoxOptions options)
 {
 	HWND wnd = Window::Get() ? (HWND)Window::Get()->GetNativeHandle() : nullptr;
 	int32 flags = GetFlags_type(type) | GetFlags_options(options);
-	int32 response = MessageBoxA(wnd, msg, caption, flags);
+	int32 response = MessageBoxA(wnd, msg.c_str(), caption.c_str(), flags);
 	return GetResponse(response);
 }
 

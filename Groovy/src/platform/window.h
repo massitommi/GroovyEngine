@@ -4,7 +4,7 @@
 
 struct WindowProps
 {
-	String title;
+	std::string title;
 	uint32 width, height;
 	uint32 refreshrate;
 	uint32 vsync;
@@ -19,10 +19,13 @@ public:
 	Window(const WindowProps& props);
 	~Window();
 
+	void Spawn();
 	void Show();
 	void Hide();
 
 	void ProcessEvents();
+	
+	void SetTitle(const std::string& newTitle);
 
 	void OnResize(uint32 width, uint32 height);
 

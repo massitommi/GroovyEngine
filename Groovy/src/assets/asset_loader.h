@@ -1,10 +1,14 @@
 #pragma once
  
-#include "assets.h"
+#include "asset.h"
 #include "renderer/api/texture.h"
+#include "renderer/api/shader.h"
+#include "renderer/mesh.h"
 
 class AssetLoader
 {
 public:
-	static Texture* LoadTexture(const Buffer& textureFile);
+	static Texture* LoadTexture(const std::string& filePath);
+	static Shader* LoadShader(const std::string& filePath);
+	static Mesh* LoadMesh(const std::string& filePath);
 };
