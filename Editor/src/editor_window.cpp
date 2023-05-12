@@ -22,31 +22,12 @@ void EditorWindow::RenderWindow()
 #include "project/Project.h"
 #include "platform/messagebox.h"
 
+extern Project gProj;
+
 
 EditMaterialWindow::EditMaterialWindow(const std::string& wndTitle, AssetHandle assetHandle)
 	: EditorWindow(wndTitle)
 {
-	if (assetHandle.type == ASSET_TYPE_MATERIAL)
-	{
-		mVirtual = false;
-		mMaterial = new Material();
-		Buffer matData;
-		FileSystem::ReadFileBinary(assetHandle.path, matData);
-		mMaterial->Deserialize(matData);
-		AssetHandle shaderHandle = AssetManager::GetAssets()[AssetManager::Find(mMaterial->GetShaderID())];
-		mMaterial->SetShader(AssetLoader::LoadShader(shaderHandle.path));
-	}
-	else if (assetHandle.type == ASSET_TYPE_SHADER)
-	{
-		mVirtual = true;
-		mMaterial = new Material();
-		Buffer shaderData;
-		mMaterial->SetShader(AssetLoader::LoadShader(assetHandle.path));
-		mMaterial->GetShaderID() = assetHandle.uuid;
-		mMaterial->ConstructResources();
-
-		mFlags |= ImGuiWindowFlags_UnsavedDocument;
-	}
 }
 
 EditMaterialWindow::~EditMaterialWindow()
@@ -57,81 +38,81 @@ EditMaterialWindow::~EditMaterialWindow()
 
 void EditMaterialWindow::RenderContent()
 {
-	if (!mMaterial->GetShader())
-	{
-		ImGui::Text("No shader, no data :(");
-		return;
-	}
+	//if (!mMaterial->GetShader())
+	//{
+	//	ImGui::Text("No shader, no data :(");
+	//	return;
+	//}
 
-	const std::vector<ConstBufferDesc>& vsBuffers = mMaterial->GetShader()->GetVertexConstBuffersDesc();
-	const std::vector<ConstBufferDesc>& psBuffers = mMaterial->GetShader()->GetPixelConstBuffersDesc();
-	const std::vector<ShaderResTexture>& psTextures = mMaterial->GetShader()->GetPixelTexturesRes();
+	//const std::vector<ConstBufferDesc>& vsBuffers = mMaterial->GetShader()->GetVertexConstBuffersDesc();
+	//const std::vector<ConstBufferDesc>& psBuffers = mMaterial->GetShader()->GetPixelConstBuffersDesc();
+	//const std::vector<ShaderResTexture>& psTextures = mMaterial->GetShader()->GetPixelTexturesRes();
 
-	ImGui::Text("Vertex shader constant buffers:");
-	ImGui::Spacing();
-	// vertex const buffers
-	{
-		byte* bufferPtr = (byte*)mMaterial->GetVertexConstBuffersData().data();
-		for (const ConstBufferDesc& bufferDesc : vsBuffers)
-		{
-			ShowConstBuffer(bufferDesc, bufferPtr);
-			bufferPtr += bufferDesc.size;
-		}
-	}
-	ImGui::Spacing();
-	ImGui::Separator();
-	ImGui::Spacing();
-	ImGui::Text("Pixel shader constant buffers:");
-	ImGui::Spacing();
-	// pixel const buffers
-	{
-		byte* bufferPtr = (byte*)mMaterial->GetPixelConstBuffersData().data();
-		for (const ConstBufferDesc& bufferDesc : psBuffers)
-		{
-			ShowConstBuffer(bufferDesc, bufferPtr);
-			bufferPtr += bufferDesc.size;
-		}
-	}
-	ImGui::Spacing();
-	ImGui::Separator();
-	ImGui::Spacing();
-	ImGui::Text("Pixel shader texture resources:");
-	ImGui::Spacing();
-	// texture resources
-	for (uint32 i = 0; i < mMaterial->GetTexturesID().size(); i++)
-	{
-		ImGui::InputScalar(psTextures[i].name.c_str(), ImGuiDataType_U64, &mMaterial->GetTexturesID()[i]);
-	}
-	ImGui::Spacing();
-	ImGui::Separator();
-	ImGui::Spacing();
+	//ImGui::Text("Vertex shader constant buffers:");
+	//ImGui::Spacing();
+	//// vertex const buffers
+	//{
+	//	byte* bufferPtr = (byte*)mMaterial->GetVertexConstBuffersData().data();
+	//	for (const ConstBufferDesc& bufferDesc : vsBuffers)
+	//	{
+	//		ShowConstBuffer(bufferDesc, bufferPtr);
+	//		bufferPtr += bufferDesc.size;
+	//	}
+	//}
+	//ImGui::Spacing();
+	//ImGui::Separator();
+	//ImGui::Spacing();
+	//ImGui::Text("Pixel shader constant buffers:");
+	//ImGui::Spacing();
+	//// pixel const buffers
+	//{
+	//	byte* bufferPtr = (byte*)mMaterial->GetPixelConstBuffersData().data();
+	//	for (const ConstBufferDesc& bufferDesc : psBuffers)
+	//	{
+	//		ShowConstBuffer(bufferDesc, bufferPtr);
+	//		bufferPtr += bufferDesc.size;
+	//	}
+	//}
+	//ImGui::Spacing();
+	//ImGui::Separator();
+	//ImGui::Spacing();
+	//ImGui::Text("Pixel shader texture resources:");
+	//ImGui::Spacing();
+	//// texture resources
+	//for (uint32 i = 0; i < mMaterial->GetTexturesID().size(); i++)
+	//{
+	//	ImGui::InputScalar(psTextures[i].name.c_str(), ImGuiDataType_U64, &mMaterial->GetTexturesID()[i]);
+	//}
+	//ImGui::Spacing();
+	//ImGui::Separator();
+	//ImGui::Spacing();
 
-	if (!mVirtual) // asset is already on disk
-	{
-		const AssetHandle& handle = AssetManager::GetAssets()[AssetManager::Find(mMaterial->GetUUID())];
-		if (ImGui::Button("Save changes"))
-		{
-			Buffer data;
-			mMaterial->Serialize(data);
-			check(FileSystem::WriteFileBinary(handle.path, data) == FILE_OPEN_RESULT_OK);
-		}
+	//if (!mVirtual) // asset is already on disk
+	//{
+	//	AssetHandle handle = {};/* AssetManager::GetAssets()[AssetManager::Find(mMaterial->GetUUID())];*/
+	//	if (ImGui::Button("Save changes"))
+	//	{
+	//		Buffer data;
+	//		mMaterial->Serialize(data);
+	//		check(FileSystem::WriteFileBinary(handle.path, data) == FILE_OPEN_RESULT_OK);
+	//	}
 
-	}
-	else // asset does not exist on disk
-	{
-		static std::string newFileName = "new_material.groovyasset";
-		std::string newPath = Project::GetMain()->GetAssetPath() + newFileName;
-		ImGui::InputText("Save as: ", &newFileName);
-		if (ImGui::Button("Save"))
-		{
-			Buffer data;
-			mMaterial->Serialize(data);
-			check(FileSystem::WriteFileBinary(newPath, data) == FILE_OPEN_RESULT_OK);
-			AssetHandle newShinyHandle = AssetManager::AddNew(newPath);
-			mVirtual = false; // now exists on disk!
-			mFlags &= ~ImGuiWindowFlags_UnsavedDocument;
-		}
-	}
+	//}
+	//else // asset does not exist on disk
+	//{
+	//	static std::string newFileName = "new_material.groovyasset";
+	//	std::string newPath = gProj.assetsPath + newFileName;
+	//	ImGui::InputText("Save as: ", &newFileName);
+	//	if (ImGui::Button("Save"))
+	//	{
+	//		Buffer data;
+	//		mMaterial->Serialize(data);
+	//		check(FileSystem::WriteFileBinary(newPath, data) == FILE_OPEN_RESULT_OK);
+	//		/*AssetHandle newShinyHandle = AssetManager::AddNew(newPath);*/
+	//		mVirtual = false; // now exists on disk!
+	//		mFlags &= ~ImGuiWindowFlags_UnsavedDocument;
+	//	}
+	//}
 }
 
 bool EditMaterialWindow::OnClose()
@@ -215,4 +196,70 @@ void EditMaterialWindow::ShowConstBuffer(const ConstBufferDesc& bufferDesc, byte
 			ShowVar(var, bufferPtr);
 		}
 	}
+}
+
+const char* AssetRegistryWindow::AssetTypeStr(EAssetType type)
+{
+	switch (type)
+	{
+		case ASSET_TYPE_TEXTURE:	return "TEXTURE";
+		case ASSET_TYPE_MATERIAL:	return "MATERIAL";
+		case ASSET_TYPE_SHADER:		return "SHADER";
+		case ASSET_TYPE_MESH:		return "MESH";
+	}
+	return "UNKNOWN";
+}
+
+void AssetRegistryWindow::RenderContent()
+{
+	const auto& reg = AssetManager::GetRegistry();
+	ImGui::Separator();
+	for (const auto& handle : reg)
+	{
+		ImGui::Text("Name: %s", handle.name.c_str());
+		ImGui::Spacing();
+		if (ImGui::BeginCombo("Type", AssetTypeStr(handle.type)))
+		{
+			ImGui::EndCombo();
+		}
+		ImGui::Spacing();
+		ImGui::Text("Path: %s", handle.path.c_str());
+		ImGui::Spacing();
+		ImGui::Text("UUID: %s", std::to_string(handle.uuid).c_str());
+		ImGui::Spacing();
+		ImGui::Text("Instance: %p", handle.instance);
+
+		ImGui::Spacing();
+		ImGui::Spacing();
+		ImGui::Separator();
+	}
+	ImGui::Spacing();
+	ImGui::Spacing();
+	ImGui::Text("Debug");
+
+	static EAssetType type = ASSET_TYPE_NONE;
+	static std::string filePath;
+
+	ImGui::InputText("File path", &filePath);
+	if (ImGui::BeginCombo("Asset type", AssetTypeStr(type)))
+	{
+		ImGui::Selectable(AssetTypeStr(ASSET_TYPE_NONE));
+		
+		if (ImGui::Selectable(AssetTypeStr(ASSET_TYPE_TEXTURE)))
+			type = ASSET_TYPE_TEXTURE;
+		if (ImGui::Selectable(AssetTypeStr(ASSET_TYPE_SHADER)))
+			type = ASSET_TYPE_SHADER;
+		if (ImGui::Selectable(AssetTypeStr(ASSET_TYPE_MESH)))
+			type = ASSET_TYPE_MESH;
+
+		ImGui::EndCombo();
+	}
+	if (type == ASSET_TYPE_NONE || filePath.empty())
+		ImGui::BeginDisabled();
+	if (ImGui::Button("Add to registry"))
+	{
+		AssetManager::AddEditorNew(filePath, type);
+	}
+	if (type == ASSET_TYPE_NONE || filePath.empty())
+		ImGui::EndDisabled();
 }

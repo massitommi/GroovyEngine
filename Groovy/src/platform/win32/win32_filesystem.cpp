@@ -57,7 +57,7 @@ EFileOpenResult FileSystem::ReadFileBinary(const std::string& path, void* outBuf
 	check(outBuffer && bufferSize);
 
 	HANDLE handle = CreateFileA(path.c_str(), GENERIC_READ, 0, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
-	
+
 	if (handle == INVALID_HANDLE_VALUE)
 		return FILE_OPEN_RESULT_UNKNOWN_ERROR;
 
@@ -65,10 +65,13 @@ EFileOpenResult FileSystem::ReadFileBinary(const std::string& path, void* outBuf
 	DWORD bytesToRead = bufferSize < fileSize ? bufferSize : fileSize;
 	DWORD bytesRead = 0;
 
-	if (!ReadFile(handle, outBuffer, bytesToRead, &bytesRead, nullptr))
-		return FILE_OPEN_RESULT_UNKNOWN_ERROR;
+	if (bytesToRead)
+	{
+		if (!ReadFile(handle, outBuffer, bytesToRead, &bytesRead, nullptr))
+			return FILE_OPEN_RESULT_UNKNOWN_ERROR;
 
-	outBytesRead = bytesRead;
+		outBytesRead = bytesRead;
+	}
 	
 	CloseHandle(handle);
 
@@ -86,10 +89,13 @@ EFileOpenResult FileSystem::ReadFileBinary(const std::string& path, Buffer& outB
 	DWORD bytesToRead = fileSize;
 	DWORD bytesRead = 0;
 
-	outBuffer.resize(bytesToRead);
-
-	if (!ReadFile(handle, outBuffer.data(), bytesToRead, &bytesRead, nullptr))
-		return FILE_OPEN_RESULT_UNKNOWN_ERROR;
+	if (bytesToRead)
+	{
+		outBuffer.resize(bytesToRead);
+		
+		if (!ReadFile(handle, outBuffer.data(), bytesToRead, &bytesRead, nullptr))
+			return FILE_OPEN_RESULT_UNKNOWN_ERROR;
+	}
 
 	CloseHandle(handle);
 
@@ -109,6 +115,15 @@ EFileOpenResult FileSystem::WriteFileBinary(const std::string& path, const Buffe
 	CloseHandle(handle);
 
 	return FILE_OPEN_RESULT_OK;
+}
+
+#undef DeleteFile()
+
+EFileOpenResult FileSystem::DeleteFile(const std::string& path)
+{
+	if (DeleteFileA(path.c_str()))
+		return FILE_OPEN_RESULT_OK;
+	return FILE_OPEN_RESULT_UNKNOWN_ERROR;
 }
 
 #endif

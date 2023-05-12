@@ -20,6 +20,22 @@ extern bool gEngineShouldRun;
 
 LRESULT Win32_EditorWndProcCallback(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
+static std::vector<std::string> GetDroppedFiles(HDROP boh)
+{
+	std::vector<std::string> result;
+
+	uint32 numFilesDropped = DragQueryFileA(boh, 0xffffffff, nullptr, 0);
+	for (uint32 i = 0; i < numFilesDropped; i++)
+	{
+		uint32 fileNameSize = DragQueryFileA(boh, i, nullptr, 0);
+		result.emplace_back(); // alloc string size
+		result[i].resize(fileNameSize);
+		DragQueryFileA(boh, i, result[i].data(), fileNameSize + 1); // +1 because the string also has a null termination character
+	}
+
+	return result;
+}
+
 static LRESULT CALLBACK GroovyWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
 	Win32_EditorWndProcCallback(hWnd, uMsg, wParam, lParam);
@@ -37,6 +53,11 @@ static LRESULT CALLBACK GroovyWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARA
 
 		case WM_CLOSE:
 		{
+			Window* wnd = (Window*)GetWindowLongPtrA(hWnd, GWLP_USERDATA);
+			if (!wnd->OnClose())
+			{
+				return TRUE; // event handled
+			}
 			gEngineShouldRun = false;
 		}
 		break;
@@ -47,13 +68,21 @@ static LRESULT CALLBACK GroovyWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARA
 			SetWindowLongPtrA(hWnd, GWLP_USERDATA, (LONG_PTR)params->lpCreateParams);
 		}
 		break;
+
+		case WM_DROPFILES:
+		{
+			std::vector<std::string> droppedFiles = GetDroppedFiles((HDROP)wParam);
+			Window* wnd = (Window*)GetWindowLongPtrA(hWnd, GWLP_USERDATA);
+			wnd->OnFilesDropped(droppedFiles);
+		}
+		break;
 	}
 
 	return DefWindowProcA(hWnd, uMsg, wParam, lParam);
 }
 
 Window::Window(const WindowProps& props)
-	: mProps(props), mHandle(nullptr)
+	: mProps(props), mHandle(nullptr), mWndCloseCallback(nullptr)
 {
 }
 
@@ -103,6 +132,13 @@ void Window::SetTitle(const std::string& newTitle)
 		SetWindowTextA((HWND)mHandle, newTitle.c_str());
 }
 
+bool Window::OnClose()
+{
+	if (mWndCloseCallback)
+		return mWndCloseCallback();
+	return true;
+}
+
 void Window::OnResize(uint32 width, uint32 height)
 {
 	mProps.width = width;
@@ -111,6 +147,14 @@ void Window::OnResize(uint32 width, uint32 height)
 	for (auto resizeCallback : mWndResizeCallabacks)
 	{
 		resizeCallback(width, height);
+	}
+}
+
+void Window::OnFilesDropped(const std::vector<std::string>& files)
+{
+	for (auto fileDropCallback : mWndFilesDropCallbacks)
+	{
+		fileDropCallback(files);
 	}
 }
 

@@ -125,6 +125,7 @@ std::vector<ShaderResTexture> GetTextures(ID3D11ShaderReflection* reflector, con
 }
 
 D3D11Shader::D3D11Shader(const void* vertexSrc, size_t vertexSize, const void* pixelSrc, size_t pixelSize)
+	: mUUID(0)
 {
 	// compile and create the shaders
 	ID3DBlob* vertexBytecode = d3dUtils::CompileShader(VERTEX_SHADER_TARGET_VER, vertexSrc, vertexSize);

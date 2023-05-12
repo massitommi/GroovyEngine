@@ -11,7 +11,7 @@ FrameBuffer* gScreenFrameBuffer = nullptr;
 
 ClearColor screenClearColor = { 1.0f, 1.0f, 1.0f, 1.0f };
 
-Project mainProj;
+Project gProj;
 
 void OnWndResizeCallback(uint32 width, uint32 height)
 {
@@ -64,15 +64,23 @@ int32 GroovyEntryPoint(const char* args)
 
 	Buffer tmp;
 	FileSystem::ReadFileBinary(projPath, tmp);
-	std::string assetPath;
-	assetPath.resize(tmp.size());
-	memcpy(assetPath.data(), tmp.data(), tmp.size());
+	std::string assetRegistryPath;
+	assetRegistryPath.resize(tmp.size());
+	memcpy(assetRegistryPath.data(), tmp.data(), tmp.size());
+
+#if PLATFORM_WIN32
+	for (char& c : assetRegistryPath)
+		if (c == '/')
+			c = '\\';
+#endif
 
 	std::string projName = FileSystem::GetFilenameNoExt(projPath);
-	std::string projAbsoluteAssetPath = FileSystem::GetParentFolder(projPath) + assetPath + FileSystem::DIR_SEPARATOR;
+	std::string absoluteAssetRegistryPath = FileSystem::GetParentFolder(projPath) + assetRegistryPath;
+	std::string absoluteAssetsPath = FileSystem::GetParentFolder(absoluteAssetRegistryPath);
 
-	mainProj = Project(projName, projAbsoluteAssetPath);
-	Project::SetMain(&mainProj);
+	gProj.name = projName;
+	gProj.registryPath = absoluteAssetRegistryPath;
+	gProj.assetsPath = absoluteAssetsPath;
 
 	AssetManager::Init();
 	Application::Init();
@@ -96,6 +104,7 @@ int32 GroovyEntryPoint(const char* args)
 	}
 
 	delete gScreenFrameBuffer;
+	AssetManager::Shutdown();
 	Application::Shutdown();
 	delete &RendererAPI::Get();
 

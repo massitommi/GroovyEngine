@@ -2,6 +2,8 @@
 
 #include "core/core.h"
 
+#include "assets/asset.h"
+
 enum EShaderVariableType
 {
 	SHADER_VARIABLE_TYPE_FLOAT1,
@@ -32,10 +34,9 @@ struct ShaderResTexture
 	uint32 bindSlot;
 };
 
-class Shader
+class Shader : public AssetInstance
 {
 public:
-	virtual ~Shader() = default;
 
 	virtual void Bind() = 0;
 

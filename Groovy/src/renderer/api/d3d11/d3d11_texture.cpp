@@ -14,7 +14,7 @@ static DXGI_FORMAT GetNativeFormat(EColorFormat format)
 }
 
 D3D11Texture::D3D11Texture(TextureSpec specs, const void* data, size_t size)
-	: mSpecs(specs)
+	: mSpecs(specs), mUUID(0)
 {
 	mHandle = d3dUtils::CreateTexture(specs.width, specs.height, D3D11_BIND_SHADER_RESOURCE, GetNativeFormat(specs.format), data, size);
 	mView = d3dUtils::CreateShaderResourceView(mHandle);

@@ -1,10 +1,11 @@
 #pragma once
- 
+
 #include "asset.h"
 #include "renderer/api/texture.h"
 #include "renderer/api/shader.h"
 #include "renderer/mesh.h"
 
+// Raw asset loader
 class AssetLoader
 {
 public:

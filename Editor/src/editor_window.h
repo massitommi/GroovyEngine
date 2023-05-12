@@ -25,6 +25,18 @@ private:
 	bool mOpen;
 };
 
+#include "assets/asset.h"
+
+class AssetRegistryWindow : public EditorWindow
+{
+public:
+	AssetRegistryWindow(const std::string& title) : EditorWindow(title) {}
+
+	const char* AssetTypeStr(EAssetType type);
+
+	virtual void RenderContent() override;
+};
+
 #include "assets/asset_manager.h"
 #include "renderer/api/shader.h"
 #include "renderer/material.h"

@@ -28,18 +28,28 @@
 
 #include "math/matrix.h"
 
+#include "assets/asset_serializer.h"
 
 static ImGuiRenderer* sRenderer = nullptr;
 extern bool gEngineShouldRun;
+extern Project gProj;
+
+static bool gPendingSave = false;
 
 void EditorInit();
 void EditorUpdate(float deltaTime);
 void EditorRender();
 void EditorShutdown();
 
+bool OnCloseRequested();
+void OnFilesDropped(const std::vector<std::string>& files);
+
 void Application::Init()
 {
-	Window::Get()->SetTitle(Project::GetMain()->GetName());
+	Window::Get()->SetTitle(gProj.name);
+
+	Window::Get()->SubmitToWndCloseCallback(OnCloseRequested);
+	Window::Get()->SubmitToWndFilesDropCallbacks(OnFilesDropped);
 
 	ImGui::CreateContext();
 	ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_DockingEnable;
@@ -84,20 +94,42 @@ void OnFilesDropped(const std::vector<std::string>& files)
 {
 	for (const std::string& file : files)
 	{
-		std::string newFileName = Project::GetMain()->GetAssetPath() + FileSystem::GetFilenameNoExt(file) + GROOVY_ASSET_EXT;
+		std::string newFileName = gProj.assetsPath + FileSystem::GetFilenameNoExt(file) + GROOVY_ASSET_EXT;
 		EAssetType assetType = AssetImporter::GetTypeFromFilename(file);
 
 		switch (assetType)
 		{
 			case ASSET_TYPE_TEXTURE:	
 				AssetImporter::ImportTexture(file, newFileName);
+				AssetManager::SaveRegistry();
 				break;
 
 			case ASSET_TYPE_MESH:
 				AssetImporter::ImportModel3D(file, newFileName);
+				AssetManager::SaveRegistry();
 				break;
 		}
 	}
+}
+
+bool OnCloseRequested()
+{
+	if (gPendingSave)
+	{
+		auto response = SysMessageBox::Show
+		(
+			"Unsaved work",
+			"You are leaving without saving, if you continue you will loose all the latest changes, are you sure?",
+			MESSAGE_BOX_TYPE_WARNING,
+			MESSAGE_BOX_OPTIONS_YESNOCANCEL
+		);
+
+		if (response != MESSAGE_BOX_RESPONSE_YES)
+		{
+			return false;
+		}
+	}
+	return true;
 }
 
 static std::vector<EditorWindow*> sWindows;
@@ -114,6 +146,12 @@ static Texture* testTexture;
 static Vec3 camLoc = {0,1.0f,-3};
 static Vec3 camRot = {0,0,0};
 static float camFOV = 60;
+
+void SaveWork()
+{
+	AssetManager::SaveRegistry();
+	gPendingSave = false;
+}
 
 Texture* LoadEditorIcon(const std::string& path)
 {
@@ -179,9 +217,11 @@ void EditorInit()
 
 	sGameViewportFrameBuffer = FrameBuffer::Create(gameViewportSpec);
 
+	const auto& reg = AssetManager::GetRegistry();
+
 	AssetHandle modelHandle, shaderHandle, textureHandle;
 
-	for (const auto& asset : AssetManager::GetAssets())
+	for (const auto& asset : reg)
 		if (asset.type == ASSET_TYPE_MESH)
 			modelHandle = asset;
 		else if (asset.type == ASSET_TYPE_SHADER)
@@ -189,13 +229,16 @@ void EditorInit()
 		else if (asset.type == ASSET_TYPE_TEXTURE)
 			textureHandle = asset;
 
-	testShader = AssetLoader::LoadShader(shaderHandle.path);
+	testShader = (Shader*)shaderHandle.instance;
 	testShader->Bind();
 
-	testMesh = AssetLoader::LoadMesh(modelHandle.path);
+	testMesh = (Mesh*)modelHandle.instance;
 
-	testTexture = AssetLoader::LoadTexture(textureHandle.path);
+	testTexture = (Texture*)textureHandle.instance;
 	testTexture->Bind(0);
+
+	Material* m;
+	AssetSerializer<Material>::Serialize(m, Buffer());
 }
 
 namespace panels
@@ -212,29 +255,46 @@ namespace panels
 		ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, { 2,2 });
 		ImGui::Begin("Asset manager");
 		ImGui::Columns(numColumns, 0, false);
-		for (const auto& asset : AssetManager::GetAssets())
+		for (const auto& asset : AssetManager::GetRegistry())
 		{
-			std::string fileName = FileSystem::GetFilenameNoExt(asset.path);
-			if (ImGui::ImageButton(asset.path.c_str(), sAssetIcon->GetRendererID(), { iconSize, iconSize }, { 0,0 }, { 1,1 }, { 1,1,1,1 }))
+			std::string fileName = FileSystem::GetFilenameNoExt(asset.name);
+			if (ImGui::ImageButton(asset.name.c_str(), sAssetIcon->GetRendererID(), { iconSize, iconSize }, { 0,0 }, { 1,1 }, { 1,1,1,1 }))
 			{
-				switch (asset.type)
+				/*switch (asset.type)
 				{
 					case ASSET_TYPE_MATERIAL:
 						AddWindow<EditMaterialWindow>("Edit material: " + fileName, asset);
 						break;
-				}
+				}*/
 			}
-			if (ImGui::BeginPopupContextItem(fileName.c_str(), ImGuiPopupFlags_MouseButtonRight))
+			if (ImGui::BeginPopupContextItem(std::to_string(asset.uuid).c_str(), ImGuiPopupFlags_MouseButtonRight))
 			{
 				ImGui::SameLine();
-				ImGui::SeparatorText("Actions...");
-				if (asset.type == ASSET_TYPE_SHADER)
+				ImGui::SeparatorText("Actions");
+
+				if (ImGui::Selectable("Delete"))
+				{
+					auto res = SysMessageBox::Show
+					(
+						"Asset deletion warning", 
+						"Deleting an asset that is references by other asset could result in a crash, do it at your own risk muhahah",
+						MESSAGE_BOX_TYPE_WARNING,
+						MESSAGE_BOX_OPTIONS_YESNOCANCEL
+					);
+					if (res == MESSAGE_BOX_RESPONSE_YES)
+					{
+						AssetManager::EditorDelete(asset);
+						AssetManager::SaveRegistry();
+					}
+				}
+
+				/*if (asset.type == ASSET_TYPE_SHADER)
 				{
 					if (ImGui::Selectable("New material"))
 					{
 						AddWindow<EditMaterialWindow>("New material", asset);
 					}
-				}
+				}*/
 				ImGui::EndPopup();
 			}
 
@@ -269,8 +329,8 @@ namespace panels
 	{
 		ImGui::Begin("Properties");
 		ImGui::Text("Window size: %ix%i", Window::Get()->GetProps().width, Window::Get()->GetProps().height);
-		ImGui::DragFloat3("cam loc", &camLoc.x);
-		ImGui::DragFloat3("cam rot", &camRot.x);
+		ImGui::DragFloat3("cam loc", &camLoc.x, 0.05f);
+		ImGui::DragFloat3("cam rot", &camRot.x, 0.05f);
 		ImGui::End();
 	}
 	void GameViewport()
@@ -349,13 +409,23 @@ void EditorRender()
     {
         if (ImGui::BeginMenu("File"))
         {
-			if (ImGui::MenuItem("Exit"))
+			if (ImGui::MenuItem("Save"))
 			{
-				gEngineShouldRun = false;
+				SaveWork();
 			}
 
             ImGui::EndMenu();
         }
+
+		if (ImGui::BeginMenu("View"))
+		{
+			if (ImGui::MenuItem("Asset registry"))
+			{
+				AddWindow<AssetRegistryWindow>("Asset Registry");
+			}
+
+			ImGui::EndMenu();
+		}
 
         ImGui::EndMenuBar();
     }

@@ -26,7 +26,7 @@ const char* MODEL3D_IMPORTABLE_EXT[] =
 
 void OnAssetImported(const std::string& importedFilePath, EAssetType assetType)
 {
-    AssetManager::AddNew(importedFilePath);
+    AssetManager::AddEditorNew(importedFilePath, assetType);
 }
 
 EAssetType AssetImporter::GetTypeFromFilename(const std::string& filename)
@@ -90,18 +90,15 @@ bool AssetImporter::ImportTexture(const std::string& originalFile, const std::st
     }
 
     uint64 rawImgSize = imgWidth * imgHeight * DEFAULT_IMAGE_IMPORT_CHANNELS;
-    Buffer groovyTexture(sizeof(GroovyAssetHeader_Texture) + rawImgSize);
+    Buffer groovyTexture(sizeof(TextureAssetHeader) + rawImgSize);
 
-    GroovyAssetHeader_Texture textureHeader;
-    memcpy(textureHeader.magic, GROOVY_ASSET_MAGIC, GROOVY_ASSET_MAGIC_SIZE);
-    textureHeader.type = ASSET_TYPE_TEXTURE;
-    textureHeader.uuid = AssetManager::GenUUID();
+    TextureAssetHeader textureHeader;
     textureHeader.width = imgWidth;
     textureHeader.height = imgHeight;
     textureHeader.format = COLOR_FORMAT_R8G8B8A8_UNORM;
 
-    memcpy(groovyTexture.data() + 0, &textureHeader, sizeof(GroovyAssetHeader_Texture)); // copy texture header
-    memcpy(groovyTexture.data() + sizeof(GroovyAssetHeader_Texture), imgData, rawImgSize); // copy texture data
+    memcpy(groovyTexture.data() + 0, &textureHeader, sizeof(TextureAssetHeader)); // copy texture header
+    memcpy(groovyTexture.data() + sizeof(TextureAssetHeader), imgData, rawImgSize); // copy texture data
 
     stbi_image_free(imgData);
 
@@ -148,21 +145,18 @@ bool AssetImporter::ImportModel3D(const std::string& originalFile, const std::st
 
     newFileData.resize
     (
-        sizeof(GroovyAssetHeader_Mesh) +
+        sizeof(MeshAssetHeader) +
         vertexBufferSize +
         indexBufferSize +
         submeshCount * sizeof(SubmeshData)
     );
 
-    GroovyAssetHeader_Mesh* header = newFileData.as<GroovyAssetHeader_Mesh>();
-    memcpy(header->magic, GROOVY_ASSET_MAGIC, GROOVY_ASSET_MAGIC_SIZE);
-    header->type = ASSET_TYPE_MESH;
-    header->uuid = AssetManager::GenUUID();
+    MeshAssetHeader* header = newFileData.as<MeshAssetHeader>();
     header->vertexBufferSize = vertexBufferSize;
     header->indexBufferSize = indexBufferSize;
     header->submeshCount = submeshCount;
 
-    byte* vertexBufferOffset = newFileData.data() + sizeof(GroovyAssetHeader_Mesh);
+    byte* vertexBufferOffset = newFileData.data() + sizeof(MeshAssetHeader);
     byte* indexBufferOffset = vertexBufferOffset + vertexBufferSize;
     byte* submeshesOffset = indexBufferOffset + indexBufferSize;
 
@@ -220,5 +214,6 @@ bool AssetImporter::ImportModel3D(const std::string& originalFile, const std::st
     }
 
     FileSystem::WriteFileBinary(newFile, newFileData);
+    
     OnAssetImported(newFile, ASSET_TYPE_MESH);
 }

@@ -8,6 +8,9 @@ public:
 	D3D11Shader(const void* vertexSrc, size_t vertexSize, const void* pixelSrc, size_t pixelSize);
 	~D3D11Shader();
 
+	virtual void __internal_SetUUID(AssetUUID uuid) override { mUUID = uuid; }
+	virtual AssetUUID GetUUID() const override { return mUUID; }
+
 	virtual void Bind() override;
 
 	virtual const std::vector<ConstBufferDesc>& GetVertexConstBuffersDesc() const override { return mVertexConstBuffersDesc; }
@@ -29,4 +32,6 @@ private:
 	std::vector<ConstBufferDesc> mVertexConstBuffersDesc;
 	std::vector<ConstBufferDesc> mPixelConstBuffersDesc;
 	std::vector<ShaderResTexture> mResTextures;
+
+	AssetUUID mUUID;
 };

@@ -7,12 +7,21 @@ class AssetManager
 {
 public:
 	static void Init();
+	static void Shutdown();
 
-	static AssetHandle AddNew(const std::string& path);
+	static void SaveRegistry();
+	static const std::vector<AssetHandle>& GetRegistry();
+	static size_t Find(AssetUUID uuid);
+	static AssetHandle& Get(AssetUUID uuid);
+	
+	template<typename T>
+	static T* GetInstance(AssetUUID uuid)
+	{
+		return (T*)(Get(uuid).instance);
+	}
 
-	static size_t Find(AssetUUID id);
-
-	static AssetUUID GenUUID();
-
-	static const std::vector<AssetHandle>& GetAssets();
+#if WITH_EDITOR
+	static AssetHandle AddEditorNew(const std::string& path, EAssetType type);
+	static void EditorDelete(const AssetHandle& handle);
+#endif
 };

@@ -2,6 +2,7 @@
 
 #include "core/core.h"
 #include "renderer/color.h"
+#include "assets/asset.h"
 
 struct TextureSpec
 {
@@ -9,11 +10,10 @@ struct TextureSpec
 	EColorFormat format;
 };
 
-class Texture
+class Texture : public AssetInstance
 {
 public:
-	virtual ~Texture() = default;
-	
+
 	virtual void Bind(uint32 slot) = 0;
 	virtual void* GetRendererID() const = 0;
 	virtual void SetData(void* data, size_t size) = 0;
