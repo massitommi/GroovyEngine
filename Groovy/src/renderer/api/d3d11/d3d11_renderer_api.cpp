@@ -4,7 +4,7 @@
 #include "d3d11_utils.h"
 #include "platform/window.h"
 
-#if 0
+#if BUILD_DEBUG
     #define SWAPCHAIN_FLAG_DEBUG D3D11_CREATE_DEVICE_DEBUG
 #else
     #define SWAPCHAIN_FLAG_DEBUG 0
@@ -88,7 +88,7 @@ void D3D11RendererAPI::Present(uint32 syncInteval)
 
 D3D11RendererAPI::~D3D11RendererAPI()
 {
-#if REF_COUNT_WARNINGS
+#if 0
     ID3D11Debug* boh;
     d3dUtils::gDevice->QueryInterface(__uuidof(ID3D11Debug), reinterpret_cast<void**>(&boh));
     boh->ReportLiveDeviceObjects(D3D11_RLDO_DETAIL);

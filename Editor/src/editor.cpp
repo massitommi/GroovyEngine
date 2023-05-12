@@ -238,7 +238,7 @@ void EditorInit()
 	testTexture->Bind(0);
 
 	Material* m;
-	AssetSerializer<Material>::Serialize(m, Buffer());
+	//AssetSerializer<Material>::Serialize(m, Buffer());
 }
 
 namespace panels
