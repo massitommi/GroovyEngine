@@ -34,10 +34,6 @@ static ImGuiRenderer* sRenderer = nullptr;
 extern bool gEngineShouldRun;
 extern Project gProj;
 
-extern Texture* DEFAULT_TEXTURE;
-extern Shader* DEFAULT_SHADER;
-extern Material* DEFAULT_MATERIAL;
-
 static bool gPendingSave = false;
 
 void EditorInit();
@@ -146,7 +142,6 @@ static ImVec2 sGameViewportSize;
 
 static Shader* testShader;
 static Mesh* testMesh;
-static Texture* testTexture;
 static Vec3 camLoc = {0,1.0f,-3};
 static Vec3 camRot = {0,0,0};
 static float camFOV = 60;
@@ -223,23 +218,14 @@ void EditorInit()
 
 	const auto& reg = AssetManager::GetRegistry();
 
-	AssetHandle modelHandle, shaderHandle, textureHandle;
+	AssetHandle modelHandle;
 
 	for (const auto& asset : reg)
 		if (asset.type == ASSET_TYPE_MESH)
 			modelHandle = asset;
-		else if (asset.type == ASSET_TYPE_SHADER)
-			shaderHandle = asset;
-		else if (asset.type == ASSET_TYPE_TEXTURE)
-			textureHandle = asset;
-
-	testShader = DEFAULT_SHADER;
-	testShader->Bind();
 
 	testMesh = (Mesh*)modelHandle.instance;
-
-	testTexture = (Texture*)textureHandle.instance;
-	testTexture->Bind(0);
+	testShader = (Shader*)testMesh->GetMaterials()[0]->GetShader();
 }
 
 namespace panels
@@ -296,14 +282,6 @@ namespace panels
 						AssetManager::SaveRegistry();
 					}
 				}
-
-				/*if (asset.type == ASSET_TYPE_SHADER)
-				{
-					if (ImGui::Selectable("New material"))
-					{
-						AddWindow<EditMaterialWindow>("New material", asset);
-					}
-				}*/
 				ImGui::EndPopup();
 			}
 
