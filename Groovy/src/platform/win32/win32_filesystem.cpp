@@ -117,6 +117,25 @@ EFileOpenResult FileSystem::WriteFileBinary(const std::string& path, const Buffe
 	return FILE_OPEN_RESULT_OK;
 }
 
+EFileOpenResult FileSystem::AppendFileBinary(const std::string& path, const Buffer& data, size_t offset)
+{
+	HANDLE handle = CreateFileA(path.c_str(), GENERIC_WRITE, 0, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
+	if (handle == INVALID_HANDLE_VALUE)
+	{
+		// todo log something
+		return FILE_OPEN_RESULT_UNKNOWN_ERROR;
+	}
+
+	OVERLAPPED overlap = {};
+	overlap.Offset = offset;
+	overlap.OffsetHigh = offset >> 32;
+
+	WriteFile(handle, data.data(), data.size(), nullptr, &overlap);
+	CloseHandle(handle);
+
+	return FILE_OPEN_RESULT_OK;
+}
+
 #undef DeleteFile()
 
 EFileOpenResult FileSystem::DeleteFile(const std::string& path)

@@ -34,6 +34,10 @@ static ImGuiRenderer* sRenderer = nullptr;
 extern bool gEngineShouldRun;
 extern Project gProj;
 
+extern Texture* DEFAULT_TEXTURE;
+extern Shader* DEFAULT_SHADER;
+extern Material* DEFAULT_MATERIAL;
+
 static bool gPendingSave = false;
 
 void EditorInit();
@@ -105,7 +109,7 @@ void OnFilesDropped(const std::vector<std::string>& files)
 				break;
 
 			case ASSET_TYPE_MESH:
-				AssetImporter::ImportModel3D(file, newFileName);
+				AssetImporter::ImportMesh(file, newFileName);
 				AssetManager::SaveRegistry();
 				break;
 		}
@@ -229,16 +233,13 @@ void EditorInit()
 		else if (asset.type == ASSET_TYPE_TEXTURE)
 			textureHandle = asset;
 
-	testShader = (Shader*)shaderHandle.instance;
+	testShader = DEFAULT_SHADER;
 	testShader->Bind();
 
 	testMesh = (Mesh*)modelHandle.instance;
 
 	testTexture = (Texture*)textureHandle.instance;
 	testTexture->Bind(0);
-
-	Material* m;
-	//AssetSerializer<Material>::Serialize(m, Buffer());
 }
 
 namespace panels
@@ -260,12 +261,20 @@ namespace panels
 			std::string fileName = FileSystem::GetFilenameNoExt(asset.name);
 			if (ImGui::ImageButton(asset.name.c_str(), sAssetIcon->GetRendererID(), { iconSize, iconSize }, { 0,0 }, { 1,1 }, { 1,1,1,1 }))
 			{
-				/*switch (asset.type)
+				switch (asset.type)
 				{
-					case ASSET_TYPE_MATERIAL:
-						AddWindow<EditMaterialWindow>("Edit material: " + fileName, asset);
+					case ASSET_TYPE_TEXTURE:
+						AddWindow<TexturePreviewWindow>("Texture preview: " + asset.name, (Texture*)asset.instance);
 						break;
-				}*/
+
+					case ASSET_TYPE_MATERIAL:
+						AddWindow<EditMaterialWindow>("Edit material: " + asset.name, (Material*)asset.instance);
+						break;
+
+					case ASSET_TYPE_MESH:
+						AddWindow<MeshPreviewWindow>("Mesh preview: " + asset.name, (Mesh*)asset.instance);
+						break;
+				}
 			}
 			if (ImGui::BeginPopupContextItem(std::to_string(asset.uuid).c_str(), ImGuiPopupFlags_MouseButtonRight))
 			{
@@ -424,6 +433,15 @@ void EditorRender()
 				AddWindow<AssetRegistryWindow>("Asset Registry");
 			}
 
+			ImGui::EndMenu();
+		}
+
+		if (ImGui::BeginMenu("New asset"))
+		{
+			if (ImGui::MenuItem("New material"))
+			{
+				AddWindow<EditMaterialWindow>("New material", nullptr);
+			}
 			ImGui::EndMenu();
 		}
 

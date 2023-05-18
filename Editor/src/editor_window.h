@@ -44,7 +44,7 @@ public:
 class EditMaterialWindow : public EditorWindow
 {
 public:
-	EditMaterialWindow(const std::string& wndTitle, AssetHandle assetHandle);
+	EditMaterialWindow(const std::string& wndTitle, Material* mat);
 	virtual ~EditMaterialWindow();
 	
 	virtual void RenderContent() override;
@@ -52,9 +52,31 @@ public:
 
 private:
 	void ShowVar(const ShaderVariable& var, byte* bufferPtr);
-	void ShowConstBuffer(const ConstBufferDesc& bufferDesc, byte* bufferPtr);
 
 private:
 	Material* mMaterial;
 	bool mVirtual;
+};
+
+class TexturePreviewWindow : public EditorWindow
+{
+public:
+	TexturePreviewWindow(const std::string& wndTitle, Texture* texture);
+
+	virtual void RenderContent() override;
+
+private:
+	Texture* mTexture;
+};
+
+#include "renderer/mesh.h"
+
+class MeshPreviewWindow : public EditorWindow
+{
+public:
+	MeshPreviewWindow(const std::string& wndTitle, Mesh* mesh);
+
+	virtual void RenderContent() override;
+private:
+	Mesh* mMesh;
 };

@@ -11,6 +11,7 @@ public:
 
 	static void SaveRegistry();
 	static const std::vector<AssetHandle>& GetRegistry();
+	static std::vector<AssetHandle> GetRegistryFiltered(EAssetType filter);
 	static size_t Find(AssetUUID uuid);
 	static AssetHandle& Get(AssetUUID uuid);
 	
@@ -21,7 +22,7 @@ public:
 	}
 
 #if WITH_EDITOR
-	static AssetHandle AddEditorNew(const std::string& path, EAssetType type);
+	static AssetHandle AddEditorNew(const std::string& path, EAssetType type, AssetInstance* instance = nullptr);
 	static void EditorDelete(const AssetHandle& handle);
 #endif
 };

@@ -44,5 +44,6 @@ public:
 	static EFileOpenResult ReadFileBinary(const std::string& path, void* outBuffer, size_t bufferSize, size_t& outBytesRead);
 	static EFileOpenResult ReadFileBinary(const std::string& path, Buffer& outBuffer);
 	static EFileOpenResult WriteFileBinary(const std::string& path, const Buffer& data);
+	static EFileOpenResult AppendFileBinary(const std::string& path, const Buffer& data, size_t offset);
 	static EFileOpenResult DeleteFile(const std::string& path);
 };

@@ -18,101 +18,161 @@ void EditorWindow::RenderWindow()
 // Material editor
 #include "assets/asset_manager.h"
 #include "assets/asset_loader.h"
-#include "platform/filesystem.h"
+#include "assets/asset_serializer.h"
 #include "project/Project.h"
 #include "platform/messagebox.h"
 
 extern Project gProj;
 
+extern Texture* DEFAULT_TEXTURE;
+extern Shader* DEFAULT_SHADER;
+extern Material* DEFAULT_MATERIAL;
 
-EditMaterialWindow::EditMaterialWindow(const std::string& wndTitle, AssetHandle assetHandle)
-	: EditorWindow(wndTitle)
+struct MyPropField
 {
+	std::string name;
+	void* data;
+};
+
+struct PropFieldArray
+{
+	std::vector<MyPropField> fields;
+	std::vector<MyPropField> options;
+};
+
+template<typename OnClickProc>
+static void RenderAssetSelectionMenu(PropFieldArray& comboArray, OnClickProc onClick)
+{
+	bool boh = false;
+
+	std::vector<std::string> previews;
+	previews.resize(comboArray.fields.size());
+
+	for (uint32 i = 0; i < comboArray.fields.size(); i++)
+	{
+		for (const MyPropField& option : comboArray.options)
+		{
+			if (comboArray.fields[i].data == option.data)
+			{
+				previews[i] = option.name;
+			}
+		}
+
+		if (ImGui::BeginCombo(comboArray.fields[i].name.c_str(), previews[i].c_str()))
+		{
+			for (uint32 j = 0; j < comboArray.options.size(); j++)
+			{
+				if (ImGui::Selectable(comboArray.options[j].name.c_str(), &boh))
+				{
+					previews[i] = comboArray.options[j].name;
+					comboArray.fields[i].data = comboArray.options[j].data;
+					onClick(i, j);
+				}
+			}
+
+			ImGui::EndCombo();
+		}
+	}
+}
+
+EditMaterialWindow::EditMaterialWindow(const std::string& wndTitle, Material* mat)
+	: EditorWindow(wndTitle), mMaterial(mat)
+{
+	if (mat)
+	{
+		mVirtual = false;
+	}
+	else
+	{
+		mVirtual = true;
+		mMaterial = new Material(DEFAULT_SHADER);
+		mMaterial->SetTextures(DEFAULT_TEXTURE);
+	}
 }
 
 EditMaterialWindow::~EditMaterialWindow()
 {
-	delete mMaterial->GetShader();
-	delete mMaterial;
+	if (mVirtual)
+	{
+		delete mMaterial;
+	}
 }
 
 void EditMaterialWindow::RenderContent()
 {
-	//if (!mMaterial->GetShader())
-	//{
-	//	ImGui::Text("No shader, no data :(");
-	//	return;
-	//}
+	ImGui::Text("Pixel shader constant buffers:");
+	ImGui::Spacing();
 
-	//const std::vector<ConstBufferDesc>& vsBuffers = mMaterial->GetShader()->GetVertexConstBuffersDesc();
-	//const std::vector<ConstBufferDesc>& psBuffers = mMaterial->GetShader()->GetPixelConstBuffersDesc();
-	//const std::vector<ShaderResTexture>& psTextures = mMaterial->GetShader()->GetPixelTexturesRes();
+	const std::vector<ConstBufferDesc>& psBuffers = mMaterial->GetShader()->GetPixelConstBuffersDesc();
+	const std::vector<ShaderResTexture>& psTextures = mMaterial->GetShader()->GetPixelTexturesRes();
 
-	//ImGui::Text("Vertex shader constant buffers:");
-	//ImGui::Spacing();
-	//// vertex const buffers
-	//{
-	//	byte* bufferPtr = (byte*)mMaterial->GetVertexConstBuffersData().data();
-	//	for (const ConstBufferDesc& bufferDesc : vsBuffers)
-	//	{
-	//		ShowConstBuffer(bufferDesc, bufferPtr);
-	//		bufferPtr += bufferDesc.size;
-	//	}
-	//}
-	//ImGui::Spacing();
-	//ImGui::Separator();
-	//ImGui::Spacing();
-	//ImGui::Text("Pixel shader constant buffers:");
-	//ImGui::Spacing();
-	//// pixel const buffers
-	//{
-	//	byte* bufferPtr = (byte*)mMaterial->GetPixelConstBuffersData().data();
-	//	for (const ConstBufferDesc& bufferDesc : psBuffers)
-	//	{
-	//		ShowConstBuffer(bufferDesc, bufferPtr);
-	//		bufferPtr += bufferDesc.size;
-	//	}
-	//}
-	//ImGui::Spacing();
-	//ImGui::Separator();
-	//ImGui::Spacing();
-	//ImGui::Text("Pixel shader texture resources:");
-	//ImGui::Spacing();
-	//// texture resources
-	//for (uint32 i = 0; i < mMaterial->GetTexturesID().size(); i++)
-	//{
-	//	ImGui::InputScalar(psTextures[i].name.c_str(), ImGuiDataType_U64, &mMaterial->GetTexturesID()[i]);
-	//}
-	//ImGui::Spacing();
-	//ImGui::Separator();
-	//ImGui::Spacing();
+	// pixel const buffers
+	{
+		byte* bufferPtr = (byte*)mMaterial->GetConstBuffersData().data();
+		for (const ConstBufferDesc& bufferDesc : psBuffers)
+		{
+			if (ImGui::CollapsingHeader(bufferDesc.name.c_str()))
+			{
+				for (const ShaderVariable& var : bufferDesc.variables)
+				{
+					ShowVar(var, bufferPtr);
+				}
+			}
+			bufferPtr += bufferDesc.size;
+		}
+	}
+	
+	ImGui::Spacing();
+	ImGui::Separator();
+	ImGui::Spacing();
+	ImGui::Text("Pixel shader texture resources:");
+	ImGui::Spacing();
+	
+	// texture resources
+	{
+		std::vector<AssetHandle> texturesAvail = AssetManager::GetRegistryFiltered(ASSET_TYPE_TEXTURE);
+		bool pSelected = false;
 
-	//if (!mVirtual) // asset is already on disk
-	//{
-	//	AssetHandle handle = {};/* AssetManager::GetAssets()[AssetManager::Find(mMaterial->GetUUID())];*/
-	//	if (ImGui::Button("Save changes"))
-	//	{
-	//		Buffer data;
-	//		mMaterial->Serialize(data);
-	//		check(FileSystem::WriteFileBinary(handle.path, data) == FILE_OPEN_RESULT_OK);
-	//	}
+		PropFieldArray fieldArray;
+		for (uint32 i = 0; i < psTextures.size(); i++)
+			fieldArray.fields.push_back({ psTextures[i].name, mMaterial->GetTextures()[i] });
+		fieldArray.options.push_back({ "DEFAULT_TEXTURE", DEFAULT_TEXTURE });
+		for(const AssetHandle& textAvail : texturesAvail)
+			fieldArray.options.push_back({ textAvail.name, textAvail.instance });
 
-	//}
-	//else // asset does not exist on disk
-	//{
-	//	static std::string newFileName = "new_material.groovyasset";
-	//	std::string newPath = gProj.assetsPath + newFileName;
-	//	ImGui::InputText("Save as: ", &newFileName);
-	//	if (ImGui::Button("Save"))
-	//	{
-	//		Buffer data;
-	//		mMaterial->Serialize(data);
-	//		check(FileSystem::WriteFileBinary(newPath, data) == FILE_OPEN_RESULT_OK);
-	//		/*AssetHandle newShinyHandle = AssetManager::AddNew(newPath);*/
-	//		mVirtual = false; // now exists on disk!
-	//		mFlags &= ~ImGuiWindowFlags_UnsavedDocument;
-	//	}
-	//}
+		RenderAssetSelectionMenu(fieldArray, [&](uint32 i, uint32 j)
+		{
+				mMaterial->SetTexture((Texture*)fieldArray.options[j].data, i);
+		});
+	}
+
+	ImGui::Spacing();
+	ImGui::Separator();
+	ImGui::Spacing();
+
+	if (mVirtual) // does not exist on disk
+	{
+		static std::string newFileName = "new_material";
+		ImGui::InputText("Save as: ", &newFileName);
+		
+		if (ImGui::Button("Save"))
+		{
+			AssetHandle handle = AssetManager::AddEditorNew(gProj.assetsPath + newFileName + GROOVY_ASSET_EXT, ASSET_TYPE_MATERIAL, mMaterial);
+			mMaterial->__internal_SetUUID(handle.uuid);
+			AssetSerializer::SerializeMaterial(mMaterial, handle.path);
+			AssetManager::SaveRegistry();
+			mVirtual = false;
+		}
+	}
+	else // file exists on disk
+	{
+		if (ImGui::Button("Save changes"))
+		{
+			const AssetHandle& handle = AssetManager::Get(mMaterial->GetUUID());
+			AssetSerializer::SerializeMaterial(mMaterial, handle.path);
+			AssetManager::SaveRegistry();
+		}
+	}
 }
 
 bool EditMaterialWindow::OnClose()
@@ -174,27 +234,9 @@ void EditMaterialWindow::ShowVar(const ShaderVariable& var, byte* bufferPtr)
 			}
 			break;
 
-		case SHADER_VARIABLE_TYPE_FLOAT4X4:
-			ImGui::DragFloat4((var.name + "[0]").c_str(), (float*)(varPtr + sizeof(float) * 4 * 0));
-			ImGui::DragFloat4((var.name + "[1]").c_str(), (float*)(varPtr + sizeof(float) * 4 * 1));
-			ImGui::DragFloat4((var.name + "[2]").c_str(), (float*)(varPtr + sizeof(float) * 4 * 2));
-			ImGui::DragFloat4((var.name + "[3]").c_str(), (float*)(varPtr + sizeof(float) * 4 * 3));
-			break;
-
 		default:
 			ImGui::Text("Variable format not implemented!");
 			break;
-	}
-}
-
-void EditMaterialWindow::ShowConstBuffer(const ConstBufferDesc& bufferDesc, byte* bufferPtr)
-{
-	if (ImGui::CollapsingHeader(bufferDesc.name.c_str()))
-	{
-		for (const ShaderVariable& var : bufferDesc.variables)
-		{
-			ShowVar(var, bufferPtr);
-		}
 	}
 }
 
@@ -262,4 +304,45 @@ void AssetRegistryWindow::RenderContent()
 	}
 	if (type == ASSET_TYPE_NONE || filePath.empty())
 		ImGui::EndDisabled();
+}
+
+TexturePreviewWindow::TexturePreviewWindow(const std::string& wndTitle, Texture* texture)
+	: EditorWindow(wndTitle), mTexture(texture)
+{
+}
+
+void TexturePreviewWindow::RenderContent()
+{
+	ImGui::Image(mTexture->GetRendererID(), ImGui::GetContentRegionAvail());
+}
+
+MeshPreviewWindow::MeshPreviewWindow(const std::string& wndTitle, Mesh* mesh)
+	: EditorWindow(wndTitle), mMesh(mesh)
+{
+}
+
+void MeshPreviewWindow::RenderContent()
+{
+	ImGui::Text("Submeshes");
+	ImGui::Separator();
+
+	const std::vector<AssetHandle>& matHandles = AssetManager::GetRegistryFiltered(ASSET_TYPE_MATERIAL);
+	PropFieldArray propFieldArray;
+
+	for (uint32 i = 0; i < mMesh->GetSubmeshes().size(); i++)
+		propFieldArray.fields.push_back({ std::to_string(i), mMesh->GetMaterials()[i] });
+	propFieldArray.options.push_back({ "DEFAULT_MATERIAL", DEFAULT_MATERIAL });
+	for (const AssetHandle& handle : matHandles)
+		propFieldArray.options.push_back({ handle.name, handle.instance });
+
+	RenderAssetSelectionMenu(propFieldArray, [&](uint32 i, uint32 j)
+	{
+		mMesh->SetMaterial((Material*)propFieldArray.options[j].data, i);
+	});
+
+	if (ImGui::Button("Save"))
+	{
+		const AssetHandle& handle = AssetManager::Get(mMesh->GetUUID());
+		AssetSerializer::SerializeMesh(mMesh, handle.path);
+	}
 }

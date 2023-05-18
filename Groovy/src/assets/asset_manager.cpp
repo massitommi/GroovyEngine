@@ -20,6 +20,10 @@ static std::mt19937_64 sRandomEngine(sRandomDevice());
 static std::uniform_int_distribution<uint64> sRandomDistributor;
 // random stuff end
 
+Texture* DEFAULT_TEXTURE;
+Shader* DEFAULT_SHADER;
+Material* DEFAULT_MATERIAL;
+
 static AssetUUID GenUUID()
 {
 	return sRandomDistributor(sRandomEngine);
@@ -52,6 +56,29 @@ void AssetManager::Init()
 {
 	sAssetRegistryPath = gProj.registryPath;
 	sAssetsPath = gProj.assetsPath;
+
+	// default assets
+	{
+		// texture
+		{
+			TextureSpec tex;
+			tex.format = COLOR_FORMAT_R8G8B8A8_UNORM;
+			tex.width = tex.height = 1;
+			uint32 data = 0xffffffff; // white
+			DEFAULT_TEXTURE = Texture::Create(tex, &data, 1 * 1 * 4);
+		}
+
+		// shader
+		{
+			DEFAULT_SHADER = AssetLoader::LoadShader(sAssetsPath + "default/default_shader.hlsl");
+		}
+
+		// material
+		{
+			DEFAULT_MATERIAL = new Material(DEFAULT_SHADER);
+			DEFAULT_MATERIAL->SetTextures(DEFAULT_TEXTURE);
+		}
+	}
 
 	// load registry
 	{
@@ -118,6 +145,17 @@ void AssetManager::Init()
 				handle.instance = ins;
 			}
 		}
+		// materials
+		{
+			std::vector<size_t> filteredAssets = GetFiltered(ASSET_TYPE_MATERIAL);
+			for (size_t i : filteredAssets)
+			{
+				AssetHandle& handle = sAssetRegistry[i];
+				AssetInstance* ins = AssetLoader::LoadMaterial(handle.path);
+				ins->__internal_SetUUID(handle.uuid);
+				handle.instance = ins;
+			}
+		}
 		// mesh
 		{
 			std::vector<size_t> filteredAssets = GetFiltered(ASSET_TYPE_MESH);
@@ -125,17 +163,6 @@ void AssetManager::Init()
 			{
 				AssetHandle& handle = sAssetRegistry[i];
 				AssetInstance* ins = AssetLoader::LoadMesh(handle.path);
-				ins->__internal_SetUUID(handle.uuid);
-				handle.instance = ins;
-			}
-		}
-		// materials
-		{
-			std::vector<size_t> filteredAssets = GetFiltered(ASSET_TYPE_MATERIAL);
-			for (size_t i : filteredAssets)
-			{
-				AssetHandle& handle = sAssetRegistry[i];
-				AssetInstance* ins = new Material();
 				ins->__internal_SetUUID(handle.uuid);
 				handle.instance = ins;
 			}
@@ -149,6 +176,10 @@ void AssetManager::Shutdown()
 	{
 		delete handle.instance;
 	}
+
+	delete DEFAULT_MATERIAL;
+	delete DEFAULT_SHADER;
+	delete DEFAULT_TEXTURE;
 }
 
 void AssetManager::SaveRegistry()
@@ -196,6 +227,17 @@ const std::vector<AssetHandle>& AssetManager::GetRegistry()
 	return sAssetRegistry;
 }
 
+std::vector<AssetHandle> AssetManager::GetRegistryFiltered(EAssetType filter)
+{
+	std::vector<AssetHandle> result;
+
+	for (const AssetHandle& handle : sAssetRegistry)
+		if (handle.type == filter)
+			result.push_back(handle);
+
+	return result;
+}
+
 size_t AssetManager::Find(AssetUUID uuid)
 {
 	size_t i;
@@ -221,14 +263,14 @@ AssetHandle& AssetManager::Get(AssetUUID uuid)
 	check(0);
 }
 
-AssetHandle AssetManager::AddEditorNew(const std::string& path, EAssetType type)
+AssetHandle AssetManager::AddEditorNew(const std::string& path, EAssetType type, AssetInstance* instance)
 {
 	AssetHandle handle;
 	handle.path = path;
 	handle.name = path.substr(path.find(gProj.assetsPath) + gProj.assetsPath.length());
 	handle.uuid = GenUUID();
 	handle.type = type;
-	handle.instance = nullptr;
+	handle.instance = instance;
 
 	sAssetRegistry.push_back(handle);
 

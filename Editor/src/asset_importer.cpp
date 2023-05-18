@@ -19,7 +19,7 @@ const char* TEXTURE_IMPORTABLE_EXT[] =
     ".png"
 };
 
-const char* MODEL3D_IMPORTABLE_EXT[] =
+const char* MESH_IMPORTABLE_EXT[] =
 {
     ".obj"
 };
@@ -36,8 +36,8 @@ EAssetType AssetImporter::GetTypeFromFilename(const std::string& filename)
     for (auto ext : TEXTURE_IMPORTABLE_EXT)
         if (fileExt == ext)
             return ASSET_TYPE_TEXTURE;
-    // check for 3d models
-    for (auto ext : MODEL3D_IMPORTABLE_EXT)
+    // check for 3d meshes
+    for (auto ext : MESH_IMPORTABLE_EXT)
         if (fileExt == ext)
             return ASSET_TYPE_MESH;
     // nothing to do
@@ -113,7 +113,7 @@ bool AssetImporter::ImportTexture(const std::string& originalFile, const std::st
     return true;
 }
 
-bool AssetImporter::ImportModel3D(const std::string& originalFile, const std::string& newFile)
+bool AssetImporter::ImportMesh(const std::string& originalFile, const std::string& newFile)
 {
     tinyobj::attrib_t attrib;
     std::vector<tinyobj::shape_t> shapes;
@@ -145,10 +145,11 @@ bool AssetImporter::ImportModel3D(const std::string& originalFile, const std::st
 
     newFileData.resize
     (
-        sizeof(MeshAssetHeader) +
-        vertexBufferSize +
-        indexBufferSize +
-        submeshCount * sizeof(SubmeshData)
+        sizeof(MeshAssetHeader) + // mesh asset header
+        vertexBufferSize + // vertex buffer
+        indexBufferSize + // index buffer
+        submeshCount * sizeof(SubmeshData) + // submesh data
+        submeshCount * sizeof(AssetUUID) // materials
     );
 
     MeshAssetHeader* header = newFileData.as<MeshAssetHeader>();
@@ -159,10 +160,12 @@ bool AssetImporter::ImportModel3D(const std::string& originalFile, const std::st
     byte* vertexBufferOffset = newFileData.data() + sizeof(MeshAssetHeader);
     byte* indexBufferOffset = vertexBufferOffset + vertexBufferSize;
     byte* submeshesOffset = indexBufferOffset + indexBufferSize;
+    byte* materialsOffset = submeshesOffset + submeshCount * sizeof(SubmeshData);
 
     MeshVertex* vertexBuffer = (MeshVertex*)vertexBufferOffset;
     MeshIndex* indexBuffer = (MeshIndex*)indexBufferOffset;
     SubmeshData* submeshes = (SubmeshData*)submeshesOffset;
+    AssetUUID* materialsID = (AssetUUID*)materialsOffset;
 
     for (const auto& shape : shapes)
     {
@@ -209,8 +212,10 @@ bool AssetImporter::ImportModel3D(const std::string& originalFile, const std::st
             indexIndex++;
             submeshes->vertexCount++;
             submeshes->indexCount++;
+            *materialsID = 0; // default asset index
         }
         submeshes++;
+        materialsID++;
     }
 
     FileSystem::WriteFileBinary(newFile, newFileData);

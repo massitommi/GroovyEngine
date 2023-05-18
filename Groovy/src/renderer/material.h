@@ -5,19 +5,21 @@
 #include "api/texture.h"
 #include "assets/asset.h"
 
-template<typename T>
-class AssetSerializer;
-
 class Material : public AssetInstance
 {
 public:
-	Material();
+	Material(Shader* shader);
 
 	void __internal_SetUUID(AssetUUID uuid) override { mUUID = uuid; }
 
 	AssetUUID GetUUID() const override { return mUUID; }
 	const Shader* GetShader() const { return mShader; }
 	const Buffer& GetConstBuffersData() const { return mConstBuffersData; }
+
+	const std::vector<Texture*> GetTextures() const { return mTextures; }
+	void SetShader(Shader* shader);
+	void SetTexture(Texture* texture, uint32 slot);
+	void SetTextures(Texture* texture);
 
 	// shader descs and our data is same size ?
 	bool Validate();
@@ -30,5 +32,6 @@ private:
 	AssetUUID mUUID;
 
 public:
-	friend class AssetSerializer<Material>;
+	friend class AssetLoader;
+	friend class AssetSerializer;
 };
