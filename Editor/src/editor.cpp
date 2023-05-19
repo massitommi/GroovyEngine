@@ -31,6 +31,7 @@
 #include "assets/asset_serializer.h"
 
 static ImGuiRenderer* sRenderer = nullptr;
+extern Window* gWindow;
 extern bool gEngineShouldRun;
 extern Project gProj;
 
@@ -46,10 +47,10 @@ void OnFilesDropped(const std::vector<std::string>& files);
 
 void Application::Init()
 {
-	Window::Get()->SetTitle(gProj.name);
+	gWindow->SetTitle(gProj.name);
 
-	Window::Get()->SubmitToWndCloseCallback(OnCloseRequested);
-	Window::Get()->SubmitToWndFilesDropCallbacks(OnFilesDropped);
+	gWindow->SubmitToWndCloseCallback(OnCloseRequested);
+	gWindow->SubmitToWndFilesDropCallbacks(OnFilesDropped);
 
 	ImGui::CreateContext();
 	ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_DockingEnable;
@@ -315,7 +316,7 @@ namespace panels
 	void Properties()
 	{
 		ImGui::Begin("Properties");
-		ImGui::Text("Window size: %ix%i", Window::Get()->GetProps().width, Window::Get()->GetProps().height);
+		ImGui::Text("Window size: %ix%i", gWindow->GetProps().width, gWindow->GetProps().height);
 		ImGui::DragFloat3("cam loc", &camLoc.x, 0.05f);
 		ImGui::DragFloat3("cam rot", &camRot.x, 0.05f);
 		ImGui::End();

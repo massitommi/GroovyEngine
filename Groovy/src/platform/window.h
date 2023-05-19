@@ -41,8 +41,6 @@ public:
 	inline void SubmitToWndCloseCallback(WindowEvent_OnClose proc) { mWndCloseCallback = proc; }
 
 	static void InitSystem();
-	inline static void SetMainWindow(Window* wnd) { sMainWindow = wnd; }
-	inline static Window* Get() { return sMainWindow; }
 
 private:
 	WindowProps mProps;
@@ -52,7 +50,4 @@ private:
 	std::vector<WindowEvent_OnResize> mWndResizeCallabacks;
 	std::vector<WindowEvent_OnFilesDropped> mWndFilesDropCallbacks;
 	WindowEvent_OnClose mWndCloseCallback;
-
-	// static instance
-	static Window* sMainWindow;
 };

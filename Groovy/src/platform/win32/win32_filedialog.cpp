@@ -4,6 +4,7 @@
 #include "platform/window.h"
 #include "win32_globals.h"
 
+extern Window* gWindow;
 
 static std::string GetNativeFilters(const ExtensionFilters& filters)
 {
@@ -34,7 +35,7 @@ std::string FileDialog::OpenFileDialog(const std::string& titleBar, const Extens
 	CHAR szFile[260] = { 0 };
 	CHAR currentDir[256] = { 0 };
 	ofn.lStructSize = sizeof(OPENFILENAME);
-	ofn.hwndOwner = Window::Get() ? (HWND)Window::Get()->GetNativeHandle() : nullptr;
+	ofn.hwndOwner = gWindow ? (HWND)gWindow->GetNativeHandle() : nullptr;
 	ofn.lpstrFile = szFile;
 	ofn.nMaxFile = sizeof(szFile);
 	if (GetCurrentDirectoryA(256, currentDir))
@@ -57,7 +58,7 @@ std::string FileDialog::SaveFileDialog(const std::string& titleBar)
 	CHAR szFile[260] = { 0 };
 	CHAR currentDir[256] = { 0 };
 	ofn.lStructSize = sizeof(OPENFILENAME);
-	ofn.hwndOwner = Window::Get() ? (HWND)Window::Get()->GetNativeHandle() : nullptr;
+	ofn.hwndOwner = gWindow ? (HWND)gWindow->GetNativeHandle() : nullptr;
 	ofn.lpstrFile = szFile;
 	ofn.nMaxFile = sizeof(szFile);
 	if (GetCurrentDirectoryA(256, currentDir))

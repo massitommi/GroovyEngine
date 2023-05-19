@@ -7,9 +7,11 @@
 #include "platform/window.h"
 #include "renderer/api/d3d11/d3d11_utils.h"
 
+extern Window* gWindow;
+
 void D3D11_ImGuiRenderer::Init()
 {
-	ImGui_ImplWin32_Init(Window::Get()->GetNativeHandle());
+	ImGui_ImplWin32_Init(gWindow->GetNativeHandle());
 	ImGui_ImplDX11_Init(d3dUtils::gDevice, d3dUtils::gContext);
 }
 

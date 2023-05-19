@@ -38,7 +38,9 @@ static std::vector<std::string> GetDroppedFiles(HDROP boh)
 
 static LRESULT CALLBACK GroovyWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
+#if WITH_EDITOR
 	Win32_EditorWndProcCallback(hWnd, uMsg, wParam, lParam);
+#endif
 
 	switch (uMsg)
 	{

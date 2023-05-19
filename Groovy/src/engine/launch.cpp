@@ -4,14 +4,14 @@
 #include "renderer/api/framebuffer.h"
 #include "application.h"
 #include "assets/asset_manager.h"
-#include "project/Project.h"
+#include "project/project.h"
 
 bool gEngineShouldRun = true;
+Window* gWindow = nullptr;
 FrameBuffer* gScreenFrameBuffer = nullptr;
+Project gProj;
 
 ClearColor screenClearColor = { 1.0f, 1.0f, 1.0f, 1.0f };
-
-Project gProj;
 
 void OnWndResizeCallback(uint32 width, uint32 height)
 {
@@ -20,6 +20,9 @@ void OnWndResizeCallback(uint32 width, uint32 height)
 	if (gScreenFrameBuffer->GetSpecs().width != width || gScreenFrameBuffer->GetSpecs().height != height)
 	{
 		gScreenFrameBuffer->Resize(width, height);
+#if BUILD_SHIPPING
+		gScreenFrameBuffer->Bind();
+#endif
 	}
 }
 
@@ -36,7 +39,7 @@ int32 GroovyEntryPoint(const char* args)
 
 	Window::InitSystem();
 	Window wnd(wndProps);
-	Window::SetMainWindow(&wnd);
+	gWindow = &wnd;
 	wnd.Spawn();
 	wnd.Show();
 
@@ -84,6 +87,8 @@ int32 GroovyEntryPoint(const char* args)
 
 	AssetManager::Init();
 	Application::Init();
+
+	gScreenFrameBuffer->Bind();
 
 	while (gEngineShouldRun)
 	{

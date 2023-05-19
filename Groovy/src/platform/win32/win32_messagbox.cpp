@@ -5,6 +5,8 @@
 #include "platform/window.h"
 #include "win32_globals.h"
 
+extern Window* gWindow;
+
 static int32 GetFlags_type(EMessageBoxType type)
 {
 	switch (type)
@@ -40,7 +42,7 @@ static EMessageBoxResponse GetResponse(int32 code)
 
 EMessageBoxResponse SysMessageBox::Show(const std::string& caption, const std::string& msg, EMessageBoxType type, EMessageBoxOptions options)
 {
-	HWND wnd = Window::Get() ? (HWND)Window::Get()->GetNativeHandle() : nullptr;
+	HWND wnd = gWindow ? (HWND)gWindow->GetNativeHandle() : nullptr;
 	int32 flags = GetFlags_type(type) | GetFlags_options(options);
 	int32 response = MessageBoxA(wnd, msg.c_str(), caption.c_str(), flags);
 	return GetResponse(response);
