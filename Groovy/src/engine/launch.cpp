@@ -11,7 +11,7 @@ Window* gWindow = nullptr;
 FrameBuffer* gScreenFrameBuffer = nullptr;
 Project gProj;
 
-ClearColor screenClearColor = { 1.0f, 1.0f, 1.0f, 1.0f };
+ClearColor gScreenClearColor = { 1.0f, 0.0f, 1.0f, 1.0f };
 
 void OnWndResizeCallback(uint32 width, uint32 height)
 {
@@ -96,7 +96,7 @@ int32 GroovyEntryPoint(const char* args)
 
 		Application::Update(1.0f / 60.0f);
 
-		gScreenFrameBuffer->ClearColorAttachment(0, screenClearColor);
+		gScreenFrameBuffer->ClearColorAttachment(0, gScreenClearColor);
 		gScreenFrameBuffer->ClearDepthAttachment();
 
 		Application::Render();

@@ -20,7 +20,7 @@
 #include "imgui_renderer/imgui_renderer.h"
 
 #include "renderer/material.h"
-#include "project/Project.h"
+#include "project/project.h"
 
 #include "editor_window.h"
 
@@ -31,6 +31,7 @@
 #include "assets/asset_serializer.h"
 
 static ImGuiRenderer* sRenderer = nullptr;
+extern ClearColor gScreenClearColor;
 extern Window* gWindow;
 extern bool gEngineShouldRun;
 extern Project gProj;
@@ -251,15 +252,15 @@ namespace panels
 				switch (asset.type)
 				{
 					case ASSET_TYPE_TEXTURE:
-						AddWindow<TexturePreviewWindow>("Texture preview: " + asset.name, (Texture*)asset.instance);
+						AddWindow<TexturePreviewWindow>("Texture viewer", (Texture*)asset.instance);
 						break;
 
 					case ASSET_TYPE_MATERIAL:
-						AddWindow<EditMaterialWindow>("Edit material: " + asset.name, (Material*)asset.instance);
+						AddWindow<EditMaterialWindow>("Material editor", (Material*)asset.instance);
 						break;
 
 					case ASSET_TYPE_MESH:
-						AddWindow<MeshPreviewWindow>("Mesh preview: " + asset.name, (Mesh*)asset.instance);
+						AddWindow<MeshPreviewWindow>("Mesh viewer", (Mesh*)asset.instance);
 						break;
 				}
 			}
@@ -310,7 +311,7 @@ namespace panels
 	}
 	void EntityList()
 	{
-		ImGui::Begin("Enity list");
+		ImGui::Begin("Entity list");
 		ImGui::End();
 	}
 	void Properties()
@@ -335,7 +336,7 @@ namespace panels
 		}
 		// clear frame buffer
 		sGameViewportFrameBuffer->ClearDepthAttachment();
-		sGameViewportFrameBuffer->ClearColorAttachment(0, { 0.76f, 0.84f, 0.725f, 1.0f });
+		sGameViewportFrameBuffer->ClearColorAttachment(0, gScreenClearColor);
 
 		sGameViewportFrameBuffer->Bind();
 		Renderer::RenderMesh(testMesh);
@@ -419,7 +420,7 @@ void EditorRender()
 		{
 			if (ImGui::MenuItem("New material"))
 			{
-				AddWindow<EditMaterialWindow>("New material", nullptr);
+				AddWindow<EditMaterialWindow>("Material editor", nullptr);
 			}
 			ImGui::EndMenu();
 		}
