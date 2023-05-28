@@ -11,7 +11,7 @@ Window* gWindow = nullptr;
 FrameBuffer* gScreenFrameBuffer = nullptr;
 Project gProj;
 
-ClearColor gScreenClearColor = { 1.0f, 0.0f, 1.0f, 1.0f };
+ClearColor gScreenClearColor = { 0.9f, 0.7f, 0.7f, 1.0f };
 
 void OnWndResizeCallback(uint32 width, uint32 height)
 {
