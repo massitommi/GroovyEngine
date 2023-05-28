@@ -235,6 +235,13 @@ inline Vec3& operator/=(Vec3& v1, Vec3 v2)
 	return v1;
 }
 
+struct Transform
+{
+	Vec3 location;
+	Vec3 rotation;
+	Vec3 scale;
+};
+
 namespace math
 {
 	Vec3 GetForwardVector(Vec3 rotation);

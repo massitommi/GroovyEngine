@@ -84,7 +84,7 @@ ID3DBlob* d3dUtils::CompileShader(const char* target, const void* src, size_t sr
 {
     ID3DBlob* bytecode;
     ID3DBlob* error;
-    d3dcheckslow
+    d3dcheckslowf
     (
         D3DCompile(src, srcLength, nullptr, nullptr, nullptr, SHADER_ENTRY_POINT, target, 0, 0, &bytecode, &error),
         "Shader compilation error: %s", error->GetBufferPointer()
