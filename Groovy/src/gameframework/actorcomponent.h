@@ -11,4 +11,6 @@ public:
 	~ActorComponent();
 
 private:
+	// true if this component was created from code, false if it was created with the editor
+	bool mNative;
 };

@@ -56,12 +56,6 @@ PixelOutput main(VertexOutput vertexOutput)
 {
 	PixelOutput output;
 	output.color0 = texture0.Sample(sampler0, vertexOutput.textCoords) * vertexOutput.color;
-	output.color0 *= texture0.Sample(sampler0, vertexOutput.textCoords) * vertexOutput.color;
-	output.color0 *= tex1.Sample(sampler0, vertexOutput.textCoords) * vertexOutput.color;
-	output.color0 *= AmbientOcclusion.Sample(sampler0, vertexOutput.textCoords) * vertexOutput.color;
-	output.color0 *= TextureACaso.Sample(sampler0, vertexOutput.textCoords) * vertexOutput.color;
-	output.color0 = vertexOutput.color * tex1.Sample(sampler0, vertexOutput.textCoords);
-	output.color1 = vertexOutput.color * texture0.Sample(sampler0, vertexOutput.textCoords);
 
 	return output;
 }

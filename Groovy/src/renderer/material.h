@@ -4,6 +4,7 @@
 #include "api/shader.h"
 #include "api/texture.h"
 #include "assets/asset.h"
+#include "classes/object.h"
 
 class Material : public AssetInstance
 {

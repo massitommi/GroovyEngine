@@ -203,6 +203,37 @@ void UpdateWindows()
 	sInsertQueue.clear();
 }
 
+#include "classes/object_serializer.h"
+#include "classes/class_db.h"
+extern ClassDB gClassDB;
+
+GROOVY_CLASS_DECL(TestClass)
+class TestClass : public GroovyObject
+{
+	GROOVY_CLASS_BODY(TestClass, GroovyObject)
+
+public:
+	int32 intVar = 5;
+	std::string strVar = "mhanz";
+	std::vector<uint64> ids = { 1, 2, 3 };
+	std::vector<std::string> strs = { "arinza" ,"arunza", "stappi", "sdunza" };
+	uint64 ids2[3] = {3, 2, 1};
+	Vec3 pos = { 0.5f, 0.6f, 0.7f };
+	std::string strs2[4] = { "sdunza", "stappi", "arunza", "arinza" };
+
+};
+
+GROOVY_CLASS_IMPL(TestClass, GroovyObject)
+GROOVY_CLASS_REFLECTION_BEGIN(TestClass)
+	GROOVY_REFLECT(intVar)
+	GROOVY_REFLECT(ids)
+	GROOVY_REFLECT(strVar)
+	GROOVY_REFLECT(strs)
+	GROOVY_REFLECT(ids2)
+	GROOVY_REFLECT(pos)
+	GROOVY_REFLECT(strs2)
+GROOVY_CLASS_REFLECTION_END()
+
 void EditorInit()
 {
 	// assets used by the editor
@@ -252,15 +283,15 @@ namespace panels
 				switch (asset.type)
 				{
 					case ASSET_TYPE_TEXTURE:
-						AddWindow<TexturePreviewWindow>("Texture viewer", (Texture*)asset.instance);
+						AddWindow<TexturePreviewWindow>((Texture*)asset.instance);
 						break;
 
 					case ASSET_TYPE_MATERIAL:
-						AddWindow<EditMaterialWindow>("Material editor", (Material*)asset.instance);
+						AddWindow<EditMaterialWindow>((Material*)asset.instance);
 						break;
 
 					case ASSET_TYPE_MESH:
-						AddWindow<MeshPreviewWindow>("Mesh viewer", (Mesh*)asset.instance);
+						AddWindow<MeshPreviewWindow>((Mesh*)asset.instance);
 						break;
 				}
 			}
@@ -399,9 +430,7 @@ void EditorRender()
         if (ImGui::BeginMenu("File"))
         {
 			if (ImGui::MenuItem("Save"))
-			{
 				SaveWork();
-			}
 
             ImGui::EndMenu();
         }
@@ -409,9 +438,10 @@ void EditorRender()
 		if (ImGui::BeginMenu("View"))
 		{
 			if (ImGui::MenuItem("Asset registry"))
-			{
-				AddWindow<AssetRegistryWindow>("Asset Registry");
-			}
+				AddWindow<AssetRegistryWindow>();
+
+			if (ImGui::MenuItem("Class registry"))
+				AddWindow<ClassRegistryWindow>();
 
 			ImGui::EndMenu();
 		}
@@ -419,9 +449,8 @@ void EditorRender()
 		if (ImGui::BeginMenu("New asset"))
 		{
 			if (ImGui::MenuItem("New material"))
-			{
-				AddWindow<EditMaterialWindow>("Material editor", nullptr);
-			}
+				AddWindow<EditMaterialWindow>(nullptr);
+
 			ImGui::EndMenu();
 		}
 

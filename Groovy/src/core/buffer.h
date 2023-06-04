@@ -91,20 +91,28 @@ public:
 		: Buffer(size), mCurrentPtr(nullptr)
 	{}
 
-	void push(void* data, size_t size)
+	void push_data(const void* data, size_t size)
 	{
 		if (size + mCurrentPtr > mData)
 		{
-			resize((size + mCurrentPtr - mData) * 2, true);
+			size_t prevSize = mCurrentPtr - mData;
+			resize((prevSize + size) * 2, true);
+			mCurrentPtr = mData + prevSize;
 		}
-		memcpy(mCurrentPtr + size, data, size);
+		memcpy(mCurrentPtr, data, size);
 		mCurrentPtr += size;
 	}
 
 	template<typename T>
-	inline void push(T* data, size_t count)
+	inline void push(const T* data, size_t count)
 	{
-		push(data, sizeof(T) * count);
+		push_data(data, sizeof(T) * count);
+	}
+
+	template<typename T>
+	inline void push(const T& data)
+	{
+		push_data(&data, sizeof(T));
 	}
 
 	inline void pop(size_t size)
@@ -131,4 +139,61 @@ public:
 
 private:
 	byte* mCurrentPtr;
+};
+
+class BufferView
+{
+public:
+	BufferView(void* data, size_t size)
+		: mCurrentPtr((byte*)data), mBytesLeft(size)
+	{}
+
+	BufferView(const Buffer& buffer)
+		: mCurrentPtr((byte*)buffer.data()), mBytesLeft(buffer.size())
+	{}
+
+	byte* seek()
+	{
+		return mCurrentPtr;
+	}
+
+	template<typename T>
+	T read()
+	{
+		check(mBytesLeft >= sizeof(T));
+		T val = *(T*)mCurrentPtr;
+		mCurrentPtr += sizeof(T);
+		mBytesLeft -= sizeof(T);
+		return val;
+	}
+
+	template<typename T>
+	T* read(size_t count)
+	{
+		check(mBytesLeft >= sizeof(T) * count);
+		T* ptr = (T*)mCurrentPtr;
+		mCurrentPtr += sizeof(T) * count;
+		mBytesLeft -= sizeof(T) * count;
+		return ptr;
+	}
+
+	byte* read(size_t count)
+	{
+		check(mBytesLeft >= count);
+		byte* ptr = mCurrentPtr;
+		mCurrentPtr += count;
+		mBytesLeft -= count;
+		return ptr;
+	}
+
+	void advance(size_t bytes)
+	{
+		check(mBytesLeft >= bytes);
+		mCurrentPtr += bytes;
+		mBytesLeft -= bytes;
+	}
+
+private:
+	byte* mCurrentPtr;
+	size_t mBytesLeft;
 };

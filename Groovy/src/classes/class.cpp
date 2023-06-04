@@ -5,7 +5,7 @@ void groovyclassUtils::GetClassPropertiesRecursiveSorted(GroovyClass* gClass, st
 	GroovyClass* c = gClass;
 	if (c->super)
 	{
-		GetClassPropertiesRecursiveSorted(gClass, outProps);
+		GetClassPropertiesRecursiveSorted(c->super, outProps);
 	}
 	check(gClass->propertiesGetter);
 	gClass->propertiesGetter(outProps);

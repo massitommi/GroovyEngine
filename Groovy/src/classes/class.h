@@ -3,7 +3,7 @@
 #include "core/core.h"
 #include "math/vector.h"
 
-enum EPropertyType
+enum EPropertyType : uint32
 {
 	PROPERTY_TYPE_INT32,
 	PROPERTY_TYPE_INT64,
@@ -16,28 +16,36 @@ enum EPropertyType
 	PROPERTY_TYPE_TRANSFORM
 };
 
-enum EPropertyFlags
+enum EPropertyFlags : uint64
 {
-	PROPERTY_FLAG_NOSERIALIZE = BITFLAG(1),
-	PROPERTY_FLAG_READONLY = BITFLAG(2)
+	PROPERTY_FLAG_IS_ARRAY = BITFLAG(1),
+	PROPERTY_FLAG_IS_DYNAMIC_ARRAY = BITFLAG(2)
+};
+
+enum EPropertyEditorFlags : uint64
+{
+	PROPERTY_EDITOR_FLAG_NOSERIALIZE = BITFLAG(1),
+	PROPERTY_EDITOR_FLAG_READONLY = BITFLAG(2)
 };
 
 struct GroovyProperty
 {
 	std::string name;
-	size_t arrayCount;
-	size_t classOffset;
 	EPropertyType type;
-	uint32 flags;
+	size_t offset;
+	size_t arrayCount;
+	uint64 flags;
+	uint64 editorFlags;
 };
 
 template<typename T>
 struct PropType
 {
-	enum : size_t
+	enum : uint32
 	{
 		Type = 0,
-		ArrayCount = 0
+		ArrayCount = 0,
+		Flags = 0
 	};
 
 	static_assert(!(sizeof(T) > 0), "Not implemented");
@@ -46,18 +54,29 @@ struct PropType
 #define IMPL_PROPERTY_TYPE(CoreType, OutPropertyType)	\
 template<>												\
 struct PropType<CoreType> {								\
-	enum : size_t {										\
+	enum : uint32 {										\
 		Type = OutPropertyType,							\
 		ArrayCount = 1,									\
+		Flags = 0										\
 	};													\
 };														\
 template<size_t InArrayCount>							\
 struct PropType<CoreType[InArrayCount]> {				\
-	enum : size_t {										\
+	enum : uint32 {										\
 		Type = OutPropertyType,							\
 		ArrayCount = InArrayCount,						\
+		Flags = PROPERTY_FLAG_IS_ARRAY					\
+	};													\
+};														\
+template<>												\
+struct PropType<std::vector<CoreType>> {				\
+	enum : uint32 {										\
+		Type = OutPropertyType,							\
+		ArrayCount = 0,									\
+		Flags = PROPERTY_FLAG_IS_DYNAMIC_ARRAY			\
 	};													\
 };
+
 
 IMPL_PROPERTY_TYPE(int32, PROPERTY_TYPE_INT32)
 IMPL_PROPERTY_TYPE(int64, PROPERTY_TYPE_INT64)
@@ -109,12 +128,23 @@ private:
 	&Class::GetClassProperties,																	\
 };
 
-#define GROOVY_PROPERTY(Class, Property, Flags)	{ #Property, PropType<decltype(Property)>::ArrayCount, offsetof(Class, Property), (EPropertyType)PropType<decltype(Property)>::Type, Flags }
+#if WITH_EDITOR
+	#define GET_EDITOR_FLAGS(EditorFlags) , EditorFlags
+#else
+	#define GET_EDITOR_FLAGS(EditorFlags)
+#endif
 
-#define GROOVY_CLASS_REFLECTION_BEGIN(Class)	void Class::GetClassPropertiesRecursive(std::vector<GroovyProperty>& outProps) const { Super::GetClassProperties(outProps); ThisClass::GetClassProperties(outProps); } void Class::GetClassProperties(std::vector<GroovyProperty>& outProps) {
-#define GROOVY_REFLECT(Property)				outProps.push_back(GROOVY_PROPERTY(ThisClass, Property, 0));
-#define GROOVY_REFLECT_EX(Property, Flags)		outProps.push_back(GROOVY_PROPERTY(ThisClass, Property, Flags));
-#define GROOVY_CLASS_REFLECTION_END()			}
+#define GROOVY_PROPERTY(Class, Property, EditorFlags)	{ #Property, (EPropertyType)PropType<decltype(Property)>::Type, offsetof(Class, Property), PropType<decltype(Property)>::ArrayCount, PropType<decltype(Property)>::Flags GET_EDITOR_FLAGS(EditorFlags) }
+
+
+#define GROOVY_CLASS_REFLECTION_BEGIN(Class)			void Class::GetClassPropertiesRecursive(std::vector<GroovyProperty>& outProps) const { Super::GetClassProperties(outProps); ThisClass::GetClassProperties(outProps); } void Class::GetClassProperties(std::vector<GroovyProperty>& outProps) {
+#define GROOVY_REFLECT(Property)						outProps.push_back(GROOVY_PROPERTY(ThisClass, Property, 0));
+#define GROOVY_REFLECT_EX(Property, EditorFlags)		outProps.push_back(GROOVY_PROPERTY(ThisClass, Property, EditorFlags));
+#define GROOVY_CLASS_REFLECTION_END()					}
+
+#define CLASS_LIST_BEGIN(ListName)				std::vector<GroovyClass*> ListName = 
+#define CLASS_LIST_ADD(Class)					&GROOVY_CLASS_NAME(Class)
+#define CLASS_LIST_END()						;
 
 namespace groovyclassUtils
 {

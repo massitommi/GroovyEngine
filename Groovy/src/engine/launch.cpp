@@ -5,13 +5,17 @@
 #include "application.h"
 #include "assets/asset_manager.h"
 #include "project/project.h"
+#include "classes/class_db.h"
 
 bool gEngineShouldRun = true;
 Window* gWindow = nullptr;
 FrameBuffer* gScreenFrameBuffer = nullptr;
 Project gProj;
-
+ClassDB gClassDB;
 ClearColor gScreenClearColor = { 0.9f, 0.7f, 0.7f, 1.0f };
+
+extern std::vector<GroovyClass*> ENGINE_CLASSES;
+//extern std::vector<GroovyClass*> GAME_CLASSES;
 
 void OnWndResizeCallback(uint32 width, uint32 height)
 {
@@ -84,6 +88,11 @@ int32 GroovyEntryPoint(const char* args)
 	gProj.name = projName;
 	gProj.registryPath = absoluteAssetRegistryPath;
 	gProj.assetsPath = absoluteAssetsPath;
+
+	for (GroovyClass* c : ENGINE_CLASSES)
+		gClassDB.Register(c);
+	/*for (GroovyClass* c : GAME_CLASSES)
+		gClassDB.Register(c);*/
 
 	AssetManager::Init();
 	Application::Init();

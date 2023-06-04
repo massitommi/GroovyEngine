@@ -12,17 +12,14 @@ GroovyClass GROOVY_CLASS_NAME(GroovyObject) =
 
 GroovyObject::GroovyObject()
 {
-
 }
 
 GroovyObject::~GroovyObject()
 {
-
 }
 
 void GroovyObject::GetClassProperties(std::vector<GroovyProperty>& outProps)
 {
-	
 }
 
 void GroovyObject::GetClassPropertiesRecursive(std::vector<GroovyProperty>& outProps) const

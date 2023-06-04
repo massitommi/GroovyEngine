@@ -1,6 +1,7 @@
 #include "editor_window.h"
 #include "vendor/imgui/imgui.h"
 #include "vendor/imgui/misc/cpp/imgui_stdlib.h"
+#include "platform/messagebox.h"
 
 void EditorWindow::RenderWindow()
 {
@@ -15,12 +16,32 @@ void EditorWindow::RenderWindow()
 	}
 }
 
-// Material editor
+bool EditorWindow::OnClose()
+{
+	if (!mPendingSave)
+		return true;
+	EMessageBoxResponse res = SysMessageBox::Show("Unsaved work", "Unsaved work will be lost, continue?", MESSAGE_BOX_TYPE_WARNING, MESSAGE_BOX_OPTIONS_YESNOCANCEL);
+	return res == MESSAGE_BOX_RESPONSE_YES;
+}
+
+void EditorWindow::SetPendingSave(bool pendingSave)
+{
+	if (pendingSave)
+		mFlags |= ImGuiWindowFlags_UnsavedDocument;
+	else
+		mFlags &= ~ImGuiWindowFlags_UnsavedDocument;
+
+	mPendingSave = pendingSave;
+}
+
 #include "assets/asset_manager.h"
 #include "assets/asset_loader.h"
 #include "assets/asset_serializer.h"
-#include "project/Project.h"
+#include "project/project.h"
 #include "platform/messagebox.h"
+#include "classes/class.h"
+#include "classes/class_db.h"
+#include "renderer/mesh.h"
 
 extern Project gProj;
 
@@ -75,8 +96,8 @@ static void RenderAssetSelectionMenu(PropFieldArray& comboArray, OnClickProc onC
 	}
 }
 
-EditMaterialWindow::EditMaterialWindow(const std::string& wndTitle, Material* mat)
-	: EditorWindow(wndTitle), mMaterial(mat)
+EditMaterialWindow::EditMaterialWindow(Material* mat)
+	: EditorWindow("Material editor"), mMaterial(mat)
 {
 	if (mat)
 	{
@@ -87,6 +108,7 @@ EditMaterialWindow::EditMaterialWindow(const std::string& wndTitle, Material* ma
 		mVirtual = true;
 		mMaterial = new Material(DEFAULT_SHADER);
 		mMaterial->SetTextures(DEFAULT_TEXTURE);
+		SetPendingSave(true);
 	}
 }
 
@@ -162,6 +184,7 @@ void EditMaterialWindow::RenderContent()
 			AssetSerializer::SerializeMaterial(mMaterial, handle.path);
 			AssetManager::SaveRegistry();
 			mVirtual = false;
+			SetPendingSave(false);
 		}
 	}
 	else // file exists on disk
@@ -173,25 +196,6 @@ void EditMaterialWindow::RenderContent()
 			AssetManager::SaveRegistry();
 		}
 	}
-}
-
-bool EditMaterialWindow::OnClose()
-{
-	if (mVirtual)
-	{
-		auto res = SysMessageBox::Show
-		(
-			"Unsaved asset",
-			"This asset is not saved on disk, are you sure you want to discard it?",
-			MESSAGE_BOX_TYPE_WARNING,
-			MESSAGE_BOX_OPTIONS_YESNOCANCEL
-		);
-		if (res != MESSAGE_BOX_RESPONSE_YES)
-		{
-			return false;
-		}
-	}
-	return true;
 }
 
 void EditMaterialWindow::ShowVar(const ShaderVariable& var, byte* bufferPtr)
@@ -306,19 +310,9 @@ void AssetRegistryWindow::RenderContent()
 		ImGui::EndDisabled();
 }
 
-TexturePreviewWindow::TexturePreviewWindow(const std::string& wndTitle, Texture* texture)
-	: EditorWindow(wndTitle), mTexture(texture)
-{
-}
-
 void TexturePreviewWindow::RenderContent()
 {
 	ImGui::Image(mTexture->GetRendererID(), ImGui::GetContentRegionAvail());
-}
-
-MeshPreviewWindow::MeshPreviewWindow(const std::string& wndTitle, Mesh* mesh)
-	: EditorWindow(wndTitle), mMesh(mesh)
-{
 }
 
 void MeshPreviewWindow::RenderContent()
@@ -344,5 +338,85 @@ void MeshPreviewWindow::RenderContent()
 	{
 		const AssetHandle& handle = AssetManager::Get(mMesh->GetUUID());
 		AssetSerializer::SerializeMesh(mMesh, handle.path);
+	}
+}
+
+extern ClassDB gClassDB;
+extern std::vector<GroovyClass*> ENGINE_CLASSES;
+extern std::vector<GroovyClass*> GAME_CLASSES;
+
+const char* GetPropertyTypeStr(EPropertyType type)
+{
+	switch (type)
+	{
+		case PROPERTY_TYPE_INT32:		return "INT32";
+		case PROPERTY_TYPE_INT64:		return "INT64";
+		case PROPERTY_TYPE_UINT32:		return "UINT32";
+		case PROPERTY_TYPE_UINT64:		return "UINT64";
+		case PROPERTY_TYPE_BOOL:		return "BOOL";
+		case PROPERTY_TYPE_FLOAT:		return "FLOAT";
+		case PROPERTY_TYPE_STRING:		return "STRING";
+		case PROPERTY_TYPE_VEC3:		return "VEC3";
+		case PROPERTY_TYPE_TRANSFORM:	return "TRANSFORM";
+	}
+	check(0);
+	return "Unknown";
+}
+
+void PrintClassProps(const std::vector<GroovyProperty>& props)
+{
+	uint32 propIndex = 0;
+	for (const GroovyProperty& p : props)
+	{
+		ImGui::Text("[%i] %s - %s", propIndex, p.name, GetPropertyTypeStr(p.type));
+		if (p.flags & PROPERTY_FLAG_IS_ARRAY)
+		{
+			ImGui::SameLine();
+			ImGui::Text(" - (array(%i))", p.arrayCount);
+		}
+		else if (p.flags & PROPERTY_FLAG_IS_DYNAMIC_ARRAY)
+		{
+			ImGui::SameLine();
+			ImGui::Text(" - (dynamic array)");
+		}
+		propIndex++;
+	}
+}
+
+void PrintClasses(std::vector<GroovyClass*> classes)
+{
+	ImGui::Spacing();
+	for (GroovyClass* c : classes)
+	{
+		if (ImGui::TreeNode(c->name.c_str()))
+		{
+			ImGui::Separator();
+			ImGui::Text("Size: %i bytes", c->size);
+			ImGui::Text("Super class: %s", c->super ? c->super->name.c_str() : "NONE");
+			ImGui::Text("Properties:");
+			ImGui::Indent();
+			
+			std::vector<GroovyProperty> props;
+			c->propertiesGetter(props);
+			PrintClassProps(props);
+			
+			ImGui::Unindent();
+
+			ImGui::Separator();
+			ImGui::TreePop();
+		}
+	}
+	ImGui::Spacing();
+}
+
+void ClassRegistryWindow::RenderContent()
+{
+	if (ImGui::CollapsingHeader("Engine classes", ImGuiTreeNodeFlags_DefaultOpen))
+	{
+		PrintClasses(ENGINE_CLASSES);
+	}
+	if (ImGui::CollapsingHeader("Game classes", ImGuiTreeNodeFlags_DefaultOpen))
+	{
+		//PrintClasses(GAME_CLASSES);
 	}
 }
