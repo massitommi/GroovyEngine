@@ -2,6 +2,7 @@
 
 #include "assets/asset.h"
 #include "renderer/api/shader.h"
+#include "classes/class.h"
 
 class EditorWindow
 {
@@ -90,4 +91,21 @@ public:
 	{}
 
 	virtual void RenderContent() override;
+};
+
+class ClassInspectorWindow : public EditorWindow
+{
+public:
+	ClassInspectorWindow();
+
+	void UpdateData();
+
+	virtual void RenderContent() override;
+
+private:
+	static GroovyClass* sSelectedClass;
+	static bool sShowInheritedProps;
+	static std::vector<GroovyProperty> sSelectedClassInheritedProps;
+	static std::vector<GroovyProperty> sSelectedClassProps;
+	static std::vector<GroovyClass*> sClasses;
 };

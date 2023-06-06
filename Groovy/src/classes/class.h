@@ -102,6 +102,7 @@ struct GroovyClass
 	GroovyDestructor destructor;
 	GroovyClass* super;
 	GroovyPropertiesGetter propertiesGetter;
+	void* cdo;
 };
 
 #define GROOVY_CLASS_NAME(Class)				__internal_groovyclass_##Class
@@ -126,15 +127,10 @@ private:
 	[](void* mem) { ((Class*)mem)->~Class(); },													\
 	&GROOVY_CLASS_NAME(SuperClass),																\
 	&Class::GetClassProperties,																	\
+	new Class()																					\
 };
 
-#if WITH_EDITOR
-	#define GET_EDITOR_FLAGS(EditorFlags) , EditorFlags
-#else
-	#define GET_EDITOR_FLAGS(EditorFlags)
-#endif
-
-#define GROOVY_PROPERTY(Class, Property, EditorFlags)	{ #Property, (EPropertyType)PropType<decltype(Property)>::Type, offsetof(Class, Property), PropType<decltype(Property)>::ArrayCount, PropType<decltype(Property)>::Flags GET_EDITOR_FLAGS(EditorFlags) }
+#define GROOVY_PROPERTY(Class, Property, EditorFlags)	{ #Property, (EPropertyType)PropType<decltype(Property)>::Type, offsetof(Class, Property), PropType<decltype(Property)>::ArrayCount, PropType<decltype(Property)>::Flags, EditorFlags }
 
 
 #define GROOVY_CLASS_REFLECTION_BEGIN(Class)			void Class::GetClassPropertiesRecursive(std::vector<GroovyProperty>& outProps) const { Super::GetClassProperties(outProps); ThisClass::GetClassProperties(outProps); } void Class::GetClassProperties(std::vector<GroovyProperty>& outProps) {
@@ -150,6 +146,7 @@ namespace groovyclassUtils
 {
 	// Gets all the properties exposed by a groovy class, sorted means that the first are the base class ones, and the last are the gClass ones
 	void GetClassPropertiesRecursiveSorted(GroovyClass* gClass, std::vector<GroovyProperty>& outProps);
+	size_t FindProperty(const std::vector<GroovyProperty>& props, const std::string& propName);
 }
 
 /*

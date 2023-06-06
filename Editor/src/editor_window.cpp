@@ -341,9 +341,63 @@ void MeshPreviewWindow::RenderContent()
 	}
 }
 
+void PrintClasses(std::vector<GroovyClass*> classes)
+{
+	ImGui::Spacing();
+	ImGui::Separator();
+	for (GroovyClass* c : classes)
+	{
+		ImGui::Text("Name: %s", c->name.c_str());
+		ImGui::Text("Size: %i bytes", c->size);
+		ImGui::Text("Super class: %s", c->super ? c->super->name.c_str() : "NONE");
+		ImGui::Text("CDO (Class Default Object): %p", c->cdo);
+
+		ImGui::Separator();
+	}
+	ImGui::Spacing();
+}
+
 extern ClassDB gClassDB;
 extern std::vector<GroovyClass*> ENGINE_CLASSES;
 extern std::vector<GroovyClass*> GAME_CLASSES;
+
+void ClassRegistryWindow::RenderContent()
+{
+	if (ImGui::CollapsingHeader("Engine classes", ImGuiTreeNodeFlags_DefaultOpen))
+	{
+		PrintClasses(ENGINE_CLASSES);
+	}
+	if (ImGui::CollapsingHeader("Game classes", ImGuiTreeNodeFlags_DefaultOpen))
+	{
+		//PrintClasses(GAME_CLASSES);
+	}
+}
+
+
+GroovyClass* ClassInspectorWindow::sSelectedClass = nullptr;
+bool ClassInspectorWindow::sShowInheritedProps = false;
+std::vector<GroovyProperty> ClassInspectorWindow::sSelectedClassInheritedProps;
+std::vector<GroovyProperty> ClassInspectorWindow::sSelectedClassProps;
+std::vector<GroovyClass*> ClassInspectorWindow::sClasses;
+
+ClassInspectorWindow::ClassInspectorWindow()
+	: EditorWindow("Class Inspector")
+{
+	if (!sClasses.size())
+	{
+		sClasses = gClassDB.GetClasses();
+		checkslow(sClasses.size());
+		sSelectedClass = sClasses[0];
+		UpdateData();
+	}
+}
+
+void ClassInspectorWindow::UpdateData()
+{
+	sSelectedClassInheritedProps = gClassDB[sSelectedClass];
+	sSelectedClassProps.clear();
+	sSelectedClass->propertiesGetter(sSelectedClassProps);
+}
 
 const char* GetPropertyTypeStr(EPropertyType type)
 {
@@ -363,60 +417,57 @@ const char* GetPropertyTypeStr(EPropertyType type)
 	return "Unknown";
 }
 
-void PrintClassProps(const std::vector<GroovyProperty>& props)
-{
-	uint32 propIndex = 0;
-	for (const GroovyProperty& p : props)
-	{
-		ImGui::Text("[%i] %s - %s", propIndex, p.name, GetPropertyTypeStr(p.type));
-		if (p.flags & PROPERTY_FLAG_IS_ARRAY)
-		{
-			ImGui::SameLine();
-			ImGui::Text(" - (array(%i))", p.arrayCount);
-		}
-		else if (p.flags & PROPERTY_FLAG_IS_DYNAMIC_ARRAY)
-		{
-			ImGui::SameLine();
-			ImGui::Text(" - (dynamic array)");
-		}
-		propIndex++;
-	}
-}
 
-void PrintClasses(std::vector<GroovyClass*> classes)
+void ClassInspectorWindow::RenderContent()
 {
+	if (ImGui::BeginCombo("Class", sSelectedClass->name.c_str()))
+	{
+		for (GroovyClass* c : sClasses)
+		{
+			bool currentlySelected = c == sSelectedClass;
+			if (ImGui::Selectable(c->name.c_str(), &currentlySelected))
+			{
+				sSelectedClass = c;
+				UpdateData();
+			}
+		}
+		ImGui::EndCombo();
+	}
+
+	ImGui::Checkbox("Include inherited properties", &sShowInheritedProps);
+
 	ImGui::Spacing();
-	for (GroovyClass* c : classes)
-	{
-		if (ImGui::TreeNode(c->name.c_str()))
-		{
-			ImGui::Separator();
-			ImGui::Text("Size: %i bytes", c->size);
-			ImGui::Text("Super class: %s", c->super ? c->super->name.c_str() : "NONE");
-			ImGui::Text("Properties:");
-			ImGui::Indent();
-			
-			std::vector<GroovyProperty> props;
-			c->propertiesGetter(props);
-			PrintClassProps(props);
-			
-			ImGui::Unindent();
-
-			ImGui::Separator();
-			ImGui::TreePop();
-		}
-	}
 	ImGui::Spacing();
-}
+	ImGui::Spacing();
 
-void ClassRegistryWindow::RenderContent()
-{
-	if (ImGui::CollapsingHeader("Engine classes", ImGuiTreeNodeFlags_DefaultOpen))
+	ImGui::Text("Reflected properties:");
+	
+	ImGui::Spacing();
+	ImGui::Spacing();
+
+	std::vector<GroovyProperty>* props = sShowInheritedProps ? &sSelectedClassInheritedProps : &sSelectedClassProps;
+
+	ImGui::Separator();
+	ImGui::Spacing();
+	for (const GroovyProperty& p : *props)
 	{
-		PrintClasses(ENGINE_CLASSES);
+		std::string varName = p.name;
+		if (p.arrayCount > 1)
+			varName += " [" + std::to_string(p.arrayCount) + "]";
+		else if (p.arrayCount < 1)
+			varName += " (dynamic array)";
+
+		if (p.editorFlags & PROPERTY_EDITOR_FLAG_NOSERIALIZE)
+			ImGui::PushStyleColor(ImGuiCol_::ImGuiCol_Text, 0xff00ffff);
+
+		if (ImGui::BeginCombo(varName.c_str(), GetPropertyTypeStr(p.type)))
+			ImGui::EndCombo();
+
+		if (p.editorFlags & PROPERTY_EDITOR_FLAG_NOSERIALIZE)
+			ImGui::PopStyleColor();
+
+		ImGui::Spacing();
+		ImGui::Separator();
 	}
-	if (ImGui::CollapsingHeader("Game classes", ImGuiTreeNodeFlags_DefaultOpen))
-	{
-		//PrintClasses(GAME_CLASSES);
-	}
+	
 }

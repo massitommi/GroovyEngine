@@ -24,26 +24,12 @@ GroovyClass* ClassDB::operator[](const std::string& className)
 	return mClassDB[className];
 }
 
-const GroovyProperty* ClassDB::GetProperty(GroovyClass* gClass, const std::string& name, EPropertyType type, uint64 flags)
+std::vector<GroovyClass*> ClassDB::GetClasses()
 {
-	std::vector<GroovyProperty>& props = mPropsDB[gClass];
-
-	for (GroovyProperty& p : props)
+	std::vector<GroovyClass*> res;
+	for (const auto& [n, c] : mClassDB)
 	{
-		bool sameName = p.name == name;
-		bool sameType = p.type == type;
-		bool sameFlags = p.flags == flags;
-		if (sameName && sameType && sameFlags)
-		{
-			return &p;
-		}
-#if BUILD_DEBUG
-		if (sameName)
-		{
-			// console log
-		}
-#endif
+		res.push_back(c);
 	}
-
-	return nullptr;
+	return res;
 }

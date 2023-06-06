@@ -207,30 +207,41 @@ void UpdateWindows()
 #include "classes/class_db.h"
 extern ClassDB gClassDB;
 
-GROOVY_CLASS_DECL(TestClass)
-class TestClass : public GroovyObject
+GROOVY_CLASS_DECL(TestClassBase)
+class TestClassBase : public GroovyObject
 {
-	GROOVY_CLASS_BODY(TestClass, GroovyObject)
+	GROOVY_CLASS_BODY(TestClassBase, GroovyObject)
+
+public:
+	std::vector<std::string> strs = { "arinza" ,"arunza", "stappi", "sdunza" };
+	uint64 ids2[3] = { 3, 2, 1 };
+	Vec3 pos = { 0.5f, 0.6f, 0.7f };
+};
+
+GROOVY_CLASS_IMPL(TestClassBase, GroovyObject)
+GROOVY_CLASS_REFLECTION_BEGIN(TestClassBase)
+	GROOVY_REFLECT(strs)
+	GROOVY_REFLECT(pos)
+	GROOVY_REFLECT(ids2)
+GROOVY_CLASS_REFLECTION_END()
+
+GROOVY_CLASS_DECL(TestClass)
+class TestClass : public TestClassBase
+{
+	GROOVY_CLASS_BODY(TestClass, TestClassBase)
 
 public:
 	int32 intVar = 5;
 	std::string strVar = "mhanz";
 	std::vector<uint64> ids = { 1, 2, 3 };
-	std::vector<std::string> strs = { "arinza" ,"arunza", "stappi", "sdunza" };
-	uint64 ids2[3] = {3, 2, 1};
-	Vec3 pos = { 0.5f, 0.6f, 0.7f };
 	std::string strs2[4] = { "sdunza", "stappi", "arunza", "arinza" };
-
 };
 
-GROOVY_CLASS_IMPL(TestClass, GroovyObject)
+GROOVY_CLASS_IMPL(TestClass, TestClassBase)
 GROOVY_CLASS_REFLECTION_BEGIN(TestClass)
-	GROOVY_REFLECT(intVar)
+	GROOVY_REFLECT_EX(intVar, PROPERTY_EDITOR_FLAG_NOSERIALIZE)
 	GROOVY_REFLECT(ids)
 	GROOVY_REFLECT(strVar)
-	GROOVY_REFLECT(strs)
-	GROOVY_REFLECT(ids2)
-	GROOVY_REFLECT(pos)
 	GROOVY_REFLECT(strs2)
 GROOVY_CLASS_REFLECTION_END()
 
@@ -259,6 +270,31 @@ void EditorInit()
 
 	testMesh = (Mesh*)modelHandle.instance;
 	testShader = (Shader*)testMesh->GetMaterials()[0]->GetShader();
+
+	gClassDB.Register(&__internal_groovyclass_TestClass);
+
+	TestClass test;
+	DynamicBuffer testFileData;
+
+	test.intVar = -1;
+	test.ids = { 4,5,6,7,8,9,10 };
+	test.strVar = "strVar";
+	test.strs = { "gg", "GG" };
+	test.strs2[0] = "ss1";
+	test.strs2[1] = "ss2";
+	test.strs2[2] = "ss3";
+	test.strs2[3] = "ss4";
+	test.pos = { 1,2,4 };
+	test.ids2[0] = 98;
+	test.ids2[1] = 99;
+	test.ids2[2] = 100;
+
+	ObjectSerializer::SerializeObject(&test, (GroovyObject*)test.GetClass()->cdo, testFileData);
+
+	TestClass* t = (TestClass*)ObjectSerializer::DeserializeObject(testFileData);
+
+	t->GetClass()->destructor(t);
+	free(t);
 }
 
 namespace panels
@@ -442,6 +478,9 @@ void EditorRender()
 
 			if (ImGui::MenuItem("Class registry"))
 				AddWindow<ClassRegistryWindow>();
+
+			if (ImGui::MenuItem("Class inspector"))
+				AddWindow<ClassInspectorWindow>();
 
 			ImGui::EndMenu();
 		}

@@ -47,8 +47,8 @@ void DisplayAssertError(const char* condition, const char* file, int line, const
 #define checkslowf(Condition, Msg, ...) CORE_ASSERT(Condition, Msg, __VA_ARGS__)
 
 #if BUILD_DEBUG
-	#define verifyf(Condition, Msg, ...) CORE_ASSERT(Condition, Msg, "")
-	#define checkf(Condition, Msg, ...) CORE_ASSERT(Condition, Msg, "")
+	#define verifyf(Condition, Msg, ...) CORE_ASSERT(Condition, Msg, __VA_ARGS__)
+	#define checkf(Condition, Msg, ...) CORE_ASSERT(Condition, Msg, __VA_ARGS__)
 #else
 	#define verifyf(Condition, Msg, ...) { bool assertResult = (Condition);  }
 	#define checkf(Condition, Msg, ...)  {}

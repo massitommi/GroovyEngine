@@ -11,5 +11,4 @@ public:
 
 public:
 	Transform mTransform;
-	std::vector<std::string> mTest;
 };

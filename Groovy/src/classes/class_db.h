@@ -13,7 +13,8 @@ public:
 	const std::vector<GroovyProperty>& operator[](GroovyClass* gClass);
 	GroovyClass* operator[](const std::string& className);
 
-	const GroovyProperty* GetProperty(GroovyClass* gClass, const std::string& name, EPropertyType type, uint64 flags);
+	// slow
+	std::vector<GroovyClass*> GetClasses();
 
 private:
 	std::map<std::string, GroovyClass*> mClassDB;

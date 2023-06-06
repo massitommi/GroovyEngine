@@ -7,7 +7,8 @@ GroovyClass GROOVY_CLASS_NAME(GroovyObject) =
 	[](void* mem) { new(mem) GroovyObject(); },					// constructor
 	[](void* mem) { ((GroovyObject*)mem)->~GroovyObject(); },	// destructor
 	nullptr,													// super class
-	&GroovyObject::GetClassProperties							// props getter
+	&GroovyObject::GetClassProperties,							// props getter
+	new GroovyObject()											// cdo
 };
 
 GroovyObject::GroovyObject()

@@ -91,7 +91,7 @@ public:
 		: Buffer(size), mCurrentPtr(nullptr)
 	{}
 
-	void push_data(const void* data, size_t size)
+	void* push_data(const void* data, size_t size)
 	{
 		if (size + mCurrentPtr > mData)
 		{
@@ -100,19 +100,21 @@ public:
 			mCurrentPtr = mData + prevSize;
 		}
 		memcpy(mCurrentPtr, data, size);
+		void* dataPtr = mCurrentPtr;
 		mCurrentPtr += size;
+		return dataPtr;
 	}
 
 	template<typename T>
-	inline void push(const T* data, size_t count)
+	inline T* push(const T* data, size_t count)
 	{
-		push_data(data, sizeof(T) * count);
+		return (T*)push_data(data, sizeof(T) * count);
 	}
 
 	template<typename T>
-	inline void push(const T& data)
+	inline T* push(const T& data)
 	{
-		push_data(&data, sizeof(T));
+		return (T*)push_data(&data, sizeof(T));
 	}
 
 	inline void pop(size_t size)
