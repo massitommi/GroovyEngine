@@ -77,7 +77,6 @@ struct PropType<std::vector<CoreType>> {				\
 	};													\
 };
 
-
 IMPL_PROPERTY_TYPE(int32, PROPERTY_TYPE_INT32)
 IMPL_PROPERTY_TYPE(int64, PROPERTY_TYPE_INT64)
 IMPL_PROPERTY_TYPE(uint32, PROPERTY_TYPE_UINT32)
@@ -142,7 +141,7 @@ private:
 #define CLASS_LIST_ADD(Class)					&GROOVY_CLASS_NAME(Class)
 #define CLASS_LIST_END()						;
 
-namespace groovyclassUtils
+namespace classUtils
 {
 	// Gets all the properties exposed by a groovy class, sorted means that the first are the base class ones, and the last are the gClass ones
 	void GetClassPropertiesRecursiveSorted(GroovyClass* gClass, std::vector<GroovyProperty>& outProps);

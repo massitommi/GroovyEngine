@@ -8,7 +8,7 @@ void ClassDB::Register(GroovyClass* gClass)
 {
 	check(gClass);
 	std::vector<GroovyProperty> props;
-	groovyclassUtils::GetClassPropertiesRecursiveSorted(gClass, props);
+	classUtils::GetClassPropertiesRecursiveSorted(gClass, props);
 	
 	mClassDB[gClass->name] = gClass;
 	mPropsDB[gClass] = props;

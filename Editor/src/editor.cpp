@@ -274,8 +274,6 @@ void EditorInit()
 	gClassDB.Register(&__internal_groovyclass_TestClass);
 
 	TestClass test;
-	DynamicBuffer testFileData;
-
 	test.intVar = -1;
 	test.ids = { 4,5,6,7,8,9,10 };
 	test.strVar = "strVar";
@@ -288,13 +286,17 @@ void EditorInit()
 	test.ids2[0] = 98;
 	test.ids2[1] = 99;
 	test.ids2[2] = 100;
+	test.pos = { 2,3,4 };
 
-	ObjectSerializer::SerializeObject(&test, (GroovyObject*)test.GetClass()->cdo, testFileData);
+	PropertyPack propertyPack = {};
 
-	TestClass* t = (TestClass*)ObjectSerializer::DeserializeObject(testFileData);
+	ObjectSerializer::CreatePropertyPack(propertyPack, &test, (GroovyObject*)test.GetClass()->cdo);
 
-	t->GetClass()->destructor(t);
-	free(t);
+	TestClass tCopy;
+
+	ObjectSerializer::DeserializeOntoObject(propertyPack.desc, propertyPack.data.data(), &tCopy);
+
+	int br = 1;
 }
 
 namespace panels
