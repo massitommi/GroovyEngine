@@ -56,7 +56,7 @@ struct MaterialAssetHeader
 {
     AssetUUID shaderID;
     size_t constBuffersSize;
-    size_t numTextures;
+    uint32 numTextures;
 };
 
 struct MeshAssetHeader

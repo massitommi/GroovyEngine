@@ -223,7 +223,7 @@ void D3D11Shader::Bind()
 	d3dUtils::gContext->PSSetConstantBuffers(0, mPixelConstBuffers.size(), mPixelConstBuffers.data());
 }
 
-size_t D3D11Shader::GetVertexConstBufferIndex(const std::string& bufferName)
+uint32 D3D11Shader::GetVertexConstBufferIndex(const std::string& bufferName)
 {
 	for (uint32 i = 0; i < mVertexConstBuffersDesc.size(); i++)
 	{
@@ -232,10 +232,10 @@ size_t D3D11Shader::GetVertexConstBufferIndex(const std::string& bufferName)
 			return i;
 		}
 	}
-	return ~((size_t)0);
+	return ~((uint32)0);
 }
 
-size_t D3D11Shader::GetPixelConstBufferIndex(const std::string& bufferName)
+uint32 D3D11Shader::GetPixelConstBufferIndex(const std::string& bufferName)
 {
 	for (uint32 i = 0; i < mPixelConstBuffersDesc.size(); i++)
 	{
@@ -244,7 +244,7 @@ size_t D3D11Shader::GetPixelConstBufferIndex(const std::string& bufferName)
 			return i;
 		}
 	}
-	return ~((size_t)0);
+	return ~((uint32)0);
 }
 
 void D3D11Shader::OverwriteVertexConstBuffer(uint32 index, void* data)

@@ -23,7 +23,7 @@ static void DeserializePropertyData(const PropertyDesc& desc, byte* data, Groovy
 			case PROPERTY_TYPE_STRING:
 			{
 				std::string* strPtr = (std::string*)objProp;
-				for (size_t i = 0; i < desc.arrayCount; i++)
+				for (uint32 i = 0; i < desc.arrayCount; i++)
 				{
 					*strPtr = (char*)data;
 					data += strPtr->length() + 1;
@@ -54,8 +54,8 @@ static bool PropertyIsEqual(const GroovyProperty& prop, GroovyObject* obj1, Groo
 {
 	void* objProp1 = (byte*)obj1 + prop.offset;
 	void* objProp2 = (byte*)obj2 + prop.offset;
-	size_t objProp1ArrayCount = prop.arrayCount;
-	size_t objProp2ArrayCount = prop.arrayCount;
+	uint32 objProp1ArrayCount = prop.arrayCount;
+	uint32 objProp2ArrayCount = prop.arrayCount;
 
 	if (prop.flags & PROPERTY_FLAG_IS_DYNAMIC_ARRAY)
 	{
@@ -81,7 +81,7 @@ static bool PropertyIsEqual(const GroovyProperty& prop, GroovyObject* obj1, Groo
 			{
 				std::string* strPtr1 = (std::string*)objProp1;
 				std::string* strPtr2 = (std::string*)objProp2;
-				for (size_t i = 0; i < objProp1ArrayCount; i++)
+				for (uint32 i = 0; i < objProp1ArrayCount; i++)
 				{
 					if (*strPtr1 != *strPtr2)
 						return false;
@@ -104,7 +104,7 @@ static bool PropertyIsEqual(const GroovyProperty& prop, GroovyObject* obj1, Groo
 static void SerializePropertyData(PropertyPack& pack, const GroovyProperty& prop, GroovyObject* obj)
 {
 	void* objProp = (byte*)obj + prop.offset;
-	size_t objPropArrayCount = prop.arrayCount;
+	uint32 objPropArrayCount = prop.arrayCount;
 
 	if (prop.flags & PROPERTY_FLAG_IS_DYNAMIC_ARRAY)
 	{
@@ -130,7 +130,7 @@ static void SerializePropertyData(PropertyPack& pack, const GroovyProperty& prop
 			case PROPERTY_TYPE_STRING:
 			{
 				std::string* strPtr = (std::string*)objProp;
-				for (size_t i = 0; i < objPropArrayCount; i++)
+				for (uint32 i = 0; i < objPropArrayCount; i++)
 				{
 					pack.data.push_data(strPtr->data(), strPtr->length());
 					pack.data.push<char>(0);

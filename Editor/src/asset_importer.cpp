@@ -89,7 +89,7 @@ bool AssetImporter::ImportTexture(const std::string& originalFile, const std::st
         return false;
     }
 
-    uint64 rawImgSize = imgWidth * imgHeight * DEFAULT_IMAGE_IMPORT_CHANNELS;
+    size_t rawImgSize = imgWidth * imgHeight * DEFAULT_IMAGE_IMPORT_CHANNELS;
     Buffer groovyTexture(sizeof(TextureAssetHeader) + rawImgSize);
 
     TextureAssetHeader textureHeader;
@@ -132,8 +132,8 @@ bool AssetImporter::ImportMesh(const std::string& originalFile, const std::strin
     }
 
     Buffer newFileData;
-    uint32 vertexBufferSize = 0;
-    uint32 indexBufferSize = 0;
+    size_t vertexBufferSize = 0;
+    size_t indexBufferSize = 0;
     uint32 submeshCount = 0;
 
     for (const auto& shape : shapes)

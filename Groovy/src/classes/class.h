@@ -32,8 +32,8 @@ struct GroovyProperty
 	std::string name;
 	EPropertyType type;
 	uint32 flags;
-	size_t offset;
-	size_t arrayCount;
+	uint32 offset;
+	uint32 arrayCount;
 	uint64 param1;
 	uint64 param2;
 };
@@ -117,7 +117,7 @@ typedef void(*GroovyPropertiesGetter)(std::vector<GroovyProperty>&);
 struct GroovyClass
 {
 	std::string name;
-	size_t size;
+	uint32 size;
 	GroovyConstructor constructor;
 	GroovyDestructor destructor;
 	GroovyClass* super;

@@ -17,8 +17,8 @@ public:
 	virtual const std::vector<ConstBufferDesc>& GetPixelConstBuffersDesc() const override { return mPixelConstBuffersDesc; }
 	virtual const std::vector<ShaderResTexture>& GetPixelTexturesRes() const override { return mResTextures; }
 
-	virtual size_t GetVertexConstBufferIndex(const std::string& bufferName) override;
-	virtual size_t GetPixelConstBufferIndex(const std::string& bufferName) override;
+	virtual uint32 GetVertexConstBufferIndex(const std::string& bufferName) override;
+	virtual uint32 GetPixelConstBufferIndex(const std::string& bufferName) override;
 
 	virtual void OverwriteVertexConstBuffer(uint32 index, void* data) override;
 	virtual void OverwritePixelConstBuffer(uint32 index, void* data) override;

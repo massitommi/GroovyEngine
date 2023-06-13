@@ -16,8 +16,8 @@ enum EShaderVariableType
 struct ShaderVariable
 {
 	std::string name;
-	size_t size;
-	size_t alignedOffset;
+	uint32 size;
+	uint32 alignedOffset;
 	EShaderVariableType type;
 };
 
@@ -44,8 +44,8 @@ public:
 	virtual const std::vector<ConstBufferDesc>& GetPixelConstBuffersDesc() const = 0;
 	virtual const std::vector<ShaderResTexture>& GetPixelTexturesRes() const = 0;
 
-	virtual size_t GetVertexConstBufferIndex(const std::string& bufferName) = 0;
-	virtual size_t GetPixelConstBufferIndex(const std::string& bufferName) = 0;
+	virtual uint32 GetVertexConstBufferIndex(const std::string& bufferName) = 0;
+	virtual uint32 GetPixelConstBufferIndex(const std::string& bufferName) = 0;
 
 	virtual void OverwriteVertexConstBuffer(uint32 index, void* data) = 0;
 	virtual void OverwritePixelConstBuffer(uint32 index, void* data) = 0;
