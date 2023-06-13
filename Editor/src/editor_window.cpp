@@ -457,13 +457,13 @@ void ClassInspectorWindow::RenderContent()
 		else if (p.arrayCount < 1)
 			varName += " (dynamic array)";
 
-		if (p.editorFlags & PROPERTY_EDITOR_FLAG_NOSERIALIZE)
+		if (p.flags & PROPERTY_FLAG_NO_SERIALIZE)
 			ImGui::PushStyleColor(ImGuiCol_::ImGuiCol_Text, 0xff00ffff);
 
 		if (ImGui::BeginCombo(varName.c_str(), GetPropertyTypeStr(p.type)))
 			ImGui::EndCombo();
 
-		if (p.editorFlags & PROPERTY_EDITOR_FLAG_NOSERIALIZE)
+		if (p.flags & PROPERTY_FLAG_NO_SERIALIZE)
 			ImGui::PopStyleColor();
 
 		ImGui::Spacing();

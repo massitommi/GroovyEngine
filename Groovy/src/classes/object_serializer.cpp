@@ -12,18 +12,31 @@ static void DeserializePropertyData(const PropertyDesc& desc, byte* data, Groovy
 		objProp = dap.data(objProp);
 	}
 
-	if (desc.classProp->type != PROPERTY_TYPE_STRING)
+	if (!(desc.classProp->flags & PROPERTY_FLAG_IS_COMPLEX))
 	{
 		memcpy(objProp, data, desc.sizeBytes);
 	}
 	else
 	{
-		std::string* strPtr = (std::string*)objProp;
-		for (size_t i = 0; i < desc.arrayCount; i++)
+		switch (desc.classProp->type)
 		{
-			*strPtr = (char*)data;
-			data += strPtr->length() + 1;
-			strPtr++;
+			case PROPERTY_TYPE_STRING:
+			{
+				std::string* strPtr = (std::string*)objProp;
+				for (size_t i = 0; i < desc.arrayCount; i++)
+				{
+					*strPtr = (char*)data;
+					data += strPtr->length() + 1;
+					strPtr++;
+				}
+			}
+			break;
+
+			case PROPERTY_TYPE_ASSET_REF:
+			{
+
+			}
+			break;
 		}
 	}
 }
@@ -56,22 +69,35 @@ static bool PropertyIsEqual(const GroovyProperty& prop, GroovyObject* obj1, Groo
 	if (objProp1ArrayCount != objProp2ArrayCount)
 		return false;
 
-	if (prop.type != PROPERTY_TYPE_STRING)
+	if (!(prop.flags & PROPERTY_FLAG_IS_COMPLEX))
 	{
 		return memcmp(objProp1, objProp2, reflectionUtils::GetPropertySize(prop.type) * objProp1ArrayCount) == 0;
 	}
 	else
 	{
-		std::string* strPtr1 = (std::string*)objProp1;
-		std::string* strPtr2 = (std::string*)objProp2;
-		for (size_t i = 0; i < objProp1ArrayCount; i++)
+		switch (prop.type)
 		{
-			if (*strPtr1 != *strPtr2)
+			case PROPERTY_TYPE_STRING:
+			{
+				std::string* strPtr1 = (std::string*)objProp1;
+				std::string* strPtr2 = (std::string*)objProp2;
+				for (size_t i = 0; i < objProp1ArrayCount; i++)
+				{
+					if (*strPtr1 != *strPtr2)
+						return false;
+					strPtr1++;
+					strPtr2++;
+				}
+				return true;
+			}
+			break;
+
+			case PROPERTY_TYPE_ASSET_REF:
+			{
 				return false;
-			strPtr1++;
-			strPtr2++;
+			}
+			break;
 		}
-		return true;
 	}
 }
 
@@ -91,7 +117,7 @@ static void SerializePropertyData(PropertyPack& pack, const GroovyProperty& prop
 	desc.arrayCount = objPropArrayCount;
 	desc.classProp = &prop;
 
-	if (prop.type != PROPERTY_TYPE_STRING)
+	if (!(prop.flags & PROPERTY_FLAG_IS_COMPLEX))
 	{
 		size_t dataWidth = reflectionUtils::GetPropertySize(prop.type) * objPropArrayCount;
 		pack.data.push_data(objProp, dataWidth);
@@ -99,13 +125,26 @@ static void SerializePropertyData(PropertyPack& pack, const GroovyProperty& prop
 	}
 	else
 	{
-		std::string* strPtr = (std::string*)objProp;
-		for (size_t i = 0; i < objPropArrayCount; i++)
+		switch (prop.type)
 		{
-			pack.data.push_data(strPtr->data(), strPtr->length());
-			pack.data.push<char>(0);
-			desc.sizeBytes += strPtr->length() + 1;
-			strPtr++;
+			case PROPERTY_TYPE_STRING:
+			{
+				std::string* strPtr = (std::string*)objProp;
+				for (size_t i = 0; i < objPropArrayCount; i++)
+				{
+					pack.data.push_data(strPtr->data(), strPtr->length());
+					pack.data.push<char>(0);
+					desc.sizeBytes += strPtr->length() + 1;
+					strPtr++;
+				}
+			}
+			break;
+
+			case PROPERTY_TYPE_ASSET_REF:
+			{
+
+			}
+			break;
 		}
 	}
 }
@@ -121,7 +160,7 @@ void ObjectSerializer::CreatePropertyPack(PropertyPack& pack, GroovyObject* obj,
 
 	for (const GroovyProperty& p : props)
 	{
-		if (p.editorFlags & PROPERTY_EDITOR_FLAG_NOSERIALIZE)
+		if (p.flags & PROPERTY_FLAG_NO_SERIALIZE)
 			continue;
 
 		if (PropertyIsEqual(p, obj, cdo))

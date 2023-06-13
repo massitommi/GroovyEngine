@@ -2,6 +2,7 @@
 
 #include "core/core.h"
 #include "math/vector.h"
+#include "assets/asset.h"
 
 enum EPropertyType : uint32
 {
@@ -13,69 +14,78 @@ enum EPropertyType : uint32
 	PROPERTY_TYPE_FLOAT,
 	PROPERTY_TYPE_STRING,
 	PROPERTY_TYPE_VEC3,
-	PROPERTY_TYPE_TRANSFORM
+	PROPERTY_TYPE_TRANSFORM,
+	PROPERTY_TYPE_ASSET_REF
 };
 
-enum EPropertyFlags : uint64
+enum EPropertyFlags : uint32
 {
 	PROPERTY_FLAG_IS_ARRAY = BITFLAG(1),
-	PROPERTY_FLAG_IS_DYNAMIC_ARRAY = BITFLAG(2)
-};
-
-enum EPropertyEditorFlags : uint64
-{
-	PROPERTY_EDITOR_FLAG_NOSERIALIZE = BITFLAG(1),
-	PROPERTY_EDITOR_FLAG_READONLY = BITFLAG(2)
+	PROPERTY_FLAG_IS_DYNAMIC_ARRAY = BITFLAG(2),
+	PROPERTY_FLAG_IS_COMPLEX = BITFLAG(3),
+	PROPERTY_FLAG_NO_SERIALIZE = BITFLAG(4),
+	PROPERTY_FLAG_EDITOR_READONLY = BITFLAG(5)
 };
 
 struct GroovyProperty
 {
 	std::string name;
 	EPropertyType type;
+	uint32 flags;
 	size_t offset;
 	size_t arrayCount;
-	uint64 flags;
-	uint64 editorFlags;
+	uint64 param1;
+	uint64 param2;
 };
 
 template<typename T>
 struct PropType
 {
-	enum : uint32
+	enum : uint64
 	{
 		Type = 0,
+		Flags = 0,
 		ArrayCount = 0,
-		Flags = 0
+		Param1 = 0,
+		Param2 = 0
 	};
 
 	static_assert(!(sizeof(T) > 0), "Not implemented");
 };
 
-#define IMPL_PROPERTY_TYPE(CoreType, OutPropertyType)	\
-template<>												\
-struct PropType<CoreType> {								\
-	enum : uint32 {										\
-		Type = OutPropertyType,							\
-		ArrayCount = 1,									\
-		Flags = 0										\
-	};													\
-};														\
-template<size_t InArrayCount>							\
-struct PropType<CoreType[InArrayCount]> {				\
-	enum : uint32 {										\
-		Type = OutPropertyType,							\
-		ArrayCount = InArrayCount,						\
-		Flags = PROPERTY_FLAG_IS_ARRAY					\
-	};													\
-};														\
-template<>												\
-struct PropType<std::vector<CoreType>> {				\
-	enum : uint32 {										\
-		Type = OutPropertyType,							\
-		ArrayCount = 0,									\
-		Flags = PROPERTY_FLAG_IS_DYNAMIC_ARRAY			\
-	};													\
+#define IMPL_PROPERTY_TYPE_EX(CoreType, OutPropertyType, ExFlags, ExParam1, ExParam2)	\
+template<>														\
+struct PropType<CoreType> {										\
+	enum : uint64 {												\
+		Type = OutPropertyType,									\
+		Flags = ExFlags,										\
+		ArrayCount = 1,											\
+		Param1 = ExParam1,										\
+		Param2 = ExParam2										\
+	};															\
+};																\
+template<size_t InArrayCount>									\
+struct PropType<CoreType[InArrayCount]> {						\
+	enum : uint64 {												\
+		Type = OutPropertyType,									\
+		Flags = ExFlags | PROPERTY_FLAG_IS_ARRAY,				\
+		ArrayCount = InArrayCount,								\
+		Param1 = ExParam1,										\
+		Param2 = ExParam2										\
+	};															\
+};																\
+template<>														\
+struct PropType<std::vector<CoreType>> {						\
+	enum : uint64 {												\
+		Type = OutPropertyType,									\
+		Flags = ExFlags | PROPERTY_FLAG_IS_DYNAMIC_ARRAY,		\
+		ArrayCount = 0,											\
+		Param1 = ExParam1,										\
+		Param2 = ExParam2										\
+	};															\
 };
+
+#define IMPL_PROPERTY_TYPE(CoreType, OutPropertyType) IMPL_PROPERTY_TYPE_EX(CoreType, OutPropertyType, 0, 0, 0)
 
 IMPL_PROPERTY_TYPE(int32, PROPERTY_TYPE_INT32)
 IMPL_PROPERTY_TYPE(int64, PROPERTY_TYPE_INT64)
@@ -83,9 +93,20 @@ IMPL_PROPERTY_TYPE(uint32, PROPERTY_TYPE_UINT32)
 IMPL_PROPERTY_TYPE(uint64, PROPERTY_TYPE_UINT64)
 IMPL_PROPERTY_TYPE(bool, PROPERTY_TYPE_BOOL)
 IMPL_PROPERTY_TYPE(float, PROPERTY_TYPE_FLOAT)
-IMPL_PROPERTY_TYPE(std::string, PROPERTY_TYPE_STRING)
 IMPL_PROPERTY_TYPE(Vec3, PROPERTY_TYPE_VEC3)
 IMPL_PROPERTY_TYPE(Transform, PROPERTY_TYPE_TRANSFORM)
+
+IMPL_PROPERTY_TYPE_EX(std::string, PROPERTY_TYPE_STRING, PROPERTY_FLAG_IS_COMPLEX, 0, 0)
+
+class Texture;
+class Shader;
+class Material;
+class Mesh;
+
+IMPL_PROPERTY_TYPE_EX(Texture*, PROPERTY_TYPE_ASSET_REF, PROPERTY_FLAG_IS_COMPLEX, ASSET_TYPE_TEXTURE, 0)
+IMPL_PROPERTY_TYPE_EX(Shader*, PROPERTY_TYPE_ASSET_REF, PROPERTY_FLAG_IS_COMPLEX, ASSET_TYPE_SHADER, 0)
+IMPL_PROPERTY_TYPE_EX(Material*, PROPERTY_TYPE_ASSET_REF, PROPERTY_FLAG_IS_COMPLEX, ASSET_TYPE_MATERIAL, 0)
+IMPL_PROPERTY_TYPE_EX(Mesh*, PROPERTY_TYPE_ASSET_REF, PROPERTY_FLAG_IS_COMPLEX, ASSET_TYPE_MESH, 0)
 
 // default property types:
 
@@ -129,12 +150,12 @@ private:
 	new Class()																					\
 };
 
-#define GROOVY_PROPERTY(Class, Property, EditorFlags)	{ #Property, (EPropertyType)PropType<decltype(Property)>::Type, offsetof(Class, Property), PropType<decltype(Property)>::ArrayCount, PropType<decltype(Property)>::Flags, EditorFlags }
+#define GROOVY_PROPERTY(Class, Property, ExFlags)	{ #Property, (EPropertyType)PropType<decltype(Property)>::Type, PropType<decltype(Property)>::Flags | ExFlags, offsetof(Class, Property), PropType<decltype(Property)>::ArrayCount, PropType<decltype(Property)>::Param1, PropType<decltype(Property)>::Param2 }
 
 
 #define GROOVY_CLASS_REFLECTION_BEGIN(Class)			void Class::GetClassPropertiesRecursive(std::vector<GroovyProperty>& outProps) const { Super::GetClassProperties(outProps); ThisClass::GetClassProperties(outProps); } void Class::GetClassProperties(std::vector<GroovyProperty>& outProps) {
 #define GROOVY_REFLECT(Property)						outProps.push_back(GROOVY_PROPERTY(ThisClass, Property, 0));
-#define GROOVY_REFLECT_EX(Property, EditorFlags)		outProps.push_back(GROOVY_PROPERTY(ThisClass, Property, EditorFlags));
+#define GROOVY_REFLECT_EX(Property, ExFlags)			outProps.push_back(GROOVY_PROPERTY(ThisClass, Property, ExFlags));
 #define GROOVY_CLASS_REFLECTION_END()					}
 
 #define CLASS_LIST_BEGIN(ListName)				std::vector<GroovyClass*> ListName = 
