@@ -6,7 +6,7 @@
 struct PropertyDesc
 {
 	const GroovyProperty* classProp;
-	size_t arrayCount;
+	uint32 arrayCount;
 	size_t sizeBytes;
 };
 
@@ -21,4 +21,7 @@ class ObjectSerializer
 public:
 	static void DeserializeOntoObject(const std::vector<PropertyDesc>& desc, byte* data, GroovyObject* obj);
 	static void CreatePropertyPack(PropertyPack& pack, GroovyObject* obj, GroovyObject* cdo);
+
+	static void SerializeSimpleObject(GroovyObject* obj, GroovyObject* cdo, DynamicBuffer& fileData);
+	static void DeserializeSimpleObject(GroovyObject* obj, BufferView fileData);
 };

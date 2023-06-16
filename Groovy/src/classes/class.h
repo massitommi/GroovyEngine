@@ -15,6 +15,7 @@ enum EPropertyType : uint32
 	PROPERTY_TYPE_STRING,
 	PROPERTY_TYPE_VEC3,
 	PROPERTY_TYPE_TRANSFORM,
+	PROPERTY_TYPE_BUFFER,
 	PROPERTY_TYPE_ASSET_REF
 };
 
@@ -97,6 +98,7 @@ IMPL_PROPERTY_TYPE(Vec3, PROPERTY_TYPE_VEC3)
 IMPL_PROPERTY_TYPE(Transform, PROPERTY_TYPE_TRANSFORM)
 
 IMPL_PROPERTY_TYPE_EX(std::string, PROPERTY_TYPE_STRING, PROPERTY_FLAG_IS_COMPLEX, 0, 0)
+IMPL_PROPERTY_TYPE_EX(Buffer, PROPERTY_TYPE_BUFFER, PROPERTY_FLAG_IS_COMPLEX, 0, 0)
 
 class Texture;
 class Shader;
@@ -137,6 +139,7 @@ public:																								\
 	virtual GroovyClass* GetClass() const override { return &GROOVY_CLASS_NAME(Class); }			\
 	static void GetClassProperties(std::vector<GroovyProperty>& outProps);							\
 	virtual void GetClassPropertiesRecursive(std::vector<GroovyProperty>& outProps) const override;	\
+	static GroovyClass* StaticClass() { return &GROOVY_CLASS_NAME(Class); }							\
 private:
 
 #define GROOVY_CLASS_IMPL(Class, SuperClass)	GroovyClass GROOVY_CLASS_NAME(Class) =			\

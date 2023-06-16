@@ -1,34 +1,25 @@
 #include "engine/application.h"
-
 #include "platform/platform.h"
+#include "project/project.h"
+
+#include "assets/assets.h"
+#include "asset_importer.h"
 
 #include "renderer/api/renderer_api.h"
 #include "renderer/api/framebuffer.h"
 #include "renderer/api/texture.h"
 #include "renderer/api/shader.h"
+#include "renderer/renderer.h"
+#include "renderer/material.h"
 
-#include "assets/asset.h"
-#include "assets/asset_manager.h"
-#include "assets/asset_loader.h"
-#include "asset_importer.h"
+#include "math/matrix.h"
 
 #include "vendor/imgui/imgui.h"
 #include "vendor/imgui/backends/imgui_impl_win32.h"
 #include "vendor/imgui/backends/imgui_impl_dx11.h"
 #include "vendor/imgui/misc/cpp/imgui_stdlib.h"
-
 #include "imgui_renderer/imgui_renderer.h"
-
-#include "renderer/material.h"
-#include "project/project.h"
-
 #include "editor_window.h"
-
-#include "renderer/renderer.h"
-
-#include "math/matrix.h"
-
-#include "assets/asset_serializer.h"
 
 static ImGuiRenderer* sRenderer = nullptr;
 extern ClearColor gScreenClearColor;
@@ -48,14 +39,13 @@ void OnFilesDropped(const std::vector<std::string>& files);
 
 void Application::Init()
 {
-	gWindow->SetTitle(gProj.name);
-
 	gWindow->SubmitToWndCloseCallback(OnCloseRequested);
 	gWindow->SubmitToWndFilesDropCallbacks(OnFilesDropped);
 
 	ImGui::CreateContext();
 	ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 	ImGui::StyleColorsDark();
+	
 	sRenderer = ImGuiRenderer::Create();
 	sRenderer->Init();
 
@@ -96,7 +86,7 @@ void OnFilesDropped(const std::vector<std::string>& files)
 {
 	for (const std::string& file : files)
 	{
-		std::string newFileName = gProj.assetsPath + FileSystem::GetFilenameNoExt(file) + GROOVY_ASSET_EXT;
+		std::string newFileName = std::filesystem::path(file).replace_extension(GROOVY_ASSET_EXT).string();
 		EAssetType assetType = AssetImporter::GetTypeFromFilename(file);
 
 		switch (assetType)
@@ -260,16 +250,14 @@ void EditorInit()
 
 	sGameViewportFrameBuffer = FrameBuffer::Create(gameViewportSpec);
 
-	const auto& reg = AssetManager::GetRegistry();
-
-	AssetHandle modelHandle;
+	/*AssetHandle modelHandle;
 
 	for (const auto& asset : reg)
 		if (asset.type == ASSET_TYPE_MESH)
-			modelHandle = asset;
+			modelHandle = asset;*/
 
-	testMesh = (Mesh*)modelHandle.instance;
-	testShader = (Shader*)testMesh->GetMaterials()[0]->GetShader();
+	/*testMesh = (Mesh*)modelHandle.instance;
+	testShader = (Shader*)testMesh->GetMaterials()[0]->GetShader();*/
 
 	gClassDB.Register(&__internal_groovyclass_TestClass);
 
@@ -313,7 +301,7 @@ namespace panels
 		ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, { 2,2 });
 		ImGui::Begin("Asset manager");
 		ImGui::Columns(numColumns, 0, false);
-		for (const auto& asset : AssetManager::GetRegistry())
+		/*for (const auto& asset : AssetManager::GetRegistry())
 		{
 			std::string fileName = FileSystem::GetFilenameNoExt(asset.name);
 			if (ImGui::ImageButton(asset.name.c_str(), sAssetIcon->GetRendererID(), { iconSize, iconSize }, { 0,0 }, { 1,1 }, { 1,1,1,1 }))
@@ -349,7 +337,7 @@ namespace panels
 					);
 					if (res == MESSAGE_BOX_RESPONSE_YES)
 					{
-						AssetManager::EditorDelete(asset);
+						checkslowf(0, "Not implemented");
 						AssetManager::SaveRegistry();
 					}
 				}
@@ -366,7 +354,7 @@ namespace panels
 			}
 			ImGui::TextWrapped(fileName.c_str());
 			ImGui::NextColumn();
-		}
+		}*/
 
 		ImGui::Columns(1);
 
@@ -408,7 +396,7 @@ namespace panels
 		sGameViewportFrameBuffer->ClearColorAttachment(0, gScreenClearColor);
 
 		sGameViewportFrameBuffer->Bind();
-		Renderer::RenderMesh(testMesh);
+		//Renderer::RenderMesh(testMesh);
 
 		// draw framebuffer
 		ImGui::Image(sGameViewportFrameBuffer->GetRendererID(0), wndSize);
@@ -438,7 +426,7 @@ void EditorUpdate(float deltaTime)
 
 	mvp = math::GetMatrixTransposed(mvp);
 
-	testShader->OverwriteVertexConstBuffer(0, &mvp);
+	//testShader->OverwriteVertexConstBuffer(0, &mvp);
 }
 
 void EditorRender()

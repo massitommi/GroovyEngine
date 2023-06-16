@@ -8,6 +8,8 @@
 
 #include "assets/asset_manager.h"
 
+#include "project/project.h"
+
 #include "renderer/mesh.h"
 
 #define DEFAULT_IMAGE_IMPORT_CHANNELS 4
@@ -24,14 +26,16 @@ const char* MESH_IMPORTABLE_EXT[] =
     ".obj"
 };
 
+extern Project gProj;
+
 void OnAssetImported(const std::string& importedFilePath, EAssetType assetType)
 {
-    AssetManager::AddEditorNew(importedFilePath, assetType);
+
 }
 
 EAssetType AssetImporter::GetTypeFromFilename(const std::string& filename)
 {
-    std::string fileExt = FileSystem::GetExtension(filename);
+    std::string fileExt = std::filesystem::path(filename).extension().string();
     // check for textures
     for (auto ext : TEXTURE_IMPORTABLE_EXT)
         if (fileExt == ext)
@@ -102,7 +106,7 @@ bool AssetImporter::ImportTexture(const std::string& originalFile, const std::st
 
     stbi_image_free(imgData);
 
-    if (FileSystem::WriteFileBinary(newFile, groovyTexture) != FILE_OPEN_RESULT_OK)
+    if (FileSystem::WriteFileBinary((gProj.assets / newFile).string(), groovyTexture) != FILE_OPEN_RESULT_OK)
     {
         // log
         return false;
@@ -115,110 +119,112 @@ bool AssetImporter::ImportTexture(const std::string& originalFile, const std::st
 
 bool AssetImporter::ImportMesh(const std::string& originalFile, const std::string& newFile)
 {
-    tinyobj::attrib_t attrib;
-    std::vector<tinyobj::shape_t> shapes;
-    std::vector<tinyobj::material_t> materials;
-    std::string warn, err;
+    //tinyobj::attrib_t attrib;
+    //std::vector<tinyobj::shape_t> shapes;
+    //std::vector<tinyobj::material_t> materials;
+    //std::string warn, err;
 
-    if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, originalFile.c_str()))
-    {
-        SysMessageBox::Show_Error("Unable to import model", err);
-        return false;
-    }
+    //if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, originalFile.c_str()))
+    //{
+    //    SysMessageBox::Show_Error("Unable to import model", err);
+    //    return false;
+    //}
 
-    if (!warn.empty())
-    {
-        SysMessageBox::Show_Warning("Import model warn", warn);
-    }
+    //if (!warn.empty())
+    //{
+    //    SysMessageBox::Show_Warning("Import model warn", warn);
+    //}
 
-    Buffer newFileData;
-    size_t vertexBufferSize = 0;
-    size_t indexBufferSize = 0;
-    uint32 submeshCount = 0;
+    //Buffer newFileData;
+    //size_t vertexBufferSize = 0;
+    //size_t indexBufferSize = 0;
+    //uint32 submeshCount = 0;
 
-    for (const auto& shape : shapes)
-    {
-        vertexBufferSize += shape.mesh.indices.size() * sizeof(MeshVertex);
-        indexBufferSize += shape.mesh.indices.size() * sizeof(MeshIndex);
-        submeshCount++;
-    }
+    //for (const auto& shape : shapes)
+    //{
+    //    vertexBufferSize += shape.mesh.indices.size() * sizeof(MeshVertex);
+    //    indexBufferSize += shape.mesh.indices.size() * sizeof(MeshIndex);
+    //    submeshCount++;
+    //}
 
-    newFileData.resize
-    (
-        sizeof(MeshAssetHeader) + // mesh asset header
-        vertexBufferSize + // vertex buffer
-        indexBufferSize + // index buffer
-        submeshCount * sizeof(SubmeshData) + // submesh data
-        submeshCount * sizeof(AssetUUID) // materials
-    );
+    //newFileData.resize
+    //(
+    //    sizeof(MeshAssetHeader) + // mesh asset header
+    //    vertexBufferSize + // vertex buffer
+    //    indexBufferSize + // index buffer
+    //    submeshCount * sizeof(SubmeshData) + // submesh data
+    //    submeshCount * sizeof(AssetUUID) // materials
+    //);
 
-    MeshAssetHeader* header = newFileData.as<MeshAssetHeader>();
-    header->vertexBufferSize = vertexBufferSize;
-    header->indexBufferSize = indexBufferSize;
-    header->submeshCount = submeshCount;
+    //MeshAssetHeader* header = newFileData.as<MeshAssetHeader>();
+    //header->vertexBufferSize = vertexBufferSize;
+    //header->indexBufferSize = indexBufferSize;
+    //header->submeshCount = submeshCount;
 
-    byte* vertexBufferOffset = newFileData.data() + sizeof(MeshAssetHeader);
-    byte* indexBufferOffset = vertexBufferOffset + vertexBufferSize;
-    byte* submeshesOffset = indexBufferOffset + indexBufferSize;
-    byte* materialsOffset = submeshesOffset + submeshCount * sizeof(SubmeshData);
+    //byte* vertexBufferOffset = newFileData.data() + sizeof(MeshAssetHeader);
+    //byte* indexBufferOffset = vertexBufferOffset + vertexBufferSize;
+    //byte* submeshesOffset = indexBufferOffset + indexBufferSize;
+    //byte* materialsOffset = submeshesOffset + submeshCount * sizeof(SubmeshData);
 
-    MeshVertex* vertexBuffer = (MeshVertex*)vertexBufferOffset;
-    MeshIndex* indexBuffer = (MeshIndex*)indexBufferOffset;
-    SubmeshData* submeshes = (SubmeshData*)submeshesOffset;
-    AssetUUID* materialsID = (AssetUUID*)materialsOffset;
+    //MeshVertex* vertexBuffer = (MeshVertex*)vertexBufferOffset;
+    //MeshIndex* indexBuffer = (MeshIndex*)indexBufferOffset;
+    //SubmeshData* submeshes = (SubmeshData*)submeshesOffset;
+    //AssetUUID* materialsID = (AssetUUID*)materialsOffset;
 
-    for (const auto& shape : shapes)
-    {
-        uint32 indexIndex = 0;
-        for (const auto& index : shape.mesh.indices)
-        {
-            // vertex data
-            {
-                // position
-                vertexBuffer->position =
-                {
-                    attrib.vertices[3 * index.vertex_index + 0],
-                    attrib.vertices[3 * index.vertex_index + 1],
-                    attrib.vertices[3 * index.vertex_index + 2],
-                    1.0f
-                };
+    //for (const auto& shape : shapes)
+    //{
+    //    uint32 indexIndex = 0;
+    //    for (const auto& index : shape.mesh.indices)
+    //    {
+    //        // vertex data
+    //        {
+    //            // position
+    //            vertexBuffer->position =
+    //            {
+    //                attrib.vertices[3 * index.vertex_index + 0],
+    //                attrib.vertices[3 * index.vertex_index + 1],
+    //                attrib.vertices[3 * index.vertex_index + 2],
+    //                1.0f
+    //            };
 
-                // texture coordinates
-                vertexBuffer->textCoords = { 0.0f, 0.0f };
+    //            // texture coordinates
+    //            vertexBuffer->textCoords = { 0.0f, 0.0f };
 
-                if (index.texcoord_index != -1)
-                {
-                    vertexBuffer->textCoords =
-                    {
-                        attrib.texcoords[2 * index.texcoord_index + 0],
-                        1.0f - attrib.texcoords[2 * index.texcoord_index + 1]
-                    };
-                }
+    //            if (index.texcoord_index != -1)
+    //            {
+    //                vertexBuffer->textCoords =
+    //                {
+    //                    attrib.texcoords[2 * index.texcoord_index + 0],
+    //                    1.0f - attrib.texcoords[2 * index.texcoord_index + 1]
+    //                };
+    //            }
 
-                // color
-                vertexBuffer->color =
-                {
-                    1.0f, 1.0f, 1.0f, 1.0f
-                };
-            }
+    //            // color
+    //            vertexBuffer->color =
+    //            {
+    //                1.0f, 1.0f, 1.0f, 1.0f
+    //            };
+    //        }
 
-            // index data
-            {
-                *indexBuffer = indexIndex;
-            }
+    //        // index data
+    //        {
+    //            *indexBuffer = indexIndex;
+    //        }
 
-            vertexBuffer++;
-            indexBuffer++;
-            indexIndex++;
-            submeshes->vertexCount++;
-            submeshes->indexCount++;
-            *materialsID = 0; // default asset index
-        }
-        submeshes++;
-        materialsID++;
-    }
+    //        vertexBuffer++;
+    //        indexBuffer++;
+    //        indexIndex++;
+    //        submeshes->vertexCount++;
+    //        submeshes->indexCount++;
+    //        *materialsID = 0; // default asset index
+    //    }
+    //    submeshes++;
+    //    materialsID++;
+    //}
 
-    FileSystem::WriteFileBinary(newFile, newFileData);
-    
-    OnAssetImported(newFile, ASSET_TYPE_MESH);
+    //FileSystem::WriteFileBinary((gProj.assets / newFile).string(), newFileData);
+    //
+    //OnAssetImported(newFile, ASSET_TYPE_MESH);
+
+    return true;
 }

@@ -34,20 +34,13 @@ void EditorWindow::SetPendingSave(bool pendingSave)
 	mPendingSave = pendingSave;
 }
 
-#include "assets/asset_manager.h"
-#include "assets/asset_loader.h"
-#include "assets/asset_serializer.h"
+#include "assets/assets.h"
 #include "project/project.h"
-#include "platform/messagebox.h"
 #include "classes/class.h"
 #include "classes/class_db.h"
 #include "renderer/mesh.h"
 
 extern Project gProj;
-
-extern Texture* DEFAULT_TEXTURE;
-extern Shader* DEFAULT_SHADER;
-extern Material* DEFAULT_MATERIAL;
 
 struct MyPropField
 {
@@ -99,7 +92,7 @@ static void RenderAssetSelectionMenu(PropFieldArray& comboArray, OnClickProc onC
 EditMaterialWindow::EditMaterialWindow(Material* mat)
 	: EditorWindow("Material editor"), mMaterial(mat)
 {
-	if (mat)
+	/*if (mat)
 	{
 		mVirtual = false;
 	}
@@ -109,7 +102,7 @@ EditMaterialWindow::EditMaterialWindow(Material* mat)
 		mMaterial = new Material(DEFAULT_SHADER);
 		mMaterial->SetTextures(DEFAULT_TEXTURE);
 		SetPendingSave(true);
-	}
+	}*/
 }
 
 EditMaterialWindow::~EditMaterialWindow()
@@ -150,52 +143,52 @@ void EditMaterialWindow::RenderContent()
 	ImGui::Text("Pixel shader texture resources:");
 	ImGui::Spacing();
 	
-	// texture resources
-	{
-		std::vector<AssetHandle> texturesAvail = AssetManager::GetRegistryFiltered(ASSET_TYPE_TEXTURE);
-		bool pSelected = false;
+	//// texture resources
+	//{
+	//	std::vector<AssetHandle> texturesAvail = AssetManager::GetRegistryFiltered(ASSET_TYPE_TEXTURE);
+	//	bool pSelected = false;
 
-		PropFieldArray fieldArray;
-		for (uint32 i = 0; i < psTextures.size(); i++)
-			fieldArray.fields.push_back({ psTextures[i].name, mMaterial->GetTextures()[i] });
-		fieldArray.options.push_back({ "DEFAULT_TEXTURE", DEFAULT_TEXTURE });
-		for(const AssetHandle& textAvail : texturesAvail)
-			fieldArray.options.push_back({ textAvail.name, textAvail.instance });
+	//	PropFieldArray fieldArray;
+	//	for (uint32 i = 0; i < psTextures.size(); i++)
+	//		fieldArray.fields.push_back({ psTextures[i].name, mMaterial->GetTextures()[i] });
+	//	fieldArray.options.push_back({ "DEFAULT_TEXTURE", DEFAULT_TEXTURE });
+	//	for(const AssetHandle& textAvail : texturesAvail)
+	//		fieldArray.options.push_back({ textAvail.name, textAvail.instance });
 
-		RenderAssetSelectionMenu(fieldArray, [&](uint32 i, uint32 j)
-		{
-				mMaterial->SetTexture((Texture*)fieldArray.options[j].data, i);
-		});
-	}
+	//	RenderAssetSelectionMenu(fieldArray, [&](uint32 i, uint32 j)
+	//	{
+	//			mMaterial->SetTexture((Texture*)fieldArray.options[j].data, i);
+	//	});
+	//}
 
-	ImGui::Spacing();
-	ImGui::Separator();
-	ImGui::Spacing();
+	//ImGui::Spacing();
+	//ImGui::Separator();
+	//ImGui::Spacing();
 
-	if (mVirtual) // does not exist on disk
-	{
-		static std::string newFileName = "new_material";
-		ImGui::InputText("Save as: ", &newFileName);
-		
-		if (ImGui::Button("Save"))
-		{
-			AssetHandle handle = AssetManager::AddEditorNew(gProj.assetsPath + newFileName + GROOVY_ASSET_EXT, ASSET_TYPE_MATERIAL, mMaterial);
-			mMaterial->__internal_SetUUID(handle.uuid);
-			AssetSerializer::SerializeMaterial(mMaterial, handle.path);
-			AssetManager::SaveRegistry();
-			mVirtual = false;
-			SetPendingSave(false);
-		}
-	}
-	else // file exists on disk
-	{
-		if (ImGui::Button("Save changes"))
-		{
-			const AssetHandle& handle = AssetManager::Get(mMaterial->GetUUID());
-			AssetSerializer::SerializeMaterial(mMaterial, handle.path);
-			AssetManager::SaveRegistry();
-		}
-	}
+	//if (mVirtual) // does not exist on disk
+	//{
+	//	static std::string newFileName = "new_material";
+	//	ImGui::InputText("Save as: ", &newFileName);
+	//	
+	//	if (ImGui::Button("Save"))
+	//	{
+	//		AssetHandle handle = AssetManager::AddEditorNew(gProj.assetsPath + newFileName + GROOVY_ASSET_EXT, ASSET_TYPE_MATERIAL, mMaterial);
+	//		mMaterial->__internal_SetUUID(handle.uuid);
+	//		AssetSerializer::SerializeMaterial(mMaterial, handle.path);
+	//		AssetManager::SaveRegistry();
+	//		mVirtual = false;
+	//		SetPendingSave(false);
+	//	}
+	//}
+	//else // file exists on disk
+	//{
+	//	if (ImGui::Button("Save changes"))
+	//	{
+	//		const AssetHandle& handle = AssetManager::Get(mMaterial->GetUUID());
+	//		AssetSerializer::SerializeMaterial(mMaterial, handle.path);
+	//		AssetManager::SaveRegistry();
+	//	}
+	//}
 }
 
 void EditMaterialWindow::ShowVar(const ShaderVariable& var, byte* bufferPtr)
@@ -258,7 +251,18 @@ const char* AssetRegistryWindow::AssetTypeStr(EAssetType type)
 
 void AssetRegistryWindow::RenderContent()
 {
-	const auto& reg = AssetManager::GetRegistry();
+	ImGui::Separator();
+
+	for (const auto& [uuid, handle] : AssetManager::GetRegistry())
+	{
+		ImGui::InputText("Name", (std::string*)&(handle.name), ImGuiInputTextFlags_ReadOnly);
+		ImGui::InputText("Type", &(std::string)AssetTypeStr(handle.type), ImGuiInputTextFlags_ReadOnly);
+		ImGui::InputText("UUID", &std::to_string(handle.uuid), ImGuiInputTextFlags_ReadOnly);
+
+		ImGui::Separator();
+	}
+
+	/*const auto& reg = AssetManager::GetRegistry();
 	ImGui::Separator();
 	for (const auto& handle : reg)
 	{
@@ -307,7 +311,7 @@ void AssetRegistryWindow::RenderContent()
 		AssetManager::AddEditorNew(filePath, type);
 	}
 	if (type == ASSET_TYPE_NONE || filePath.empty())
-		ImGui::EndDisabled();
+		ImGui::EndDisabled();*/
 }
 
 void TexturePreviewWindow::RenderContent()
@@ -320,7 +324,7 @@ void MeshPreviewWindow::RenderContent()
 	ImGui::Text("Submeshes");
 	ImGui::Separator();
 
-	const std::vector<AssetHandle>& matHandles = AssetManager::GetRegistryFiltered(ASSET_TYPE_MATERIAL);
+	/*const std::vector<AssetHandle>& matHandles = AssetManager::GetRegistryFiltered(ASSET_TYPE_MATERIAL);
 	PropFieldArray propFieldArray;
 
 	for (uint32 i = 0; i < mMesh->GetSubmeshes().size(); i++)
@@ -338,7 +342,7 @@ void MeshPreviewWindow::RenderContent()
 	{
 		const AssetHandle& handle = AssetManager::Get(mMesh->GetUUID());
 		AssetSerializer::SerializeMesh(mMesh, handle.path);
-	}
+	}*/
 }
 
 void PrintClasses(std::vector<GroovyClass*> classes)

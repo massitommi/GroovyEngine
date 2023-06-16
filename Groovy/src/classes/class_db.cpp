@@ -33,3 +33,14 @@ std::vector<GroovyClass*> ClassDB::GetClasses()
 	}
 	return res;
 }
+
+const GroovyProperty* ClassDB::FindProperty(GroovyClass* gClass, const std::string& propertyName)
+{
+	const std::vector<GroovyProperty>& props = (*this)[gClass];
+	
+	for (const GroovyProperty& prop : props)
+		if (prop.name == propertyName)
+			return &prop;
+
+	return nullptr;
+}

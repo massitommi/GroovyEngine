@@ -6,6 +6,5 @@
 class AssetSerializer
 {
 public:
-	static void SerializeMaterial(Material* mat, const std::string& filePath);
-	static void SerializeMesh(Mesh* mesh, const std::string& filePath);
+	static void SerializeMaterial(MaterialAssetFile* materialAsset, const std::string& filePath);
 };

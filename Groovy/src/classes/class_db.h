@@ -16,6 +16,8 @@ public:
 	// slow
 	std::vector<GroovyClass*> GetClasses();
 
+	const GroovyProperty* FindProperty(GroovyClass* gClass, const std::string& propertyName);
+
 private:
 	std::map<std::string, GroovyClass*> mClassDB;
 	std::map<GroovyClass*, std::vector<GroovyProperty>> mPropsDB;

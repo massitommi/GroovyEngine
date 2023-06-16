@@ -25,11 +25,13 @@ class Mesh : public AssetInstance
 	friend class Renderer;
 
 public:
-	Mesh(VertexBuffer* vertexBuffer, IndexBuffer* indexBuffer, const std::vector<SubmeshData>& submeshes, const std::vector<Material*> materials);
+	Mesh();
 	~Mesh();
 
 	void __internal_SetUUID(AssetUUID uuid) override { mUUID = uuid; }
 	AssetUUID GetUUID() const override { return mUUID; }
+	virtual bool IsLoaded() const override { return mLoaded; }
+	virtual void Load() override {}
 
 	size_t GetVertexBufferSize() const { return mVertexBuffer->GetSize(); }
 	size_t GetIndexBufferSize() const { return mIndexBuffer->GetSize(); }
@@ -46,4 +48,6 @@ private:
 	std::vector<Material*> mMaterials;
 
 	AssetUUID mUUID;
+	bool mLoaded;
+
 };

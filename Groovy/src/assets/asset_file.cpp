@@ -1,0 +1,6 @@
+#include "asset_file.h"
+
+GROOVY_CLASS_IMPL(AssetFile, GroovyObject)
+
+GROOVY_CLASS_REFLECTION_BEGIN(AssetFile)
+GROOVY_CLASS_REFLECTION_END()

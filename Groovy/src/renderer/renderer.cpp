@@ -3,7 +3,7 @@
 
 void Renderer::RenderMesh(Mesh* mesh)
 {
-	check(mesh);
+	/*check(mesh);
 
 	mesh->mVertexBuffer->Bind();
 	mesh->mIndexBuffer->Bind();
@@ -20,5 +20,5 @@ void Renderer::RenderMesh(Mesh* mesh)
 		RendererAPI::Get().DrawIndexed(vertexOffset, indexOffset, mesh->mSubmeshes[i].indexCount);
 		vertexOffset += mesh->mSubmeshes[i].vertexCount;
 		indexOffset += mesh->mSubmeshes[i].indexCount;
-	}
+	}*/
 }

@@ -5,8 +5,6 @@
 
 #include <fileapi.h>
 
-const std::string FileSystem::DIR_SEPARATOR = "\\";
-
 static std::vector<std::string> GetFilesInDir(const std::string& dir)
 {
 	std::vector<std::string> result;
@@ -102,7 +100,7 @@ EFileOpenResult FileSystem::ReadFileBinary(const std::string& path, Buffer& outB
 	return FILE_OPEN_RESULT_OK;
 }
 
-EFileOpenResult FileSystem::WriteFileBinary(const std::string& path, const Buffer& data)
+EFileOpenResult FileSystem::WriteFileBinary(const std::string& path, const void* data, size_t sizeBytes)
 {
 	HANDLE handle = CreateFileA(path.c_str(), GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
 	if (handle == INVALID_HANDLE_VALUE)
@@ -111,13 +109,13 @@ EFileOpenResult FileSystem::WriteFileBinary(const std::string& path, const Buffe
 		return FILE_OPEN_RESULT_UNKNOWN_ERROR;
 	}
 
-	WriteFile(handle, data.data(), data.size(), nullptr, nullptr);
+	WriteFile(handle, data, sizeBytes, nullptr, nullptr);
 	CloseHandle(handle);
 
 	return FILE_OPEN_RESULT_OK;
 }
 
-EFileOpenResult FileSystem::AppendFileBinary(const std::string& path, const Buffer& data, size_t offset)
+EFileOpenResult FileSystem::OverwriteFileBinary(const std::string& path, const void* data, size_t sizeBytes, size_t offset)
 {
 	HANDLE handle = CreateFileA(path.c_str(), GENERIC_WRITE, 0, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
 	if (handle == INVALID_HANDLE_VALUE)
@@ -130,7 +128,7 @@ EFileOpenResult FileSystem::AppendFileBinary(const std::string& path, const Buff
 	overlap.Offset = offset;
 	overlap.OffsetHigh = offset >> 32;
 
-	WriteFile(handle, data.data(), data.size(), nullptr, &overlap);
+	WriteFile(handle, data, sizeBytes, nullptr, &overlap);
 	CloseHandle(handle);
 
 	return FILE_OPEN_RESULT_OK;

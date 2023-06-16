@@ -91,30 +91,36 @@ public:
 		: Buffer(size), mCurrentPtr(nullptr)
 	{}
 
-	void* push_data(const void* data, size_t size)
+	void* push_bytes(const void* data, size_t sizeBytes)
 	{
-		if (size + mCurrentPtr > mData)
+		size_t bytesUsed = used();
+		void* ptr = mCurrentPtr;
+		if (bytesUsed + sizeBytes > mSize)
 		{
-			size_t prevSize = mCurrentPtr - mData;
-			resize((prevSize + size) * 2, true);
-			mCurrentPtr = mData + prevSize;
+			resize((bytesUsed + sizeBytes) * 2, true);
+			ptr = mCurrentPtr = mData + bytesUsed;
 		}
-		memcpy(mCurrentPtr, data, size);
-		void* dataPtr = mCurrentPtr;
-		mCurrentPtr += size;
-		return dataPtr;
+		memcpy(ptr, data, sizeBytes);
+		mCurrentPtr += sizeBytes;
+		return ptr;
 	}
 
 	template<typename T>
-	inline T* push(const T* data, size_t count)
+	void* push(const T& val)
 	{
-		return (T*)push_data(data, sizeof(T) * count);
+		return push_bytes(&val, sizeof(T));
 	}
 
 	template<typename T>
-	inline T* push(const T& data)
+	void* push(const T* data, uint32 count)
 	{
-		return (T*)push_data(&data, sizeof(T));
+		return push_bytes(data, (sizeof(T) * count));
+	}
+
+	template<>
+	void* push(const std::string& str)
+	{
+		return push_bytes(str.c_str(), str.length() + 1);
 	}
 
 	inline void pop(size_t size)
@@ -162,30 +168,32 @@ public:
 	template<typename T>
 	T read()
 	{
-		check(mBytesLeft >= sizeof(T));
 		T val = *(T*)mCurrentPtr;
-		mCurrentPtr += sizeof(T);
-		mBytesLeft -= sizeof(T);
+		advance(sizeof(T) * 1);
 		return val;
 	}
 
 	template<typename T>
-	T* read(size_t count)
+	T* read(uint32 count)
 	{
-		check(mBytesLeft >= sizeof(T) * count);
 		T* ptr = (T*)mCurrentPtr;
-		mCurrentPtr += sizeof(T) * count;
-		mBytesLeft -= sizeof(T) * count;
+		advance(sizeof(T) * count);
 		return ptr;
 	}
 
 	byte* read(size_t count)
 	{
-		check(mBytesLeft >= count);
 		byte* ptr = mCurrentPtr;
-		mCurrentPtr += count;
-		mBytesLeft -= count;
+		advance(count);
 		return ptr;
+	}
+
+	template<>
+	std::string read<std::string>()
+	{
+		std::string str((char*)mCurrentPtr);
+		advance(str.length() + 1);
+		return str;
 	}
 
 	void advance(size_t bytes)

@@ -32,9 +32,24 @@ void OnWndResizeCallback(uint32 width, uint32 height)
 
 int32 GroovyEntryPoint(const char* args)
 {
+	gProj.projFile = args;
+	if (gProj.projFile.empty())
+	{
+		SysMessageBox::Show_Error("Error", "No project selected!");
+		return -1;
+	}
+
+	Buffer projFile;
+	FileSystem::ReadFileBinary(gProj.projFile.string(), projFile);
+	gProj.name = std::string((char*)projFile.data(), projFile.size());
+	gProj.assetRegistry = (gProj.projFile.parent_path() / "assets" / "assetregistry").string();
+	gProj.assets = gProj.assetRegistry.parent_path().string();
+
+	projFile.free();
+
 	WindowProps wndProps =
 	{
-		"Groovy window!",	// title
+		gProj.name,			// wndTitle			
 		1600, 900,			// resolution
 		0,					// refreshrate (0 = max)
 		false,				// fullscreen
@@ -59,35 +74,6 @@ int32 GroovyEntryPoint(const char* args)
 	gScreenFrameBuffer = FrameBuffer::Create(screenBufferSpec);
 
 	wnd.SubmitToWndResizeCallback(OnWndResizeCallback);
-
-	std::string projPath = args;
-	if (projPath.empty())
-	{
-		ExtensionFilter projExtFilter = { "Groovy project", { "*.groovyproj" } };
-		projPath = FileDialog::OpenFileDialog("Select a groovy project", { projExtFilter });
-		if (projPath == "")
-			return -1;
-	}
-
-	Buffer tmp;
-	FileSystem::ReadFileBinary(projPath, tmp);
-	std::string assetRegistryPath;
-	assetRegistryPath.resize(tmp.size());
-	memcpy(assetRegistryPath.data(), tmp.data(), tmp.size());
-
-#if PLATFORM_WIN32
-	for (char& c : assetRegistryPath)
-		if (c == '/')
-			c = '\\';
-#endif
-
-	std::string projName = FileSystem::GetFilenameNoExt(projPath);
-	std::string absoluteAssetRegistryPath = FileSystem::GetParentFolder(projPath) + assetRegistryPath;
-	std::string absoluteAssetsPath = FileSystem::GetParentFolder(absoluteAssetRegistryPath);
-
-	gProj.name = projName;
-	gProj.registryPath = absoluteAssetRegistryPath;
-	gProj.assetsPath = absoluteAssetsPath;
 
 	for (GroovyClass* c : ENGINE_CLASSES)
 		gClassDB.Register(c);
@@ -118,7 +104,6 @@ int32 GroovyEntryPoint(const char* args)
 	}
 
 	delete gScreenFrameBuffer;
-	AssetManager::Shutdown();
 	Application::Shutdown();
 	delete &RendererAPI::Get();
 

@@ -13,6 +13,7 @@ public:
 	virtual GroovyClass* GetClass() const { return &GROOVY_CLASS_NAME(GroovyObject); }
 	static void GetClassProperties(std::vector<GroovyProperty>& outProps);
 	virtual void GetClassPropertiesRecursive(std::vector<GroovyProperty>& outProps) const;
+	static GroovyClass* StaticClass() { return &GROOVY_CLASS_NAME(GroovyObject); }
 
 	friend class ObjectSerializer;
 };
