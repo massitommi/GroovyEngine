@@ -225,6 +225,7 @@ public:
 	std::string strVar = "mhanz";
 	std::vector<uint64> ids = { 1, 2, 3 };
 	std::string strs2[4] = { "sdunza", "stappi", "arunza", "arinza" };
+	Buffer buffTest;
 };
 
 GROOVY_CLASS_IMPL(TestClass, TestClassBase)
@@ -233,6 +234,7 @@ GROOVY_CLASS_REFLECTION_BEGIN(TestClass)
 	GROOVY_REFLECT(ids)
 	GROOVY_REFLECT(strVar)
 	GROOVY_REFLECT(strs2)
+	GROOVY_REFLECT(buffTest)
 GROOVY_CLASS_REFLECTION_END()
 
 void EditorInit()
@@ -249,15 +251,6 @@ void EditorInit()
 	gameViewportSpec.height = sGameViewportSize.y = 100;
 
 	sGameViewportFrameBuffer = FrameBuffer::Create(gameViewportSpec);
-
-	/*AssetHandle modelHandle;
-
-	for (const auto& asset : reg)
-		if (asset.type == ASSET_TYPE_MESH)
-			modelHandle = asset;*/
-
-	/*testMesh = (Mesh*)modelHandle.instance;
-	testShader = (Shader*)testMesh->GetMaterials()[0]->GetShader();*/
 
 	gClassDB.Register(&__internal_groovyclass_TestClass);
 
@@ -276,13 +269,13 @@ void EditorInit()
 	test.ids2[2] = 100;
 	test.pos = { 2,3,4 };
 
-	PropertyPack propertyPack = {};
+	DynamicBuffer fileData;
 
-	ObjectSerializer::CreatePropertyPack(propertyPack, &test, (GroovyObject*)test.GetClass()->cdo);
+	ObjectSerializer::SerializeSimpleObject(&test, (GroovyObject*)TestClass::StaticClass()->cdo, fileData);
 
 	TestClass tCopy;
 
-	ObjectSerializer::DeserializeOntoObject(propertyPack.desc, propertyPack.data.data(), &tCopy);
+	ObjectSerializer::DeserializeSimpleObject(&tCopy, fileData);
 
 	int br = 1;
 }

@@ -11,10 +11,10 @@ void classUtils::GetClassPropertiesRecursiveSorted(GroovyClass* gClass, std::vec
 	gClass->propertiesGetter(outProps);
 }
 
-size_t classUtils::FindProperty(const std::vector<GroovyProperty>& props, const std::string& propName)
+uint32 classUtils::FindProperty(const std::vector<GroovyProperty>& props, const std::string& propName)
 {
-	for (size_t i = 0; i < props.size(); i++)
+	for (uint32 i = 0; i < props.size(); i++)
 		if (props[i].name == propName)
 			return i;
-	return ~((size_t)0);
+	return ~((uint32)0);
 }

@@ -44,6 +44,16 @@ static AssetInstance* InstantiateAsset(const AssetHandle& handle)
 
 void AssetManager::Init()
 {
+	// default texture
+	{
+		TextureSpec spec;
+		spec.width = spec.height = 1;
+		spec.format = COLOR_FORMAT_R8G8B8A8_UNORM;
+		uint32 data = 0xffffffff;
+
+		DEFAULT_TEXTURE = Texture::Create(spec, &data, 4);
+	}
+
 	Buffer registryFile;
 	FileSystem::ReadFileBinary(gProj.assetRegistry.string(), registryFile);
 

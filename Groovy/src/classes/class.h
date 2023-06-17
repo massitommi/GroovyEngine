@@ -169,7 +169,7 @@ namespace classUtils
 {
 	// Gets all the properties exposed by a groovy class, sorted means that the first are the base class ones, and the last are the gClass ones
 	void GetClassPropertiesRecursiveSorted(GroovyClass* gClass, std::vector<GroovyProperty>& outProps);
-	size_t FindProperty(const std::vector<GroovyProperty>& props, const std::string& propName);
+	uint32 FindProperty(const std::vector<GroovyProperty>& props, const std::string& propName);
 }
 
 /*
