@@ -119,10 +119,13 @@ void AssetManager::SaveRegistry()
 {
 	DynamicBuffer registryFile;
 
-	registryFile.push<uint32>(sAssetRegistry.size());
+	registryFile.push<uint32>(sAssetRegistry.size() - 2);
 
 	for (const auto& [uuid, handle] : sAssetRegistry)
 	{
+		if (handle.instance == DEFAULT_TEXTURE || handle.instance == DEFAULT_SHADER)
+			continue;
+
 		registryFile.push(handle.name);
 		registryFile.push(handle.uuid);
 		registryFile.push(handle.type);
