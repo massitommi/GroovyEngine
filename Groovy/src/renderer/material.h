@@ -4,7 +4,6 @@
 #include "api/shader.h"
 #include "api/texture.h"
 #include "assets/asset.h"
-#include "assets/asset_file.h"
 #include "classes/object.h"
 
 struct MaterialResource
@@ -12,38 +11,6 @@ struct MaterialResource
 	std::string name;
 	Texture* res;
 	uint32 slot;
-};
-
-GROOVY_CLASS_DECL(MaterialAssetFile)
-class MaterialAssetFile : public AssetFile
-{
-	GROOVY_CLASS_BODY(MaterialAssetFile, AssetFile)
-public:
-
-	void SetShaderToSerialize(Shader* shader)
-	{
-		mShader = mShader;
-	}
-
-	void PushResourceToSerialize(const MaterialResource& res)
-	{
-		mShaderResNames.push_back(res.name);
-		mShaderResources.push_back(res.res);
-	}
-
-	void SetConstBuffersDataToSerialize(const Buffer& data)
-	{
-		mConstBuffersData.resize(data.size());
-		memcpy(mConstBuffersData.data(), data.data(), data.size());
-	}
-
-	virtual void DeserializeOntoMaterial(Material* mat);
-
-private:
-	Shader* mShader = nullptr;
-	Buffer mConstBuffersData;
-	std::vector<std::string> mShaderResNames;
-	std::vector<Texture*> mShaderResources;
 };
 
 class Material : public AssetInstance
@@ -58,15 +25,23 @@ public:
 
 	// shader descs and our data is same size ?
 	bool Validate();
-	
+
+	void SetShader(Shader* shader);
+	void SetResource(Texture* texture, uint32 slot);
+	void SetResources(Texture* texture);
+
+	void FixForRendering();
+
 	const Shader* GetShader() const { return mShader; }
 	const std::vector<MaterialResource>& GetResources() const { return mResources; }
 	const Buffer& GetConstBuffersData() const { return mConstBuffersData; }
 
+	void Serialize(DynamicBuffer& fileData);
+	void Deserialize(BufferView fileData);
+
 #if WITH_EDITOR
 
-	Shader*& ShaderRef() { return mShader; }
-	std::vector<MaterialResource>& ResourcesRef() { return mResources; }
+	std::vector<MaterialResource>& Editor_ResourcesRef() { return mResources; }
 
 #endif
 
@@ -77,6 +52,16 @@ private:
 
 	AssetUUID mUUID;
 	bool mLoaded;
+};
 
-	friend class MaterialAssetFile;
+GROOVY_CLASS_DECL(MaterialAssetFile)
+class MaterialAssetFile : public GroovyObject
+{
+	GROOVY_CLASS_BODY(MaterialAssetFile, GroovyObject)
+
+public:
+	Shader* shader = nullptr;
+	Buffer constBuffersData;
+	std::vector<std::string> shaderResNames;
+	std::vector<Texture*> shaderRes;
 };

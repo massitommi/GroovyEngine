@@ -28,11 +28,6 @@ const char* MESH_IMPORTABLE_EXT[] =
 
 extern Project gProj;
 
-void OnAssetImported(const std::string& importedFilePath, EAssetType assetType)
-{
-
-}
-
 EAssetType AssetImporter::GetTypeFromFilename(const std::string& filename)
 {
     std::string fileExt = std::filesystem::path(filename).extension().string();
@@ -86,6 +81,7 @@ bool AssetImporter::ImportTexture(const std::string& originalFile, const std::st
 
     // let stbi do the job
     int imgWidth, imgHeight, imgChannels;
+    imgWidth = imgHeight = imgChannels = 0;
     stbi_uc* imgData = stbi_load_from_memory(imgCompressed.data(), imgCompressed.size(), &imgWidth, &imgHeight, &imgChannels, DEFAULT_IMAGE_IMPORT_CHANNELS);
     if (!imgData)
     {
@@ -112,7 +108,7 @@ bool AssetImporter::ImportTexture(const std::string& originalFile, const std::st
         return false;
     }
 
-    OnAssetImported(newFile, ASSET_TYPE_TEXTURE);
+    AssetManager::Editor_OnImport(newFile, ASSET_TYPE_TEXTURE);
     
     return true;
 }
@@ -222,7 +218,7 @@ bool AssetImporter::ImportMesh(const std::string& originalFile, const std::strin
     //    materialsID++;
     //}
 
-    //FileSystem::WriteFileBinary((gProj.assets / newFile).string(), newFileData);
+    //FileSystem::WriteFileBinary(, newFileData);
     //
     //OnAssetImported(newFile, ASSET_TYPE_MESH);
 

@@ -19,6 +19,7 @@ static AssetUUID GenUUID()
 
 extern Project gProj;
 Texture* DEFAULT_TEXTURE = nullptr;
+Shader* DEFAULT_SHADER = nullptr;
 
 static AssetInstance* InstantiateAsset(const AssetHandle& handle)
 {
@@ -44,14 +45,39 @@ static AssetInstance* InstantiateAsset(const AssetHandle& handle)
 
 void AssetManager::Init()
 {
-	// default texture
+	// default assets
 	{
-		TextureSpec spec;
-		spec.width = spec.height = 1;
-		spec.format = COLOR_FORMAT_R8G8B8A8_UNORM;
-		uint32 data = 0xffffffff;
+		// default texture
+		{
+			TextureSpec spec;
+			spec.width = spec.height = 1;
+			spec.format = COLOR_FORMAT_R8G8B8A8_UNORM;
+			uint32 data = 0xffffffff;
 
-		DEFAULT_TEXTURE = Texture::Create(spec, &data, 4);
+			DEFAULT_TEXTURE = Texture::Create(spec, &data, 4);
+		}
+		// default shader
+		{
+			DEFAULT_SHADER = AssetLoader::LoadShader((gProj.assets / "default" / "default_shader.hlsl").string());
+		}
+
+		AssetHandle tmpHandle;
+
+		tmpHandle.name = "DEFAULT_TEXTURE";
+		tmpHandle.type = ASSET_TYPE_TEXTURE;
+		tmpHandle.uuid = 1;
+		tmpHandle.instance = DEFAULT_TEXTURE;
+		tmpHandle.instance->__internal_SetUUID(1);
+
+		sAssetRegistry[tmpHandle.uuid] = tmpHandle;
+
+		tmpHandle.name = "DEFAULT_SHADER";
+		tmpHandle.type = ASSET_TYPE_SHADER;
+		tmpHandle.uuid = 2;
+		tmpHandle.instance = DEFAULT_SHADER;
+		tmpHandle.instance->__internal_SetUUID(2);
+
+		sAssetRegistry[tmpHandle.uuid] = tmpHandle;
 	}
 
 	Buffer registryFile;
@@ -78,6 +104,12 @@ void AssetManager::Init()
 	}
 }
 
+void AssetManager::Shutdown()
+{
+	for (const auto [uuid, handle] : sAssetRegistry)
+		delete handle.instance;
+}
+
 AssetHandle AssetManager::Get(AssetUUID uuid)
 {
 	return sAssetRegistry[uuid];
@@ -99,7 +131,41 @@ void AssetManager::SaveRegistry()
 	FileSystem::WriteFileBinary(gProj.assetRegistry.string(), registryFile);
 }
 
-const std::map<AssetUUID, AssetHandle>& AssetManager::GetRegistry()
+const std::map<AssetUUID, AssetHandle>& AssetManager::Editor_GetRegistry()
 {
 	return sAssetRegistry;
+}
+
+std::vector<AssetHandle> AssetManager::Editor_GetAssets(EAssetType filter)
+{
+	std::vector<AssetHandle> res;
+
+	if (filter == ASSET_TYPE_NONE)
+	{
+		for (const auto& [uuid, handle] : sAssetRegistry)
+			res.push_back(handle);
+	}
+	else
+	{
+		for (const auto& [uuid, handle] : sAssetRegistry)
+			if (handle.type == filter)
+				res.push_back(handle);
+	}
+
+	return res;
+}
+
+AssetHandle AssetManager::Editor_OnImport(const std::string& fileName, EAssetType type)
+{
+	check(type == ASSET_TYPE_TEXTURE || type == ASSET_TYPE_MESH);
+
+	AssetUUID uuid = GenUUID();
+
+	AssetHandle& handle = sAssetRegistry[uuid];
+	handle.name = fileName;
+	handle.type = type;
+	handle.uuid = uuid;
+	handle.instance = InstantiateAsset(handle);
+
+	return handle;
 }

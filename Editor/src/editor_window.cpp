@@ -2,6 +2,7 @@
 #include "vendor/imgui/imgui.h"
 #include "vendor/imgui/misc/cpp/imgui_stdlib.h"
 #include "platform/messagebox.h"
+#include "classes/object_serializer.h"
 
 void EditorWindow::RenderWindow()
 {
@@ -42,72 +43,21 @@ void EditorWindow::SetPendingSave(bool pendingSave)
 
 extern Project gProj;
 
-struct MyPropField
-{
-	std::string name;
-	void* data;
-};
-
-struct PropFieldArray
-{
-	std::vector<MyPropField> fields;
-	std::vector<MyPropField> options;
-};
-
-template<typename OnClickProc>
-static void RenderAssetSelectionMenu(PropFieldArray& comboArray, OnClickProc onClick)
-{
-	bool boh = false;
-
-	std::vector<std::string> previews;
-	previews.resize(comboArray.fields.size());
-
-	for (uint32 i = 0; i < comboArray.fields.size(); i++)
-	{
-		for (const MyPropField& option : comboArray.options)
-		{
-			if (comboArray.fields[i].data == option.data)
-			{
-				previews[i] = option.name;
-			}
-		}
-
-		if (ImGui::BeginCombo(comboArray.fields[i].name.c_str(), previews[i].c_str()))
-		{
-			for (uint32 j = 0; j < comboArray.options.size(); j++)
-			{
-				if (ImGui::Selectable(comboArray.options[j].name.c_str(), &boh))
-				{
-					previews[i] = comboArray.options[j].name;
-					comboArray.fields[i].data = comboArray.options[j].data;
-					onClick(i, j);
-				}
-			}
-
-			ImGui::EndCombo();
-		}
-	}
-}
-
 EditMaterialWindow::EditMaterialWindow(Material* mat)
 	: EditorWindow("Material editor"), mMaterial(mat)
 {
-	/*if (mat)
+	if (!mat)
 	{
-		mVirtual = false;
-	}
-	else
-	{
-		mVirtual = true;
-		mMaterial = new Material(DEFAULT_SHADER);
-		mMaterial->SetTextures(DEFAULT_TEXTURE);
+		mMaterial = new Material();
+		mMaterial->FixForRendering();
+		check(mMaterial->Validate());
 		SetPendingSave(true);
-	}*/
+	}
 }
 
 EditMaterialWindow::~EditMaterialWindow()
 {
-	if (mVirtual)
+	if (PendingSave())
 	{
 		delete mMaterial;
 	}
@@ -115,135 +65,90 @@ EditMaterialWindow::~EditMaterialWindow()
 
 void EditMaterialWindow::RenderContent()
 {
-	ImGui::Text("Pixel shader constant buffers:");
-	ImGui::Spacing();
+	extern Texture* DEFAULT_TEXTURE;
 
-	const std::vector<ConstBufferDesc>& psBuffers = mMaterial->GetShader()->GetPixelConstBuffersDesc();
-	const std::vector<ShaderResTexture>& psTextures = mMaterial->GetShader()->GetPixelTexturesRes();
+	ImGui::Separator();
 
-	// pixel const buffers
+	std::vector<AssetHandle> textures = AssetManager::Editor_GetAssets(ASSET_TYPE_TEXTURE);
+
+	for (MaterialResource& res : mMaterial->Editor_ResourcesRef())
 	{
-		byte* bufferPtr = (byte*)mMaterial->GetConstBuffersData().data();
-		for (const ConstBufferDesc& bufferDesc : psBuffers)
+		ImGui::Text(res.name.c_str());
+		ImGui::Spacing();
+
+		std::string resName = AssetManager::Get(res.res->GetUUID()).name;
+
+		if (ImGui::BeginCombo(res.name.c_str(), resName.c_str()))
 		{
-			if (ImGui::CollapsingHeader(bufferDesc.name.c_str()))
+			for (const AssetHandle& tex : textures)
 			{
-				for (const ShaderVariable& var : bufferDesc.variables)
+				bool selected = res.res == tex.instance;
+				if (ImGui::Selectable(tex.name.c_str(), &selected))
 				{
-					ShowVar(var, bufferPtr);
+					res.res = (Texture*)tex.instance;
 				}
 			}
-			bufferPtr += bufferDesc.size;
+
+			ImGui::EndCombo();
 		}
-	}
-	
-	ImGui::Spacing();
-	ImGui::Separator();
-	ImGui::Spacing();
-	ImGui::Text("Pixel shader texture resources:");
-	ImGui::Spacing();
-	
-	//// texture resources
-	//{
-	//	std::vector<AssetHandle> texturesAvail = AssetManager::GetRegistryFiltered(ASSET_TYPE_TEXTURE);
-	//	bool pSelected = false;
 
-	//	PropFieldArray fieldArray;
-	//	for (uint32 i = 0; i < psTextures.size(); i++)
-	//		fieldArray.fields.push_back({ psTextures[i].name, mMaterial->GetTextures()[i] });
-	//	fieldArray.options.push_back({ "DEFAULT_TEXTURE", DEFAULT_TEXTURE });
-	//	for(const AssetHandle& textAvail : texturesAvail)
-	//		fieldArray.options.push_back({ textAvail.name, textAvail.instance });
-
-	//	RenderAssetSelectionMenu(fieldArray, [&](uint32 i, uint32 j)
-	//	{
-	//			mMaterial->SetTexture((Texture*)fieldArray.options[j].data, i);
-	//	});
-	//}
-
-	//ImGui::Spacing();
-	//ImGui::Separator();
-	//ImGui::Spacing();
-
-	//if (mVirtual) // does not exist on disk
-	//{
-	//	static std::string newFileName = "new_material";
-	//	ImGui::InputText("Save as: ", &newFileName);
-	//	
-	//	if (ImGui::Button("Save"))
-	//	{
-	//		AssetHandle handle = AssetManager::AddEditorNew(gProj.assetsPath + newFileName + GROOVY_ASSET_EXT, ASSET_TYPE_MATERIAL, mMaterial);
-	//		mMaterial->__internal_SetUUID(handle.uuid);
-	//		AssetSerializer::SerializeMaterial(mMaterial, handle.path);
-	//		AssetManager::SaveRegistry();
-	//		mVirtual = false;
-	//		SetPendingSave(false);
-	//	}
-	//}
-	//else // file exists on disk
-	//{
-	//	if (ImGui::Button("Save changes"))
-	//	{
-	//		const AssetHandle& handle = AssetManager::Get(mMaterial->GetUUID());
-	//		AssetSerializer::SerializeMaterial(mMaterial, handle.path);
-	//		AssetManager::SaveRegistry();
-	//	}
-	//}
-}
-
-void EditMaterialWindow::ShowVar(const ShaderVariable& var, byte* bufferPtr)
-{
-	byte* varPtr = bufferPtr + var.alignedOffset;
-	static bool vec3AsColor = true;
-	static bool vec4AsColor = true;
-
-	switch (var.type)
-	{
-		case SHADER_VARIABLE_TYPE_FLOAT1:
-			ImGui::DragFloat(var.name.c_str(), (float*)varPtr);
-			break;
-
-		case SHADER_VARIABLE_TYPE_FLOAT2:
-			ImGui::DragFloat2(var.name.c_str(), (float*)varPtr);
-			break;
-
-		case SHADER_VARIABLE_TYPE_FLOAT3:
-			ImGui::Checkbox("Use Vec3 as color", &vec3AsColor);
-			if (vec3AsColor)
-			{
-				ImGui::ColorEdit3(var.name.c_str(), (float*)varPtr);
-			}
-			else
-			{
-				ImGui::DragFloat3(var.name.c_str(), (float*)varPtr);
-			}
-			break;
-
-		case SHADER_VARIABLE_TYPE_FLOAT4:
-			ImGui::Checkbox("Use Vec4 as color", &vec4AsColor);
-			if (vec4AsColor)
-			{
-				ImGui::ColorEdit4(var.name.c_str(), (float*)varPtr);
-			}
-			else
-			{
-				ImGui::DragFloat4(var.name.c_str(), (float*)varPtr);
-			}
-			break;
-
-		default:
-			ImGui::Text("Variable format not implemented!");
-			break;
+		ImGui::Separator();
 	}
 }
+
+//void EditMaterialWindow::ShowVar(const ShaderVariable& var, byte* bufferPtr)
+//{
+//	byte* varPtr = bufferPtr + var.alignedOffset;
+//	static bool vec3AsColor = true;
+//	static bool vec4AsColor = true;
+//
+//	switch (var.type)
+//	{
+//		case SHADER_VARIABLE_TYPE_FLOAT1:
+//			ImGui::DragFloat(var.name.c_str(), (float*)varPtr);
+//			break;
+//
+//		case SHADER_VARIABLE_TYPE_FLOAT2:
+//			ImGui::DragFloat2(var.name.c_str(), (float*)varPtr);
+//			break;
+//
+//		case SHADER_VARIABLE_TYPE_FLOAT3:
+//			ImGui::Checkbox("Use Vec3 as color", &vec3AsColor);
+//			if (vec3AsColor)
+//			{
+//				ImGui::ColorEdit3(var.name.c_str(), (float*)varPtr);
+//			}
+//			else
+//			{
+//				ImGui::DragFloat3(var.name.c_str(), (float*)varPtr);
+//			}
+//			break;
+//
+//		case SHADER_VARIABLE_TYPE_FLOAT4:
+//			ImGui::Checkbox("Use Vec4 as color", &vec4AsColor);
+//			if (vec4AsColor)
+//			{
+//				ImGui::ColorEdit4(var.name.c_str(), (float*)varPtr);
+//			}
+//			else
+//			{
+//				ImGui::DragFloat4(var.name.c_str(), (float*)varPtr);
+//			}
+//			break;
+//
+//		default:
+//			ImGui::Text("Variable format not implemented!");
+//			break;
+//	}
+//}
 
 const char* AssetRegistryWindow::AssetTypeStr(EAssetType type)
 {
 	switch (type)
 	{
 		case ASSET_TYPE_TEXTURE:	return "TEXTURE";
-		case ASSET_TYPE_MATERIAL:	return "MATERIAL";
 		case ASSET_TYPE_SHADER:		return "SHADER";
+		case ASSET_TYPE_MATERIAL:	return "MATERIAL";
 		case ASSET_TYPE_MESH:		return "MESH";
 	}
 	return "UNKNOWN";
@@ -251,15 +156,19 @@ const char* AssetRegistryWindow::AssetTypeStr(EAssetType type)
 
 void AssetRegistryWindow::RenderContent()
 {
+	ImGui::Spacing();
 	ImGui::Separator();
 
-	for (const auto& [uuid, handle] : AssetManager::GetRegistry())
+	for (const auto& [uuid, handle] : AssetManager::Editor_GetRegistry())
 	{
 		ImGui::InputText("Name", (std::string*)&(handle.name), ImGuiInputTextFlags_ReadOnly);
 		ImGui::InputText("Type", &(std::string)AssetTypeStr(handle.type), ImGuiInputTextFlags_ReadOnly);
 		ImGui::InputText("UUID", &std::to_string(handle.uuid), ImGuiInputTextFlags_ReadOnly);
 
 		ImGui::Separator();
+		ImGui::Spacing();
+		ImGui::Spacing();
+		ImGui::Spacing();
 	}
 
 	/*const auto& reg = AssetManager::GetRegistry();

@@ -86,7 +86,7 @@ void OnFilesDropped(const std::vector<std::string>& files)
 {
 	for (const std::string& file : files)
 	{
-		std::string newFileName = std::filesystem::path(file).replace_extension(GROOVY_ASSET_EXT).string();
+		std::string newFileName = std::filesystem::path(file).replace_extension(GROOVY_ASSET_EXT).filename().string();
 		EAssetType assetType = AssetImporter::GetTypeFromFilename(file);
 
 		switch (assetType)

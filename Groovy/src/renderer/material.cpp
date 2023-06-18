@@ -1,46 +1,6 @@
 #include "material.h"
 #include "assets/asset_loader.h"
-
-extern Texture* DEFAULT_TEXTURE;
-
-GROOVY_CLASS_IMPL(MaterialAssetFile, AssetFile)
-
-GROOVY_CLASS_REFLECTION_BEGIN(MaterialAssetFile)
-	GROOVY_REFLECT(mShader)
-	GROOVY_REFLECT(mConstBuffersData)
-	GROOVY_REFLECT(mShaderResNames)
-	GROOVY_REFLECT(mShaderResources)
-GROOVY_CLASS_REFLECTION_END()
-
-void MaterialAssetFile::DeserializeOntoMaterial(Material* mat)
-{
-	check(mat);
-	checkf(mShader, "Corrupted material file, missing shader");
-	checkf(mShaderResNames.size() == mShaderResources.size(), "Corrupted material file, resource bindings count mismatch");
-
-	// set shader
-	mat->mShader = mShader;
-	// set const buffers data
-	mat->mConstBuffersData.resize(mConstBuffersData.size());
-	memcpy(mat->mConstBuffersData.data(), mConstBuffersData.data(), mConstBuffersData.size());
-	// set resources (textures)
-	mat->mResources.clear();
-	for (const auto& shaderRes : mShader->GetPixelTexturesRes())
-	{
-		MaterialResource& matRes = mat->mResources.emplace_back();
-		matRes.name = shaderRes.name;
-		matRes.slot = shaderRes.bindSlot;
-		matRes.res = nullptr;
-
-		auto it = std::find(mShaderResNames.begin(), mShaderResNames.end(), shaderRes.name);
-		uint32 resIndex = it - mShaderResNames.begin();
-		if (resIndex < mShaderResNames.size())
-			matRes.res = mShaderResources[resIndex];
-		
-		if (!matRes.res)
-			matRes.res = DEFAULT_TEXTURE;
-	}
-}
+#include "classes/object_serializer.h"
 
 Material::Material()
 	: mShader(nullptr), mUUID(0), mLoaded(false)
@@ -51,8 +11,6 @@ void Material::Load()
 {
 	if (mLoaded)
 		return;
-
-	AssetLoader::LoadMaterial(this);
 
 	mLoaded = true;
 }
@@ -73,4 +31,126 @@ bool Material::Validate()
 		return false;
 
 	return true;
+}
+
+void Material::SetShader(Shader* shader)
+{
+	if (shader == mShader)
+		return;
+
+	if (!shader)
+	{
+		mResources.clear();
+		mConstBuffersData.resize(0);
+		return;
+	}
+
+	// set shader
+	mShader = shader;
+
+	// set const buffers data
+	size_t constBuffersSize = 0;
+	for (const ConstBufferDesc& bufferDesc : shader->GetPixelConstBuffersDesc())
+		constBuffersSize += bufferDesc.size;
+
+	mConstBuffersData.resize(constBuffersSize);
+
+	// set resources
+	mResources.clear();
+	for (const ShaderResTexture& shaderRes : shader->GetPixelTexturesRes())
+	{
+		MaterialResource& matRes = mResources.emplace_back();
+		matRes.name = shaderRes.name;
+		matRes.slot = shaderRes.bindSlot;
+		matRes.res = nullptr;
+	}
+}
+
+void Material::SetResource(Texture* texture, uint32 slot)
+{
+	if (slot < mResources.size())
+		mResources[slot].res = texture;
+}
+
+void Material::SetResources(Texture* texture)
+{
+	for (MaterialResource& res : mResources)
+		res.res = texture;
+}
+
+void Material::FixForRendering()
+{
+	extern Shader* DEFAULT_SHADER;
+	extern Texture* DEFAULT_TEXTURE;
+
+	// set shader to DEFAULT_SHADER if null
+	if (!mShader)
+		SetShader(DEFAULT_SHADER);
+	
+	// set null textures to DEFAULT_TEXTURE
+	for (MaterialResource& res : mResources)
+		if (!res.res)
+			res.res = DEFAULT_TEXTURE;
+
+	// clear const buffers data
+	memset(mConstBuffersData.data(), 0, mConstBuffersData.size());
+}
+
+GROOVY_CLASS_IMPL(MaterialAssetFile, GroovyObject)
+
+GROOVY_CLASS_REFLECTION_BEGIN(MaterialAssetFile)
+	GROOVY_REFLECT(shader)
+	GROOVY_REFLECT(constBuffersData)
+	GROOVY_REFLECT(shaderResNames)
+	GROOVY_REFLECT(shaderRes)
+GROOVY_CLASS_REFLECTION_END()
+
+void Material::Serialize(DynamicBuffer& fileData)
+{
+	checkslowf(Validate(), "Trying to serialize a material that is not ready for rendering");
+	
+	MaterialAssetFile asset;
+
+	// shader
+	asset.shader = mShader;
+
+	// resources
+	for (const MaterialResource& res : mResources)
+	{
+		asset.shaderResNames.push_back(res.name);
+		asset.shaderRes.push_back(res.res);
+	}
+
+	// const buffers
+	asset.constBuffersData.resize(mConstBuffersData.size());
+	memcpy(asset.constBuffersData.data(), mConstBuffersData.data(), mConstBuffersData.size());
+
+	ObjectSerializer::SerializeSimpleObject(&asset, (GroovyObject*)MaterialAssetFile::StaticClass()->cdo, fileData);
+}
+
+void Material::Deserialize(BufferView fileData)
+{
+	MaterialAssetFile asset;
+	ObjectSerializer::DeserializeSimpleObject(&asset, fileData);
+
+	// shader
+	SetShader(asset.shader);
+
+	// resources
+	for (const MaterialResource& res : mResources)
+	{
+		auto it = std::find(asset.shaderResNames.begin(), asset.shaderResNames.end(), res.name);
+		uint32 resIndex = it - asset.shaderResNames.begin();
+
+		if (resIndex < asset.shaderResNames.size())
+		{
+			mResources[resIndex].res = asset.shaderRes[resIndex];
+		}
+	}
+
+	// const buffers data
+	if (mConstBuffersData.size() == mConstBuffersData.size())
+	{
+		memcpy(mConstBuffersData.data(), asset.constBuffersData.data(), asset.constBuffersData.size());
+	}
 }

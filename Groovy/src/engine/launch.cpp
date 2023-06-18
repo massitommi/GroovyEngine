@@ -102,8 +102,9 @@ int32 GroovyEntryPoint(const char* args)
 #endif
 		RendererAPI::Get().Present(0);
 	}
-
+	
 	delete gScreenFrameBuffer;
+	AssetManager::Shutdown();
 	Application::Shutdown();
 	delete &RendererAPI::Get();
 

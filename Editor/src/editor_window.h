@@ -20,6 +20,7 @@ public:
 	virtual bool OnClose();
 
 	inline bool ShouldClose() const { return !mOpen; }
+	inline bool PendingSave() const { return mPendingSave; }
 
 protected:
 	void SetPendingSave(bool pendingSave);
@@ -48,13 +49,12 @@ public:
 	virtual ~EditMaterialWindow();
 	
 	virtual void RenderContent() override;
-
-private:
-	void ShowVar(const ShaderVariable& var, byte* bufferPtr);
+//
+//private:
+//	void ShowVar(const ShaderVariable& var, byte* bufferPtr);
 
 private:
 	class Material* mMaterial;
-	bool mVirtual;
 };
 
 class TexturePreviewWindow : public EditorWindow

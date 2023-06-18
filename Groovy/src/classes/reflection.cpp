@@ -13,6 +13,7 @@ size_t reflectionUtils::GetPropertySize(EPropertyType type)
 		case PROPERTY_TYPE_STRING:		return sizeof(std::string);
 		case PROPERTY_TYPE_VEC3:		return sizeof(Vec3);
 		case PROPERTY_TYPE_TRANSFORM:	return sizeof(Transform);
+		case PROPERTY_TYPE_ASSET_REF:	return sizeof(AssetInstance*);
 	}
 	checkslowf(0, "Type not implemented");
 	return 0;
@@ -37,6 +38,7 @@ DynamicArrayPtr reflectionUtils::GetDynamicArrayPtr(EPropertyType type)
 		case PROPERTY_TYPE_STRING:		return GET_GDAPTR(std::string);
 		case PROPERTY_TYPE_VEC3:		return GET_GDAPTR(Vec3);
 		case PROPERTY_TYPE_TRANSFORM:	return GET_GDAPTR(Transform);
+		case PROPERTY_TYPE_ASSET_REF:	return GET_GDAPTR(AssetInstance*);
 	}
 	checkslowf(0, "Type not implemented");
 	return {};

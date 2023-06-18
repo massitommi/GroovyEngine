@@ -11,7 +11,4 @@ class AssetLoader
 public:
 	static Texture* LoadTexture(const std::string& filePath);
 	static Shader* LoadShader(const std::string& filePath);
-
-	static void LoadMaterial(const std::string& filePath, Material* mat);
-	static void LoadMaterial(Material* mat);
 };

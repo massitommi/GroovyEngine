@@ -25,6 +25,12 @@ public:
 
 	void resize(size_t size, bool copyOldData = false)
 	{
+		if (!size)
+		{
+			free();
+			return;
+		}
+
 		byte* newData = (byte*)malloc(size);
 		
 		if (copyOldData && mData)
@@ -160,6 +166,10 @@ public:
 		: mCurrentPtr((byte*)buffer.data()), mBytesLeft(buffer.size())
 	{}
 
+	BufferView(const DynamicBuffer& buffer)
+		: mCurrentPtr((byte*)buffer.data()), mBytesLeft(buffer.used())
+	{}
+
 	byte* seek()
 	{
 		return mCurrentPtr;
@@ -202,6 +212,8 @@ public:
 		mCurrentPtr += bytes;
 		mBytesLeft -= bytes;
 	}
+
+	size_t remaining() { return mBytesLeft; }
 
 private:
 	byte* mCurrentPtr;

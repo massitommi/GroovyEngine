@@ -1,15 +1,5 @@
 #include "asset_loader.h"
 #include "platform/filesystem.h"
-#include "asset_manager.h"
-#include "asset_manager.h"
-#include "project/project.h"
-#include "classes/object_serializer.h"
-
-extern Texture* DEFAULT_TEXTURE;
-extern Shader* DEFAULT_SHADER;
-extern Material* DEFAULT_MATERIAL;
-
-extern Project gProj;
 
 Texture* AssetLoader::LoadTexture(const std::string& filePath)
 {
@@ -40,83 +30,6 @@ Shader* AssetLoader::LoadShader(const std::string& filePath)
 	return Shader::Create(data.data() + vertexStart, vertexSize, data.data() + pixelStart, pixelSize);
 }
 
-void AssetLoader::LoadMaterial(const std::string& filePath, Material* mat)
-{
-	checkslow(mat);
-	
-	Buffer fileData;
-	FileSystem::ReadFileBinary(filePath, fileData);
-
-	MaterialAssetFile materialAsset;
-	ObjectSerializer::DeserializeSimpleObject(&materialAsset, fileData);
-
-	materialAsset.DeserializeOntoMaterial(mat);
-}
-
-void AssetLoader::LoadMaterial(Material* mat)
-{
-	checkslow(mat);
-
-	AssetHandle handle = AssetManager::Get(mat->GetUUID());
-	std::string filePath = (gProj.assets / handle.name).string();
-
-	LoadMaterial(filePath, mat);
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-//
-//Material* AssetLoader::LoadMaterial(const std::string& filePath)
-//{
-//	Buffer fileData;
-//	FileSystem::ReadFileBinary(filePath, fileData);
-//
-//	const MaterialAssetHeader* header = fileData.as<MaterialAssetHeader>();
-//
-//	const byte* dataPtr = fileData.data() + sizeof(MaterialAssetHeader);
-//
-//	// shader
-//	Shader* shaderInstance = DEFAULT_SHADER;
-//	if(header->shaderID)
-//		shaderInstance = AssetManager::Get<Shader>(header->shaderID);
-//	
-//	check(shaderInstance); // not loaded yet???
-//	
-//	Material* mat = new Material(shaderInstance);
-//
-//	// const buffers data
-//	memcpy(mat->mConstBuffersData.data(), dataPtr, header->constBuffersSize);
-//	dataPtr += header->constBuffersSize;
-//
-//	// textures
-//	AssetUUID* textureIDptr = (AssetUUID*)dataPtr;
-//	for (Texture*& tex : mat->mTextures)
-//	{
-//		Texture* texture = DEFAULT_TEXTURE;
-//		if (*textureIDptr)
-//			texture = AssetManager::Get<Texture>(*textureIDptr);
-//		
-//		check(texture);
-//		
-//		tex = texture;
-//
-//		textureIDptr++;
-//	}
-//
-//	return mat;
-//}
-//
 //Mesh* AssetLoader::LoadMesh(const std::string& filePath)
 //{
 //	Buffer fileData;

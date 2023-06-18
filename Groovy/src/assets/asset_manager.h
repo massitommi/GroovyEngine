@@ -7,6 +7,7 @@ class AssetManager
 {
 public:
 	static void Init();
+	static void Shutdown();
 
 	static AssetHandle Get(AssetUUID uuid);
 
@@ -20,7 +21,9 @@ public:
 
 #if WITH_EDITOR
 
-	static const std::map<AssetUUID, AssetHandle>& GetRegistry();
+	static const std::map<AssetUUID, AssetHandle>& Editor_GetRegistry();
+	static std::vector<AssetHandle> Editor_GetAssets(EAssetType filter = ASSET_TYPE_NONE);
+	static AssetHandle Editor_OnImport(const std::string& fileName, EAssetType type);
 
 #endif
 };
