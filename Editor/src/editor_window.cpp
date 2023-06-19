@@ -169,7 +169,7 @@ const char* AssetRegistryWindow::AssetTypeStr(EAssetType type)
 		case ASSET_TYPE_MATERIAL:	return "MATERIAL";
 		case ASSET_TYPE_MESH:		return "MESH";
 	}
-	return "UNKNOWN";
+	return "NONE";
 }
 
 void AssetRegistryWindow::RenderContent()
@@ -188,6 +188,39 @@ void AssetRegistryWindow::RenderContent()
 		ImGui::Spacing();
 		ImGui::Spacing();
 	}
+
+	ImGui::Spacing();
+	ImGui::Spacing();
+	ImGui::Spacing();
+	ImGui::Text("Debug add groovyasset");
+	ImGui::InputText("Asset name", &mDebugAssetName);
+	if (ImGui::BeginCombo("Asset type", AssetTypeStr(mDebugAssetType)))
+	{
+		if (ImGui::Selectable(AssetTypeStr(ASSET_TYPE_TEXTURE), mDebugAssetType == ASSET_TYPE_TEXTURE))
+			mDebugAssetType = ASSET_TYPE_TEXTURE;
+
+		if (ImGui::Selectable(AssetTypeStr(ASSET_TYPE_SHADER), mDebugAssetType == ASSET_TYPE_SHADER))
+			mDebugAssetType = ASSET_TYPE_SHADER;
+
+		if (ImGui::Selectable(AssetTypeStr(ASSET_TYPE_MATERIAL), mDebugAssetType == ASSET_TYPE_MATERIAL))
+			mDebugAssetType = ASSET_TYPE_MATERIAL;
+
+		if (ImGui::Selectable(AssetTypeStr(ASSET_TYPE_MESH), mDebugAssetType == ASSET_TYPE_MESH))
+			mDebugAssetType = ASSET_TYPE_MESH;
+
+		ImGui::EndCombo();
+	}
+
+	bool canAdd = !mDebugAssetName.empty();
+
+	if (!canAdd)
+		ImGui::BeginDisabled();
+
+	if (ImGui::Button("Add to registry"))
+		AssetManager::Editor_OnImport(mDebugAssetName, mDebugAssetType);
+	
+	if (!canAdd)
+		ImGui::EndDisabled();
 
 	/*const auto& reg = AssetManager::GetRegistry();
 	ImGui::Separator();

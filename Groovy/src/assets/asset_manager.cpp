@@ -123,7 +123,9 @@ void AssetManager::Shutdown()
 
 AssetHandle AssetManager::Get(AssetUUID uuid)
 {
-	return sAssetRegistry[uuid];
+	if(sAssetRegistry.find(uuid) != sAssetRegistry.end())
+		return sAssetRegistry[uuid];
+	return {};
 }
 
 void AssetManager::SaveRegistry()
@@ -144,6 +146,8 @@ void AssetManager::SaveRegistry()
 
 	FileSystem::WriteFileBinary(gProj.assetRegistry.string(), registryFile);
 }
+
+#if WITH_EDITOR
 
 const std::map<AssetUUID, AssetHandle>& AssetManager::Editor_GetRegistry()
 {
@@ -178,11 +182,21 @@ AssetHandle AssetManager::Editor_OnImport(const std::string& fileName, EAssetTyp
 	handle.type = type;
 	handle.uuid = uuid;
 	handle.instance = InstantiateAsset(handle);
+	handle.instance->__internal_SetUUID(uuid);
 
-#if WITH_EDITOR
 	extern bool gEditorPendingSave;
 	gEditorPendingSave = true;
-#endif
 
 	return handle;
 }
+
+void AssetManager::Editor_Delete(AssetUUID uuid)
+{
+	delete sAssetRegistry[uuid].instance;
+	sAssetRegistry.erase(uuid);
+
+	extern bool gEditorPendingSave;
+	gEditorPendingSave = true;
+}
+
+#endif

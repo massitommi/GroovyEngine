@@ -40,6 +40,10 @@ public:
 	const char* AssetTypeStr(EAssetType type);
 
 	virtual void RenderContent() override;
+
+private:
+	std::string mDebugAssetName = "";
+	EAssetType mDebugAssetType = ASSET_TYPE_TEXTURE;
 };
 
 class EditMaterialWindow : public EditorWindow

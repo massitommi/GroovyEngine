@@ -262,8 +262,7 @@ namespace panels
 						);
 						if (res == MESSAGE_BOX_RESPONSE_YES)
 						{
-							checkslowf(0, "Not implemented");
-							AssetManager::SaveRegistry();
+							AssetManager::Editor_Delete(asset.uuid);
 						}
 					}
 				}
