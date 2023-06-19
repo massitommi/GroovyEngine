@@ -55,6 +55,8 @@ public:
 
 private:
 	class Material* mMaterial;
+	bool mExistsOnDisk;
+	std::string mFileName;
 };
 
 class TexturePreviewWindow : public EditorWindow

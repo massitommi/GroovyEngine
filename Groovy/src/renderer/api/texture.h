@@ -14,6 +14,9 @@ class Texture : public AssetInstance
 {
 public:
 
+	virtual bool IsLoaded() const override { return true; }
+	virtual void Load() override {}
+
 	virtual void Bind(uint32 slot) = 0;
 	virtual void* GetRendererID() const = 0;
 	virtual void SetData(void* data, size_t size) = 0;

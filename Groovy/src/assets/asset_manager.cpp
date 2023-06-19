@@ -90,9 +90,13 @@ void AssetManager::Init()
 
 	uint32 assetsCount = registryView.read<uint32>();
 
+	std::vector<AssetHandle> fileAssets;
+	fileAssets.reserve(assetsCount);
+
+	// load registry
 	for (uint32 i = 0; i < assetsCount; i++)
 	{
-		AssetHandle assetHandle;
+		AssetHandle& assetHandle = fileAssets.emplace_back();
 		assetHandle.name = registryView.read<std::string>();
 		assetHandle.uuid = registryView.read<AssetUUID>();
 		assetHandle.type = registryView.read<EAssetType>();
@@ -101,6 +105,13 @@ void AssetManager::Init()
 		assetHandle.instance->__internal_SetUUID(assetHandle.uuid);
 
 		sAssetRegistry[assetHandle.uuid] = assetHandle;
+	}
+
+	// load assets
+	for (const AssetHandle& handle : fileAssets)
+	{
+		if (!handle.instance->IsLoaded())
+			handle.instance->Load();
 	}
 }
 
@@ -160,8 +171,6 @@ std::vector<AssetHandle> AssetManager::Editor_GetAssets(EAssetType filter)
 
 AssetHandle AssetManager::Editor_OnImport(const std::string& fileName, EAssetType type)
 {
-	check(type == ASSET_TYPE_TEXTURE || type == ASSET_TYPE_MESH);
-
 	AssetUUID uuid = GenUUID();
 
 	AssetHandle& handle = sAssetRegistry[uuid];
@@ -169,6 +178,11 @@ AssetHandle AssetManager::Editor_OnImport(const std::string& fileName, EAssetTyp
 	handle.type = type;
 	handle.uuid = uuid;
 	handle.instance = InstantiateAsset(handle);
+
+#if WITH_EDITOR
+	extern bool gEditorPendingSave;
+	gEditorPendingSave = true;
+#endif
 
 	return handle;
 }

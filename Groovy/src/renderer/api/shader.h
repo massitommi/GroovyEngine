@@ -38,6 +38,9 @@ class Shader : public AssetInstance
 {
 public:
 
+	virtual bool IsLoaded() const override { return true; }
+	virtual void Load() override {}
+
 	virtual void Bind() = 0;
 
 	virtual const std::vector<ConstBufferDesc>& GetVertexConstBuffersDesc() const = 0;

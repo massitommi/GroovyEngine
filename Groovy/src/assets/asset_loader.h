@@ -6,9 +6,11 @@
 #include "renderer/material.h"
 #include "renderer/mesh.h"
 
+// raw asset loader
 class AssetLoader
 {
 public:
+
 	static Texture* LoadTexture(const std::string& filePath);
 	static Shader* LoadShader(const std::string& filePath);
 };

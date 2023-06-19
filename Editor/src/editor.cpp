@@ -27,7 +27,7 @@ extern Window* gWindow;
 extern bool gEngineShouldRun;
 extern Project gProj;
 
-static bool gPendingSave = false;
+bool gEditorPendingSave = false;
 
 void EditorInit();
 void EditorUpdate(float deltaTime);
@@ -106,7 +106,7 @@ void OnFilesDropped(const std::vector<std::string>& files)
 
 bool OnCloseRequested()
 {
-	if (gPendingSave)
+	if (gEditorPendingSave)
 	{
 		auto response = SysMessageBox::Show
 		(
@@ -141,7 +141,7 @@ static float camFOV = 60;
 void SaveWork()
 {
 	AssetManager::SaveRegistry();
-	gPendingSave = false;
+	gEditorPendingSave = false;
 }
 
 Texture* LoadEditorIcon(const std::string& path)
@@ -193,50 +193,6 @@ void UpdateWindows()
 	sInsertQueue.clear();
 }
 
-#include "classes/object_serializer.h"
-#include "classes/class_db.h"
-extern ClassDB gClassDB;
-
-GROOVY_CLASS_DECL(TestClassBase)
-class TestClassBase : public GroovyObject
-{
-	GROOVY_CLASS_BODY(TestClassBase, GroovyObject)
-
-public:
-	std::vector<std::string> strs = { "arinza" ,"arunza", "stappi", "sdunza" };
-	uint64 ids2[3] = { 3, 2, 1 };
-	Vec3 pos = { 0.5f, 0.6f, 0.7f };
-};
-
-GROOVY_CLASS_IMPL(TestClassBase, GroovyObject)
-GROOVY_CLASS_REFLECTION_BEGIN(TestClassBase)
-	GROOVY_REFLECT(strs)
-	GROOVY_REFLECT(pos)
-	GROOVY_REFLECT(ids2)
-GROOVY_CLASS_REFLECTION_END()
-
-GROOVY_CLASS_DECL(TestClass)
-class TestClass : public TestClassBase
-{
-	GROOVY_CLASS_BODY(TestClass, TestClassBase)
-
-public:
-	int32 intVar = 5;
-	std::string strVar = "mhanz";
-	std::vector<uint64> ids = { 1, 2, 3 };
-	std::string strs2[4] = { "sdunza", "stappi", "arunza", "arinza" };
-	Buffer buffTest;
-};
-
-GROOVY_CLASS_IMPL(TestClass, TestClassBase)
-GROOVY_CLASS_REFLECTION_BEGIN(TestClass)
-	GROOVY_REFLECT_EX(intVar, PROPERTY_FLAG_NO_SERIALIZE)
-	GROOVY_REFLECT(ids)
-	GROOVY_REFLECT(strVar)
-	GROOVY_REFLECT(strs2)
-	GROOVY_REFLECT(buffTest)
-GROOVY_CLASS_REFLECTION_END()
-
 void EditorInit()
 {
 	// assets used by the editor
@@ -251,40 +207,13 @@ void EditorInit()
 	gameViewportSpec.height = sGameViewportSize.y = 100;
 
 	sGameViewportFrameBuffer = FrameBuffer::Create(gameViewportSpec);
-
-	gClassDB.Register(&__internal_groovyclass_TestClass);
-
-	TestClass test;
-	test.intVar = -1;
-	test.ids = { 4,5,6,7,8,9,10 };
-	test.strVar = "strVar";
-	test.strs = { "gg", "GG" };
-	test.strs2[0] = "ss1";
-	test.strs2[1] = "ss2";
-	test.strs2[2] = "ss3";
-	test.strs2[3] = "ss4";
-	test.pos = { 1,2,4 };
-	test.ids2[0] = 98;
-	test.ids2[1] = 99;
-	test.ids2[2] = 100;
-	test.pos = { 2,3,4 };
-
-	DynamicBuffer fileData;
-
-	ObjectSerializer::SerializeSimpleObject(&test, (GroovyObject*)TestClass::StaticClass()->cdo, fileData);
-
-	TestClass tCopy;
-
-	ObjectSerializer::DeserializeSimpleObject(&tCopy, fileData);
-
-	int br = 1;
 }
 
 namespace panels
 {
 	void Assets()
 	{
-		static float zoom = 1.0f;
+		static float zoom = 1.5f;
 
 		float iconSize = 90 * zoom;
 		uint32 numColumns = ImGui::GetContentRegionAvail().x / iconSize;
@@ -294,10 +223,11 @@ namespace panels
 		ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, { 2,2 });
 		ImGui::Begin("Asset manager");
 		ImGui::Columns(numColumns, 0, false);
-		/*for (const auto& asset : AssetManager::GetRegistry())
+		for (const auto& asset : AssetManager::Editor_GetAssets())
 		{
-			std::string fileName = FileSystem::GetFilenameNoExt(asset.name);
-			if (ImGui::ImageButton(asset.name.c_str(), sAssetIcon->GetRendererID(), { iconSize, iconSize }, { 0,0 }, { 1,1 }, { 1,1,1,1 }))
+			std::string fileName = asset.name;
+			ImTextureID thumbnail = asset.type != ASSET_TYPE_TEXTURE ? sAssetIcon->GetRendererID() : ((Texture*)asset.instance)->GetRendererID();
+			if (ImGui::ImageButton(asset.name.c_str(), thumbnail, { iconSize, iconSize }, { 0,0 }, { 1,1 }, { 1,1,1,1 }))
 			{
 				switch (asset.type)
 				{
@@ -319,19 +249,22 @@ namespace panels
 				ImGui::SameLine();
 				ImGui::SeparatorText("Actions");
 
-				if (ImGui::Selectable("Delete"))
+				if (asset.uuid > 3)
 				{
-					auto res = SysMessageBox::Show
-					(
-						"Asset deletion warning", 
-						"Deleting an asset that is references by other asset could result in a crash, do it at your own risk muhahah",
-						MESSAGE_BOX_TYPE_WARNING,
-						MESSAGE_BOX_OPTIONS_YESNOCANCEL
-					);
-					if (res == MESSAGE_BOX_RESPONSE_YES)
+					if (ImGui::Selectable("Delete"))
 					{
-						checkslowf(0, "Not implemented");
-						AssetManager::SaveRegistry();
+						auto res = SysMessageBox::Show
+						(
+							"Asset deletion warning",
+							"Deleting an asset that is references by other asset could result in a crash, do it at your own risk muhahah",
+							MESSAGE_BOX_TYPE_WARNING,
+							MESSAGE_BOX_OPTIONS_YESNOCANCEL
+						);
+						if (res == MESSAGE_BOX_RESPONSE_YES)
+						{
+							checkslowf(0, "Not implemented");
+							AssetManager::SaveRegistry();
+						}
 					}
 				}
 				ImGui::EndPopup();
@@ -347,7 +280,7 @@ namespace panels
 			}
 			ImGui::TextWrapped(fileName.c_str());
 			ImGui::NextColumn();
-		}*/
+		}
 
 		ImGui::Columns(1);
 

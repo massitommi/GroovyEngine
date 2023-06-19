@@ -3,6 +3,7 @@
 #include "vendor/imgui/misc/cpp/imgui_stdlib.h"
 #include "platform/messagebox.h"
 #include "classes/object_serializer.h"
+#include "assets/asset_serializer.h"
 
 void EditorWindow::RenderWindow()
 {
@@ -44,7 +45,7 @@ void EditorWindow::SetPendingSave(bool pendingSave)
 extern Project gProj;
 
 EditMaterialWindow::EditMaterialWindow(Material* mat)
-	: EditorWindow("Material editor"), mMaterial(mat)
+	: EditorWindow("Material editor"), mMaterial(mat), mExistsOnDisk(true)
 {
 	if (!mat)
 	{
@@ -52,12 +53,18 @@ EditMaterialWindow::EditMaterialWindow(Material* mat)
 		mMaterial->FixForRendering();
 		check(mMaterial->Validate());
 		SetPendingSave(true);
+		mExistsOnDisk = false;
+		mFileName = "new_material" GROOVY_ASSET_EXT;
+	}
+	else
+	{
+		mFileName = AssetManager::Get(mMaterial->GetUUID()).name;
 	}
 }
 
 EditMaterialWindow::~EditMaterialWindow()
 {
-	if (PendingSave())
+	if (!mExistsOnDisk)
 	{
 		delete mMaterial;
 	}
@@ -65,8 +72,6 @@ EditMaterialWindow::~EditMaterialWindow()
 
 void EditMaterialWindow::RenderContent()
 {
-	extern Texture* DEFAULT_TEXTURE;
-
 	ImGui::Separator();
 
 	std::vector<AssetHandle> textures = AssetManager::Editor_GetAssets(ASSET_TYPE_TEXTURE);
@@ -93,6 +98,19 @@ void EditMaterialWindow::RenderContent()
 		}
 
 		ImGui::Separator();
+	}
+
+	ImGui::InputText("Filename", &mFileName, mExistsOnDisk ? ImGuiInputTextFlags_ReadOnly : 0);
+
+	if (ImGui::Button(mExistsOnDisk ? "Save changes" : "Save"))
+	{
+		AssetSerializer::SerializeMaterial(mMaterial, (gProj.assets / mFileName).string());
+		if (!mExistsOnDisk)
+		{
+			AssetManager::Editor_OnImport(mFileName, ASSET_TYPE_MATERIAL);
+			mExistsOnDisk = true;
+		}
+		SetPendingSave(false);
 	}
 }
 

@@ -10,8 +10,6 @@ public:
 
 	virtual void __internal_SetUUID(AssetUUID uuid) override { mUUID = uuid; }
 	virtual AssetUUID GetUUID() const override { return mUUID; }
-	virtual bool IsLoaded() const override { return true; }
-	virtual void Load() override {}
 
 	virtual void Bind(uint32 slot) override;
 	virtual void* GetRendererID() const override { return mView; }

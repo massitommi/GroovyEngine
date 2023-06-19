@@ -54,3 +54,9 @@ struct TextureAssetHeader
     uint32 height;
     EColorFormat format;
 };
+
+struct MeshAssetHeader
+{
+    size_t vertexBufferSize;
+    size_t indexBufferSize;
+};
