@@ -3,6 +3,7 @@
 #include "project/project.h"
 #include "asset_loader.h"
 #include <random>
+#include "renderer/api/renderer_api.h"
 
 static std::map<AssetUUID, AssetHandle> sAssetRegistry;
 
@@ -59,7 +60,15 @@ void AssetManager::Init()
 		}
 		// default shader
 		{
-			DEFAULT_SHADER = AssetLoader::LoadShader((gProj.assets / "default" / "default_shader.hlsl").string());
+			std::string shaderFile = "default_shader";
+			switch (RendererAPI::GetAPI())
+			{
+				case RENDERER_API_D3D11:
+					shaderFile += ".hlsl";
+					break;
+			}
+
+			DEFAULT_SHADER = AssetLoader::LoadShader((gProj.assets / "default" / shaderFile).string());
 		}
 		// default material
 		{
