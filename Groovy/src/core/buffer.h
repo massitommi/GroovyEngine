@@ -97,15 +97,21 @@ public:
 		: Buffer(size), mCurrentPtr(nullptr)
 	{}
 
+private:
+	void resize(size_t size, bool copyOldData = false)
+	{
+		size_t usedBytes = used();
+		Buffer::resize(size, copyOldData);
+		mCurrentPtr = mData + usedBytes;
+	}
+public:
+
 	void* push_bytes(const void* data, size_t sizeBytes)
 	{
 		size_t bytesUsed = used();
-		void* ptr = mCurrentPtr;
 		if (bytesUsed + sizeBytes > mSize)
-		{
 			resize((bytesUsed + sizeBytes) * 2, true);
-			ptr = mCurrentPtr = mData + bytesUsed;
-		}
+		void* ptr = mCurrentPtr;
 		memcpy(ptr, data, sizeBytes);
 		mCurrentPtr += sizeBytes;
 		return ptr;

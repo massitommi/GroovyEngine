@@ -5,8 +5,6 @@
 #include "project/project.h"
 #include "platform/filesystem.h"
 
-extern Project gProj;
-
 Material::Material()
 	: mShader(nullptr), mUUID(0), mLoaded(false)
 {
@@ -17,6 +15,7 @@ void Material::Load()
 	if (mLoaded)
 		return;
 
+	extern Project gProj;
 	AssetHandle myHandle = AssetManager::Get(mUUID);
 	Buffer fileData;
 	FileSystem::ReadFileBinary((gProj.assets / myHandle.name).string(), fileData);

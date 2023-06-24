@@ -31,7 +31,7 @@ public:
 	void __internal_SetUUID(AssetUUID uuid) override { mUUID = uuid; }
 	AssetUUID GetUUID() const override { return mUUID; }
 	virtual bool IsLoaded() const override { return mLoaded; }
-	virtual void Load() override {}
+	virtual void Load();
 
 	size_t GetVertexBufferSize() const { return mVertexBuffer->GetSize(); }
 	size_t GetIndexBufferSize() const { return mIndexBuffer->GetSize(); }
@@ -40,6 +40,17 @@ public:
 	const std::vector<Material*>& GetMaterials() const { return mMaterials; }
 
 	void SetMaterial(Material* mat, uint32 index) { check(index < mMaterials.size()); mMaterials[index] = mat; }
+	void FixForRendering();
+
+	size_t GetAssetOffsetForSerialization() const { return sizeof(MeshAssetHeader) + mVertexBuffer->GetSize() + mIndexBuffer->GetSize(); }
+	void Serialize(DynamicBuffer& fileData);
+	void Deserialize(BufferView fileData);
+
+#if WITH_EDITOR
+
+	std::vector<Material*>& Editor_MaterialsRef() { return mMaterials; }
+
+#endif
 
 private:
 	VertexBuffer* mVertexBuffer;
@@ -49,5 +60,14 @@ private:
 
 	AssetUUID mUUID;
 	bool mLoaded;
+};
 
+GROOVY_CLASS_DECL(MeshAssetFile)
+class MeshAssetFile : public GroovyObject
+{
+	GROOVY_CLASS_BODY(MeshAssetFile, GroovyObject)
+
+public:
+	std::vector<Material*> materials;
+	std::vector<SubmeshData> submeshes;
 };

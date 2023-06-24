@@ -4,6 +4,11 @@
 #include "platform/messagebox.h"
 #include "classes/object_serializer.h"
 #include "assets/asset_serializer.h"
+#include "assets/assets.h"
+#include "project/project.h"
+#include "classes/class.h"
+#include "classes/class_db.h"
+#include "renderer/mesh.h"
 
 void EditorWindow::RenderWindow()
 {
@@ -36,12 +41,6 @@ void EditorWindow::SetPendingSave(bool pendingSave)
 	mPendingSave = pendingSave;
 }
 
-#include "assets/assets.h"
-#include "project/project.h"
-#include "classes/class.h"
-#include "classes/class_db.h"
-#include "renderer/mesh.h"
-
 extern Project gProj;
 
 EditMaterialWindow::EditMaterialWindow(Material* mat)
@@ -59,6 +58,7 @@ EditMaterialWindow::EditMaterialWindow(Material* mat)
 	else
 	{
 		mFileName = AssetManager::Get(mMaterial->GetUUID()).name;
+		mMaterial->FixForRendering();
 	}
 }
 
@@ -100,7 +100,19 @@ void EditMaterialWindow::RenderContent()
 		ImGui::Separator();
 	}
 
-	ImGui::InputText("Filename", &mFileName, mExistsOnDisk ? ImGuiInputTextFlags_ReadOnly : 0);
+	ImGui::Spacing();
+	ImGui::Spacing();
+	ImGui::Spacing();
+
+	if (mExistsOnDisk)
+		ImGui::BeginDisabled();
+
+	ImGui::InputText("Filename", &mFileName);
+
+	if (mExistsOnDisk)
+		ImGui::EndDisabled();
+
+	ImGui::Spacing();
 
 	if (ImGui::Button(mExistsOnDisk ? "Save changes" : "Save"))
 	{
@@ -113,52 +125,6 @@ void EditMaterialWindow::RenderContent()
 		SetPendingSave(false);
 	}
 }
-
-//void EditMaterialWindow::ShowVar(const ShaderVariable& var, byte* bufferPtr)
-//{
-//	byte* varPtr = bufferPtr + var.alignedOffset;
-//	static bool vec3AsColor = true;
-//	static bool vec4AsColor = true;
-//
-//	switch (var.type)
-//	{
-//		case SHADER_VARIABLE_TYPE_FLOAT1:
-//			ImGui::DragFloat(var.name.c_str(), (float*)varPtr);
-//			break;
-//
-//		case SHADER_VARIABLE_TYPE_FLOAT2:
-//			ImGui::DragFloat2(var.name.c_str(), (float*)varPtr);
-//			break;
-//
-//		case SHADER_VARIABLE_TYPE_FLOAT3:
-//			ImGui::Checkbox("Use Vec3 as color", &vec3AsColor);
-//			if (vec3AsColor)
-//			{
-//				ImGui::ColorEdit3(var.name.c_str(), (float*)varPtr);
-//			}
-//			else
-//			{
-//				ImGui::DragFloat3(var.name.c_str(), (float*)varPtr);
-//			}
-//			break;
-//
-//		case SHADER_VARIABLE_TYPE_FLOAT4:
-//			ImGui::Checkbox("Use Vec4 as color", &vec4AsColor);
-//			if (vec4AsColor)
-//			{
-//				ImGui::ColorEdit4(var.name.c_str(), (float*)varPtr);
-//			}
-//			else
-//			{
-//				ImGui::DragFloat4(var.name.c_str(), (float*)varPtr);
-//			}
-//			break;
-//
-//		default:
-//			ImGui::Text("Variable format not implemented!");
-//			break;
-//	}
-//}
 
 const char* AssetRegistryWindow::AssetTypeStr(EAssetType type)
 {
@@ -221,57 +187,6 @@ void AssetRegistryWindow::RenderContent()
 	
 	if (!canAdd)
 		ImGui::EndDisabled();
-
-	/*const auto& reg = AssetManager::GetRegistry();
-	ImGui::Separator();
-	for (const auto& handle : reg)
-	{
-		ImGui::Text("Name: %s", handle.name.c_str());
-		ImGui::Spacing();
-		if (ImGui::BeginCombo("Type", AssetTypeStr(handle.type)))
-		{
-			ImGui::EndCombo();
-		}
-		ImGui::Spacing();
-		ImGui::Text("Path: %s", handle.path.c_str());
-		ImGui::Spacing();
-		ImGui::Text("UUID: %s", std::to_string(handle.uuid).c_str());
-		ImGui::Spacing();
-		ImGui::Text("Instance: %p", handle.instance);
-
-		ImGui::Spacing();
-		ImGui::Spacing();
-		ImGui::Separator();
-	}
-	ImGui::Spacing();
-	ImGui::Spacing();
-	ImGui::Text("Debug");
-
-	static EAssetType type = ASSET_TYPE_NONE;
-	static std::string filePath;
-
-	ImGui::InputText("File path", &filePath);
-	if (ImGui::BeginCombo("Asset type", AssetTypeStr(type)))
-	{
-		ImGui::Selectable(AssetTypeStr(ASSET_TYPE_NONE));
-		
-		if (ImGui::Selectable(AssetTypeStr(ASSET_TYPE_TEXTURE)))
-			type = ASSET_TYPE_TEXTURE;
-		if (ImGui::Selectable(AssetTypeStr(ASSET_TYPE_SHADER)))
-			type = ASSET_TYPE_SHADER;
-		if (ImGui::Selectable(AssetTypeStr(ASSET_TYPE_MESH)))
-			type = ASSET_TYPE_MESH;
-
-		ImGui::EndCombo();
-	}
-	if (type == ASSET_TYPE_NONE || filePath.empty())
-		ImGui::BeginDisabled();
-	if (ImGui::Button("Add to registry"))
-	{
-		AssetManager::AddEditorNew(filePath, type);
-	}
-	if (type == ASSET_TYPE_NONE || filePath.empty())
-		ImGui::EndDisabled();*/
 }
 
 void TexturePreviewWindow::RenderContent()
@@ -279,30 +194,56 @@ void TexturePreviewWindow::RenderContent()
 	ImGui::Image(mTexture->GetRendererID(), ImGui::GetContentRegionAvail());
 }
 
+MeshPreviewWindow::MeshPreviewWindow(Mesh* mesh)
+	: EditorWindow("Mesh viewer"), mMesh(mesh)
+{
+	check(mesh);
+	mesh->FixForRendering();
+	mFileName = AssetManager::Get(mesh->GetUUID()).name;
+}
+
 void MeshPreviewWindow::RenderContent()
 {
-	ImGui::Text("Submeshes");
 	ImGui::Separator();
 
-	/*const std::vector<AssetHandle>& matHandles = AssetManager::GetRegistryFiltered(ASSET_TYPE_MATERIAL);
-	PropFieldArray propFieldArray;
+	std::vector<AssetHandle> assets = AssetManager::Editor_GetAssets(ASSET_TYPE_MATERIAL);
 
-	for (uint32 i = 0; i < mMesh->GetSubmeshes().size(); i++)
-		propFieldArray.fields.push_back({ std::to_string(i), mMesh->GetMaterials()[i] });
-	propFieldArray.options.push_back({ "DEFAULT_MATERIAL", DEFAULT_MATERIAL });
-	for (const AssetHandle& handle : matHandles)
-		propFieldArray.options.push_back({ handle.name, handle.instance });
+	std::vector<Material*>& mats = mMesh->Editor_MaterialsRef();
 
-	RenderAssetSelectionMenu(propFieldArray, [&](uint32 i, uint32 j)
+	for (uint32 i = 0; i < mats.size(); i++)
 	{
-		mMesh->SetMaterial((Material*)propFieldArray.options[j].data, i);
-	});
+		Material*& mat = mats[i];
 
-	if (ImGui::Button("Save"))
+		AssetHandle currentMatHandle = AssetManager::Get(mat->GetUUID());
+		std::string dropdropName = "[" + std::to_string(i) + "]";
+
+		if (ImGui::BeginCombo(dropdropName.c_str(), currentMatHandle.name.c_str()))
+		{
+			for (const AssetHandle& assetMat : assets)
+			{
+				bool selected = mat == assetMat.instance;
+				if (ImGui::Selectable(assetMat.name.c_str(), &selected))
+				{
+					mat = (Material*)assetMat.instance;
+				}
+			}
+
+			ImGui::EndCombo();
+		}
+	}
+
+	ImGui::Spacing();
+	ImGui::Spacing();
+	ImGui::Spacing();
+
+	ImGui::BeginDisabled();
+	ImGui::InputText("Filename", &mFileName);
+	ImGui::EndDisabled();
+
+	if (ImGui::Button("Save changes"))
 	{
-		const AssetHandle& handle = AssetManager::Get(mMesh->GetUUID());
-		AssetSerializer::SerializeMesh(mMesh, handle.path);
-	}*/
+		AssetSerializer::SerializeMesh(mMesh, (gProj.assets / mFileName).string());
+	}
 }
 
 void PrintClasses(std::vector<GroovyClass*> classes)

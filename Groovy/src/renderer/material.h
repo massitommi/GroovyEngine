@@ -15,6 +15,8 @@ struct MaterialResource
 
 class Material : public AssetInstance
 {
+	friend class Renderer;
+
 public:
 	Material();
 

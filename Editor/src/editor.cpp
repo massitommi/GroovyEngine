@@ -128,11 +128,13 @@ static std::vector<EditorWindow*> sWindows;
 static std::vector<EditorWindow*> sInsertQueue;
 static std::vector<EditorWindow*> sRemoveQueue;
 
-static Texture* sAssetIcon;
+static Texture* sShaderAssetIcon;
+static Texture* sMaterialAssetIcon;
+static Texture* sMeshAssetIcon;
+
 static FrameBuffer* sGameViewportFrameBuffer;
 static ImVec2 sGameViewportSize;
 
-static Shader* testShader;
 static Mesh* testMesh;
 static Vec3 camLoc = {0,1.0f,-3};
 static Vec3 camRot = {0,0,0};
@@ -193,10 +195,14 @@ void UpdateWindows()
 	sInsertQueue.clear();
 }
 
+
+extern Shader* DEFAULT_SHADER;
 void EditorInit()
 {
 	// assets used by the editor
-	sAssetIcon = LoadEditorIcon("assets/asset_icon.png");
+	sShaderAssetIcon = LoadEditorIcon("res/shader_asset_icon.png");
+	sMaterialAssetIcon = LoadEditorIcon("res/material_asset_icon.png");
+	sMeshAssetIcon = LoadEditorIcon("res/mesh_asset_icon.png");
 	
 	// gameviewport framebuffer
 	FrameBufferSpec gameViewportSpec;
@@ -207,32 +213,108 @@ void EditorInit()
 	gameViewportSpec.height = sGameViewportSize.y = 100;
 
 	sGameViewportFrameBuffer = FrameBuffer::Create(gameViewportSpec);
+
+	DEFAULT_SHADER->Bind();
+
+	testMesh = (Mesh*)AssetManager::Editor_GetAssets(ASSET_TYPE_MESH)[0].instance;
+	testMesh->FixForRendering();
 }
 
 namespace panels
 {
 	void Assets()
 	{
-		static float zoom = 1.5f;
-
-		float iconSize = 90 * zoom;
-		uint32 numColumns = ImGui::GetContentRegionAvail().x / iconSize;
-		if (!numColumns)
-			numColumns = 1;
-
-		ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, { 2,2 });
-		ImGui::Begin("Asset manager");
-		ImGui::Columns(numColumns, 0, false);
-		for (const auto& asset : AssetManager::Editor_GetAssets())
+		static const const char* TYPES_STR[] =
 		{
-			std::string fileName = asset.name;
-			ImTextureID thumbnail = asset.type != ASSET_TYPE_TEXTURE ? sAssetIcon->GetRendererID() : ((Texture*)asset.instance)->GetRendererID();
-			if (ImGui::ImageButton(asset.name.c_str(), thumbnail, { iconSize, iconSize }, { 0,0 }, { 1,1 }, { 1,1,1,1 }))
+			"TEXTURE",
+			"SHADER",
+			"MATERIAL",
+			"MESH"
+		};
+
+		enum PanelAssetFlags
+		{
+			PANEL_ASSET_FLAG_IS_DEFAULT = BITFLAG(1)
+		};
+
+		struct PanelAsset
+		{
+			ImTextureID thumbnail;
+			uint32 typeNameIndex;
+			uint32 flags;
+		};
+
+		std::vector<AssetHandle> assets = AssetManager::Editor_GetAssets();
+		std::vector<PanelAsset> panelAssets;
+		panelAssets.resize(assets.size());
+		for (uint32 i = 0; i < assets.size(); i++)
+		{
+			switch (assets[i].type)
+			{
+				case ASSET_TYPE_TEXTURE:
+					panelAssets[i].thumbnail = ((Texture*)assets[i].instance)->GetRendererID();
+					panelAssets[i].typeNameIndex = 0;
+					break;
+				case ASSET_TYPE_SHADER:
+					panelAssets[i].thumbnail = sShaderAssetIcon->GetRendererID();
+					panelAssets[i].typeNameIndex = 1;
+					break;
+				case ASSET_TYPE_MATERIAL:
+					panelAssets[i].thumbnail = sMaterialAssetIcon->GetRendererID();
+					panelAssets[i].typeNameIndex = 2;
+					break;
+				case ASSET_TYPE_MESH:
+					panelAssets[i].thumbnail = sMeshAssetIcon->GetRendererID();
+					panelAssets[i].typeNameIndex = 3;
+					break;
+			}
+
+			if (assets[i].uuid <= 3)
+				panelAssets[i].flags |= PANEL_ASSET_FLAG_IS_DEFAULT;
+		}
+
+		ImGui::Begin("Asset manager");
+
+		// stolen ui code that works pretty well
+
+		float contentWidth = ImGui::GetContentRegionAvail().x;
+		float contentHeight = ImGui::GetContentRegionAvail().y;
+		static float itemSize = 140;
+		int columns = contentWidth / itemSize;
+		columns = columns < 1 ? 1 : columns;
+
+		// end stolen ui code
+
+		ImGui::Spacing();
+		ImGui::SetNextItemWidth(200);
+		ImGui::SliderFloat("Item size", &itemSize, 100, 256);
+		ImGui::Spacing();
+		ImGui::Spacing();
+
+		ImGui::Columns(columns, nullptr, false);
+
+		for (size_t i = 0; i < assets.size(); ++i)
+		{
+			AssetHandle& asset = assets[i];
+			PanelAsset panelAsset = panelAssets[i];
+
+			ImGui::PushID(i);
+
+			ImGui::BeginGroup();
+
+			std::string fileNameNoExt = std::filesystem::path(asset.name).replace_extension().string();
+
+			ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, {3,3});
+
+			if (ImGui::ImageButton(fileNameNoExt.c_str(), panelAsset.thumbnail, { itemSize - 10, itemSize - 5 }, {0,0}, {1,1}, {1,1,1,1}))
 			{
 				switch (asset.type)
 				{
 					case ASSET_TYPE_TEXTURE:
 						AddWindow<TexturePreviewWindow>((Texture*)asset.instance);
+						break;
+
+					case ASSET_TYPE_SHADER:
 						break;
 
 					case ASSET_TYPE_MATERIAL:
@@ -244,58 +326,56 @@ namespace panels
 						break;
 				}
 			}
-			if (ImGui::BeginPopupContextItem(std::to_string(asset.uuid).c_str(), ImGuiPopupFlags_MouseButtonRight))
-			{
-				ImGui::SameLine();
-				ImGui::SeparatorText("Actions");
 
-				if (asset.uuid > 3)
+			ImGui::PopStyleVar();
+
+			if (ImGui::BeginPopupContextItem(fileNameNoExt.c_str(), ImGuiPopupFlags_MouseButtonRight))
+			{
+				// delete asset
+				if (panelAsset.flags & PANEL_ASSET_FLAG_IS_DEFAULT)
+					ImGui::BeginDisabled();
+				if (ImGui::Selectable("Delete"))
 				{
-					if (ImGui::Selectable("Delete"))
+					auto res = SysMessageBox::Show
+					(
+						"Asset deletion",
+						"Deleting an asset is dangerous, it could break dependencies with other assets, do you want to continue?",
+						MESSAGE_BOX_TYPE_WARNING, MESSAGE_BOX_OPTIONS_YESNOCANCEL
+					);
+					if (res == MESSAGE_BOX_RESPONSE_YES)
 					{
-						auto res = SysMessageBox::Show
-						(
-							"Asset deletion warning",
-							"Deleting an asset that is references by other asset could result in a crash, do it at your own risk muhahah",
-							MESSAGE_BOX_TYPE_WARNING,
-							MESSAGE_BOX_OPTIONS_YESNOCANCEL
-						);
-						if (res == MESSAGE_BOX_RESPONSE_YES)
-						{
-							AssetManager::Editor_Delete(asset.uuid);
-						}
+						// replace asset in dependenciese please
+						AssetManager::Editor_Delete(asset.uuid);
 					}
 				}
+				if (panelAsset.flags & PANEL_ASSET_FLAG_IS_DEFAULT)
+					ImGui::EndDisabled();
+
 				ImGui::EndPopup();
 			}
-
-			switch (asset.type)
+			else if (ImGui::IsItemHovered())
 			{
-				case ASSET_TYPE_TEXTURE:	fileName += " (TEXTURE)"; break;
-				case ASSET_TYPE_SHADER:		fileName += " (SHADER)"; break;
-				case ASSET_TYPE_MATERIAL:	fileName += " (MATERIAL)"; break;
-				case ASSET_TYPE_MESH:		fileName += " (MESH)"; break;
-				default:					fileName += " (UNKNOWN?!?)"; break;
+				ImGui::SetTooltip("File: %s" "\n" "Type: %s", asset.name.c_str(), TYPES_STR[panelAsset.typeNameIndex]);
 			}
-			ImGui::TextWrapped(fileName.c_str());
+			ImGui::Text(fileNameNoExt.c_str());
+			
+
+			
+			ImGui::EndGroup();
+			
+			ImGui::PopID();
 			ImGui::NextColumn();
 		}
 
-		ImGui::Columns(1);
-
-		ImGui::Separator();
-		ImGui::SetNextItemWidth(200.0f);
-		ImGui::SliderFloat("Zoom level", &zoom, 0.5f, 2.0f);
-
 		ImGui::End();
-
-		ImGui::PopStyleVar();
 	}
+
 	void EntityList()
 	{
 		ImGui::Begin("Entity list");
 		ImGui::End();
 	}
+
 	void Properties()
 	{
 		ImGui::Begin("Properties");
@@ -304,6 +384,7 @@ namespace panels
 		ImGui::DragFloat3("cam rot", &camRot.x, 0.05f);
 		ImGui::End();
 	}
+	
 	void GameViewport()
 	{
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, { 0,0 });
@@ -321,7 +402,7 @@ namespace panels
 		sGameViewportFrameBuffer->ClearColorAttachment(0, gScreenClearColor);
 
 		sGameViewportFrameBuffer->Bind();
-		//Renderer::RenderMesh(testMesh);
+		Renderer::RenderMesh(testMesh);
 
 		// draw framebuffer
 		ImGui::Image(sGameViewportFrameBuffer->GetRendererID(0), wndSize);
@@ -351,7 +432,7 @@ void EditorUpdate(float deltaTime)
 
 	mvp = math::GetMatrixTransposed(mvp);
 
-	//testShader->OverwriteVertexConstBuffer(0, &mvp);
+	DEFAULT_SHADER->OverwriteVertexConstBuffer(0, &mvp);
 }
 
 void EditorRender()
@@ -422,7 +503,9 @@ void EditorRender()
 
 void EditorShutdown()
 {
-	delete sAssetIcon;
+	delete sShaderAssetIcon;
+	delete sMaterialAssetIcon;
+	delete sMeshAssetIcon;
 	delete sGameViewportFrameBuffer;
 }
 

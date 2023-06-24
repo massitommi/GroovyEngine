@@ -11,6 +11,7 @@
 #include "project/project.h"
 
 #include "renderer/mesh.h"
+#include "classes/object_serializer.h"
 
 #define DEFAULT_IMAGE_IMPORT_CHANNELS 4
 
@@ -115,112 +116,114 @@ bool AssetImporter::ImportTexture(const std::string& originalFile, const std::st
 
 bool AssetImporter::ImportMesh(const std::string& originalFile, const std::string& newFile)
 {
-    //tinyobj::attrib_t attrib;
-    //std::vector<tinyobj::shape_t> shapes;
-    //std::vector<tinyobj::material_t> materials;
-    //std::string warn, err;
+    tinyobj::attrib_t attrib;
+    std::vector<tinyobj::shape_t> shapes;
+    std::vector<tinyobj::material_t> materials;
+    std::string warn, err;
 
-    //if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, originalFile.c_str()))
-    //{
-    //    SysMessageBox::Show_Error("Unable to import model", err);
-    //    return false;
-    //}
+    if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, originalFile.c_str()))
+    {
+        SysMessageBox::Show_Error("Unable to import model", err);
+        return false;
+    }
 
-    //if (!warn.empty())
-    //{
-    //    SysMessageBox::Show_Warning("Import model warn", warn);
-    //}
+    if (!warn.empty())
+        SysMessageBox::Show_Warning("Import model warn", warn);
 
-    //Buffer newFileData;
-    //size_t vertexBufferSize = 0;
-    //size_t indexBufferSize = 0;
-    //uint32 submeshCount = 0;
+    Buffer fileData;
+    size_t vertexBufferSize = 0;
+    size_t indexBufferSize = 0;
+    uint32 submeshCount = 0;
 
-    //for (const auto& shape : shapes)
-    //{
-    //    vertexBufferSize += shape.mesh.indices.size() * sizeof(MeshVertex);
-    //    indexBufferSize += shape.mesh.indices.size() * sizeof(MeshIndex);
-    //    submeshCount++;
-    //}
+    for (const auto& shape : shapes)
+    {
+        vertexBufferSize += shape.mesh.indices.size() * sizeof(MeshVertex);
+        indexBufferSize += shape.mesh.indices.size() * sizeof(MeshIndex);
+        submeshCount++;
+    }
 
-    //newFileData.resize
-    //(
-    //    sizeof(MeshAssetHeader) + // mesh asset header
-    //    vertexBufferSize + // vertex buffer
-    //    indexBufferSize + // index buffer
-    //    submeshCount * sizeof(SubmeshData) + // submesh data
-    //    submeshCount * sizeof(AssetUUID) // materials
-    //);
+    fileData.resize
+    (
+        sizeof(MeshAssetHeader) + // mesh asset header
+        vertexBufferSize + // vertex buffer
+        indexBufferSize // index buffer
+    );
 
-    //MeshAssetHeader* header = newFileData.as<MeshAssetHeader>();
-    //header->vertexBufferSize = vertexBufferSize;
-    //header->indexBufferSize = indexBufferSize;
-    //header->submeshCount = submeshCount;
+    BufferView fileDataView(fileData);
 
-    //byte* vertexBufferOffset = newFileData.data() + sizeof(MeshAssetHeader);
-    //byte* indexBufferOffset = vertexBufferOffset + vertexBufferSize;
-    //byte* submeshesOffset = indexBufferOffset + indexBufferSize;
-    //byte* materialsOffset = submeshesOffset + submeshCount * sizeof(SubmeshData);
+    MeshAssetHeader* header = fileDataView.read<MeshAssetHeader>(1);
+    header->vertexBufferSize = vertexBufferSize;
+    header->indexBufferSize = indexBufferSize;
 
-    //MeshVertex* vertexBuffer = (MeshVertex*)vertexBufferOffset;
-    //MeshIndex* indexBuffer = (MeshIndex*)indexBufferOffset;
-    //SubmeshData* submeshes = (SubmeshData*)submeshesOffset;
-    //AssetUUID* materialsID = (AssetUUID*)materialsOffset;
+    MeshVertex* vertexBuffer = (MeshVertex*)fileDataView.read(header->vertexBufferSize);
+    MeshIndex* indexBuffer = (MeshIndex*)fileDataView.read(header->indexBufferSize);
+    MeshAssetFile asset;
+    asset.submeshes.resize(submeshCount);
+    asset.materials.resize(submeshCount);
+    memset(asset.materials.data(), 0, sizeof(Material*) * asset.materials.size());
 
-    //for (const auto& shape : shapes)
-    //{
-    //    uint32 indexIndex = 0;
-    //    for (const auto& index : shape.mesh.indices)
-    //    {
-    //        // vertex data
-    //        {
-    //            // position
-    //            vertexBuffer->position =
-    //            {
-    //                attrib.vertices[3 * index.vertex_index + 0],
-    //                attrib.vertices[3 * index.vertex_index + 1],
-    //                attrib.vertices[3 * index.vertex_index + 2],
-    //                1.0f
-    //            };
+    for (uint32 i = 0; i < shapes.size(); i++)
+    {
+        const auto& shape = shapes[i];
 
-    //            // texture coordinates
-    //            vertexBuffer->textCoords = { 0.0f, 0.0f };
 
-    //            if (index.texcoord_index != -1)
-    //            {
-    //                vertexBuffer->textCoords =
-    //                {
-    //                    attrib.texcoords[2 * index.texcoord_index + 0],
-    //                    1.0f - attrib.texcoords[2 * index.texcoord_index + 1]
-    //                };
-    //            }
+        for (uint32 j = 0; j < shape.mesh.indices.size(); j++)
+        {
+            const auto& index = shape.mesh.indices[j];
 
-    //            // color
-    //            vertexBuffer->color =
-    //            {
-    //                1.0f, 1.0f, 1.0f, 1.0f
-    //            };
-    //        }
+            // vertex data
+            {
+                // position
+                vertexBuffer->position =
+                {
+                    attrib.vertices[3 * index.vertex_index + 0],
+                    attrib.vertices[3 * index.vertex_index + 1],
+                    attrib.vertices[3 * index.vertex_index + 2],
+                    1.0f
+                };
 
-    //        // index data
-    //        {
-    //            *indexBuffer = indexIndex;
-    //        }
+                // texture coordinates
+                vertexBuffer->textCoords = { 0.0f, 0.0f };
 
-    //        vertexBuffer++;
-    //        indexBuffer++;
-    //        indexIndex++;
-    //        submeshes->vertexCount++;
-    //        submeshes->indexCount++;
-    //        *materialsID = 0; // default asset index
-    //    }
-    //    submeshes++;
-    //    materialsID++;
-    //}
+                if (index.texcoord_index != -1)
+                {
+                    vertexBuffer->textCoords =
+                    {
+                        attrib.texcoords[2 * index.texcoord_index + 0],
+                        1.0f - attrib.texcoords[2 * index.texcoord_index + 1]
+                    };
+                }
 
-    //FileSystem::WriteFileBinary(, newFileData);
-    //
-    //OnAssetImported(newFile, ASSET_TYPE_MESH);
+                // color
+                vertexBuffer->color =
+                {
+                    1.0f, 1.0f, 1.0f, 1.0f
+                };
+            }
+            // index data
+            {
+                *indexBuffer = j;
+            }
+
+            vertexBuffer++;
+            indexBuffer++;
+
+            asset.submeshes[i].vertexCount++;
+            asset.submeshes[i].indexCount++;
+        }
+    }
+
+    DynamicBuffer fileData2;
+    ObjectSerializer::SerializeSimpleObject(&asset, (GroovyObject*)MeshAssetFile::StaticClass()->cdo, fileData2);
+
+    Buffer finalFileData;
+    finalFileData.resize(fileData.size() + fileData2.used());
+    memcpy(finalFileData.data(), fileData.data(), fileData.size());
+    memcpy(finalFileData.data() + fileData.size(), fileData2.data(), fileData2.used());
+
+    FileSystem::WriteFileBinary((gProj.assets / newFile).string(), finalFileData);
+    
+    AssetManager::Editor_OnImport(newFile, ASSET_TYPE_MESH);
 
     return true;
 }

@@ -1,7 +1,8 @@
-#include "renderer/material.h"
+#include "core/core.h"
 
 class AssetSerializer
 {
 public:
-	static void SerializeMaterial(Material* mat, const std::string& filePath);
+	static void SerializeMaterial(class Material* mat, const std::string& filePath);
+	static void SerializeMesh(class Mesh* mesh, const std::string& filePath);
 };

@@ -53,9 +53,6 @@ public:
 	virtual ~EditMaterialWindow();
 	
 	virtual void RenderContent() override;
-//
-//private:
-//	void ShowVar(const ShaderVariable& var, byte* bufferPtr);
 
 private:
 	class Material* mMaterial;
@@ -79,14 +76,13 @@ private:
 class MeshPreviewWindow : public EditorWindow
 {
 public:
-	MeshPreviewWindow(class Mesh* mesh)
-		: EditorWindow("Mesh viewer"), mMesh(mesh)
-	{}
+	MeshPreviewWindow(Mesh* mesh);
 
 	virtual void RenderContent() override;
 
 private:
 	class Mesh* mMesh;
+	std::string mFileName;
 };
 
 class ClassRegistryWindow : public EditorWindow

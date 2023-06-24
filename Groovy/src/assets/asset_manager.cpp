@@ -20,6 +20,7 @@ static AssetUUID GenUUID()
 extern Project gProj;
 Texture* DEFAULT_TEXTURE = nullptr;
 Shader* DEFAULT_SHADER = nullptr;
+Material* DEFAULT_MATERIAL = nullptr;
 
 static AssetInstance* InstantiateAsset(const AssetHandle& handle)
 {
@@ -60,6 +61,12 @@ void AssetManager::Init()
 		{
 			DEFAULT_SHADER = AssetLoader::LoadShader((gProj.assets / "default" / "default_shader.hlsl").string());
 		}
+		// default material
+		{
+			DEFAULT_MATERIAL = new Material();
+			DEFAULT_MATERIAL->SetShader(DEFAULT_SHADER);
+			DEFAULT_MATERIAL->SetResources(DEFAULT_TEXTURE);
+		}
 
 		AssetHandle tmpHandle;
 
@@ -76,6 +83,14 @@ void AssetManager::Init()
 		tmpHandle.uuid = 2;
 		tmpHandle.instance = DEFAULT_SHADER;
 		tmpHandle.instance->__internal_SetUUID(2);
+
+		sAssetRegistry[tmpHandle.uuid] = tmpHandle;
+
+		tmpHandle.name = "DEFAULT_MATERIAL";
+		tmpHandle.type = ASSET_TYPE_MATERIAL;
+		tmpHandle.uuid = 3;
+		tmpHandle.instance = DEFAULT_MATERIAL;
+		tmpHandle.instance->__internal_SetUUID(3);
 
 		sAssetRegistry[tmpHandle.uuid] = tmpHandle;
 	}
@@ -132,11 +147,11 @@ void AssetManager::SaveRegistry()
 {
 	DynamicBuffer registryFile;
 
-	registryFile.push<uint32>(sAssetRegistry.size() - 2);
+	registryFile.push<uint32>(sAssetRegistry.size() - 3);
 
 	for (const auto& [uuid, handle] : sAssetRegistry)
 	{
-		if (handle.instance == DEFAULT_TEXTURE || handle.instance == DEFAULT_SHADER)
+		if (handle.instance == DEFAULT_TEXTURE || handle.instance == DEFAULT_SHADER || handle.instance == DEFAULT_MATERIAL)
 			continue;
 
 		registryFile.push(handle.name);

@@ -3,7 +3,7 @@
 
 void Renderer::RenderMesh(Mesh* mesh)
 {
-	/*check(mesh);
+	check(mesh);
 
 	mesh->mVertexBuffer->Bind();
 	mesh->mIndexBuffer->Bind();
@@ -13,12 +13,12 @@ void Renderer::RenderMesh(Mesh* mesh)
 	for (uint32 i = 0; i < mesh->mSubmeshes.size(); i++)
 	{
 		Material* mat = mesh->GetMaterials()[i];
-		const_cast<Shader*>(mat->GetShader())->Bind();
-		for (uint32 j = 0; j < mat->GetTextures().size(); j++)
-			mat->GetTextures()[i]->Bind(j);
+		mat->mShader->Bind();
+		for (MaterialResource& res : mat->mResources)
+			res.res->Bind(res.slot);
 
 		RendererAPI::Get().DrawIndexed(vertexOffset, indexOffset, mesh->mSubmeshes[i].indexCount);
 		vertexOffset += mesh->mSubmeshes[i].vertexCount;
 		indexOffset += mesh->mSubmeshes[i].indexCount;
-	}*/
+	}
 }

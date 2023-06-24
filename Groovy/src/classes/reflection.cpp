@@ -1,5 +1,11 @@
 #include "reflection.h"
 
+struct SubmeshData
+{
+	uint32 vertexCount;
+	uint32 indexCount;
+};
+
 size_t reflectionUtils::GetPropertySize(EPropertyType type)
 {
 	switch (type)
@@ -14,6 +20,7 @@ size_t reflectionUtils::GetPropertySize(EPropertyType type)
 		case PROPERTY_TYPE_VEC3:		return sizeof(Vec3);
 		case PROPERTY_TYPE_TRANSFORM:	return sizeof(Transform);
 		case PROPERTY_TYPE_ASSET_REF:	return sizeof(AssetInstance*);
+		case PROPERTY_TYPE_INTERNAL_SUBMESHDATA:	return sizeof(SubmeshData);
 	}
 	checkslowf(0, "Type not implemented");
 	return 0;
@@ -39,6 +46,7 @@ DynamicArrayPtr reflectionUtils::GetDynamicArrayPtr(EPropertyType type)
 		case PROPERTY_TYPE_VEC3:		return GET_GDAPTR(Vec3);
 		case PROPERTY_TYPE_TRANSFORM:	return GET_GDAPTR(Transform);
 		case PROPERTY_TYPE_ASSET_REF:	return GET_GDAPTR(AssetInstance*);
+		case PROPERTY_TYPE_INTERNAL_SUBMESHDATA:	return GET_GDAPTR(SubmeshData);
 	}
 	checkslowf(0, "Type not implemented");
 	return {};

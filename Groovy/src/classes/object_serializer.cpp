@@ -252,7 +252,7 @@ void ObjectSerializer::SerializeSimpleObject(GroovyObject* obj, GroovyObject* cd
 	}
 }
 
-void ObjectSerializer::DeserializeSimpleObject(GroovyObject* obj, BufferView fileData)
+void ObjectSerializer::DeserializeSimpleObject(GroovyObject* obj, BufferView& fileData)
 {
 	check(obj);
 

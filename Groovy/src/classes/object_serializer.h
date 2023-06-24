@@ -23,5 +23,5 @@ public:
 	static void CreatePropertyPack(PropertyPack& pack, GroovyObject* obj, GroovyObject* cdo);
 
 	static void SerializeSimpleObject(GroovyObject* obj, GroovyObject* cdo, DynamicBuffer& fileData);
-	static void DeserializeSimpleObject(GroovyObject* obj, BufferView fileData);
+	static void DeserializeSimpleObject(GroovyObject* obj, BufferView& fileData);
 };
