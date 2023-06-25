@@ -195,7 +195,6 @@ void UpdateWindows()
 	sInsertQueue.clear();
 }
 
-
 extern Shader* DEFAULT_SHADER;
 void EditorInit()
 {

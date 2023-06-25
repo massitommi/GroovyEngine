@@ -15,16 +15,22 @@ public:
 	virtual void GetClassPropertiesRecursive(std::vector<GroovyProperty>& outProps) const;
 	static GroovyClass* StaticClass() { return &GROOVY_CLASS_NAME(GroovyObject); }
 	
-	inline bool IsA(GroovyClass* gClass) { return classUtils::DynamicCast(this, gClass); }
+	inline bool IsA(GroovyClass* gClass) const { return classUtils::DynamicCast((GroovyObject*)this, gClass); }
 	
 	template<typename GroovyClassT>
-	inline bool IsA() { return classUtils::DynamicCast(this, GroovyClassT::StaticClass()); }
+	inline bool IsA() const { return classUtils::DynamicCast((GroovyObject*)this, GroovyClassT::StaticClass()); }
 
 	friend class ObjectSerializer;
 };
 
 template<typename GroovyClassT>
-GroovyClassT* Cast(GroovyObject* obj)
+inline GroovyClassT* Cast(GroovyObject* obj)
 {
 	return (GroovyClassT*)classUtils::DynamicCast(obj, GroovyClassT::StaticClass());
+}
+
+template<typename GroovyClassT>
+inline const GroovyClassT* Cast(const GroovyObject* obj)
+{
+	return (const GroovyClassT*)classUtils::DynamicCast((GroovyObject*)obj, GroovyClassT::StaticClass());
 }
