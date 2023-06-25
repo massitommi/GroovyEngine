@@ -317,6 +317,9 @@ const char* GetPropertyTypeStr(EPropertyType type)
 		case PROPERTY_TYPE_STRING:		return "STRING";
 		case PROPERTY_TYPE_VEC3:		return "VEC3";
 		case PROPERTY_TYPE_TRANSFORM:	return "TRANSFORM";
+		case PROPERTY_TYPE_BUFFER:		return "BUFFER";
+		case PROPERTY_TYPE_ASSET_REF:	return "ASSET_REF";
+		case PROPERTY_TYPE_INTERNAL_SUBMESHDATA:	return "INTERNAL_SUBMESHDATA";
 	}
 	check(0);
 	return "Unknown";
