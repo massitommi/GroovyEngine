@@ -135,7 +135,7 @@ void Material::Serialize(DynamicBuffer& fileData)
 	asset.constBuffersData.resize(mConstBuffersData.size());
 	memcpy(asset.constBuffersData.data(), mConstBuffersData.data(), mConstBuffersData.size());
 
-	ObjectSerializer::SerializeSimpleObject(&asset, (GroovyObject*)MaterialAssetFile::StaticClass()->cdo, fileData);
+	ObjectSerializer::SerializeSimpleObject(&asset, MaterialAssetFile::StaticClass()->cdo, fileData);
 }
 
 void Material::Deserialize(BufferView fileData)

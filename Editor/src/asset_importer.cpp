@@ -214,7 +214,7 @@ bool AssetImporter::ImportMesh(const std::string& originalFile, const std::strin
     }
 
     DynamicBuffer fileData2;
-    ObjectSerializer::SerializeSimpleObject(&asset, (GroovyObject*)MeshAssetFile::StaticClass()->cdo, fileData2);
+    ObjectSerializer::SerializeSimpleObject(&asset, MeshAssetFile::StaticClass()->cdo, fileData2);
 
     Buffer finalFileData;
     finalFileData.resize(fileData.size() + fileData2.used());

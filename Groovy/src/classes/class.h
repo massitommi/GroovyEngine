@@ -117,6 +117,8 @@ typedef void(*GroovyConstructor)(void*);
 typedef void(*GroovyDestructor)(void*);
 typedef void(*GroovyPropertiesGetter)(std::vector<GroovyProperty>&);
 
+class GroovyObject;
+
 struct GroovyClass
 {
 	std::string name;
@@ -125,7 +127,7 @@ struct GroovyClass
 	GroovyDestructor destructor;
 	GroovyClass* super;
 	GroovyPropertiesGetter propertiesGetter;
-	void* cdo;
+	GroovyObject* cdo;
 };
 
 #define GROOVY_CLASS_NAME(Class)				__internal_groovyclass_##Class
@@ -171,6 +173,7 @@ namespace classUtils
 	// Gets all the properties exposed by a groovy class, sorted means that the first are the base class ones, and the last are the gClass ones
 	void GetClassPropertiesRecursiveSorted(GroovyClass* gClass, std::vector<GroovyProperty>& outProps);
 	uint32 FindProperty(const std::vector<GroovyProperty>& props, const std::string& propName);
+	GroovyObject* DynamicCast(GroovyObject* obj, GroovyClass* gClass);
 }
 
 /*

@@ -1,4 +1,5 @@
 #include "class.h"
+#include "object.h"
 
 void classUtils::GetClassPropertiesRecursiveSorted(GroovyClass* gClass, std::vector<GroovyProperty>& outProps)
 {
@@ -17,4 +18,18 @@ uint32 classUtils::FindProperty(const std::vector<GroovyProperty>& props, const 
 		if (props[i].name == propName)
 			return i;
 	return ~((uint32)0);
+}
+
+GroovyObject* classUtils::DynamicCast(GroovyObject* obj, GroovyClass* gClass)
+{
+	GroovyClass* superClass = obj->GetClass();
+	while (superClass)
+	{
+		if (superClass == gClass)
+		{
+			return obj;
+		}
+		superClass = superClass->super;
+	}
+	return nullptr;
 }

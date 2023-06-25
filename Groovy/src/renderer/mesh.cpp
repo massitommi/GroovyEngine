@@ -46,7 +46,7 @@ void Mesh::Serialize(DynamicBuffer& fileData)
 	asset.materials = mMaterials;
 	asset.submeshes = mSubmeshes;
 
-	ObjectSerializer::SerializeSimpleObject(&asset, (GroovyObject*)MeshAssetFile::StaticClass()->cdo, fileData);
+	ObjectSerializer::SerializeSimpleObject(&asset, MeshAssetFile::StaticClass()->cdo, fileData);
 }
 
 void Mesh::Deserialize(BufferView fileData)
