@@ -1,6 +1,7 @@
 #include "mesh.h"
 #include "classes/object_serializer.h"
 #include "assets/asset_manager.h"
+#include "assets/asset_serializer.h"
 #include "project/project.h"
 #include "platform/filesystem.h"
 
@@ -17,9 +18,6 @@ Mesh::~Mesh()
 
 void Mesh::Load()
 {
-	if (mLoaded)
-		return;
-
 	extern Project gProj;
 	AssetHandle myHandle = AssetManager::Get(mUUID);
 	Buffer fileData;
@@ -27,6 +25,32 @@ void Mesh::Load()
 	Deserialize(fileData);
 
 	mLoaded = true;
+}
+
+void Mesh::Save()
+{
+	extern Project gProj;
+	AssetHandle myHandle = AssetManager::Get(mUUID);
+	AssetSerializer::SerializeMesh(this, (gProj.assets / myHandle.name).string());
+}
+
+bool Mesh::Editor_FixDependencyDeletion(AssetHandle assetToBeDeleted)
+{
+	extern Material* DEFAULT_MATERIAL;
+	if (assetToBeDeleted.type == ASSET_TYPE_MATERIAL)
+	{
+		bool found = false;
+		for (Material*& m : mMaterials)
+		{
+			if (m == assetToBeDeleted.instance)
+			{
+				m = DEFAULT_MATERIAL;
+				found = true;
+			}
+		}
+		return found;
+	}
+	return false;
 }
 
 void Mesh::FixForRendering()

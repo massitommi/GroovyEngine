@@ -208,19 +208,28 @@ AssetHandle AssetManager::Editor_OnImport(const std::string& fileName, EAssetTyp
 	handle.instance = InstantiateAsset(handle);
 	handle.instance->__internal_SetUUID(uuid);
 
-	extern bool gEditorPendingSave;
-	gEditorPendingSave = true;
-
 	return handle;
 }
 
-void AssetManager::Editor_Delete(AssetUUID uuid)
+void AssetManager::Editor_Delete(AssetUUID uuid, std::vector<AssetHandle>& outDependencies)
 {
-	delete sAssetRegistry[uuid].instance;
+	AssetHandle assetHandle = sAssetRegistry[uuid];
+	checkslowf(assetHandle.instance, "Trying to delete an asset with that does not exist in the registry! uuid: %i", uuid);
+	
+	// remove from registry
 	sAssetRegistry.erase(uuid);
+	
+	// fix dependencies
+	for (auto& [uuid, handle] : sAssetRegistry)
+	{
+		if (handle.instance->Editor_FixDependencyDeletion(assetHandle))
+		{
+			outDependencies.push_back(handle);
+		}
+	}
 
-	extern bool gEditorPendingSave;
-	gEditorPendingSave = true;
+	// delete instance
+	delete assetHandle.instance;
 }
 
 #endif

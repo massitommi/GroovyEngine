@@ -25,6 +25,14 @@ typedef uint64 AssetUUID;
 #define GROOVY_SHADER_VERTEX_SEGMENT    "GROOVY_SHADER_VERTEX"
 #define GROOVY_SHADER_PIXEL_SEGMENT     "GROOVY_SHADER_PIXEL"
 
+struct AssetHandle
+{
+    std::string name;
+    AssetUUID uuid = 0;
+    EAssetType type = ASSET_TYPE_NONE;
+    class AssetInstance* instance = nullptr;
+};
+
 class AssetInstance
 {
 public:
@@ -37,14 +45,14 @@ public:
 
     virtual bool IsLoaded() const = 0;
     virtual void Load() = 0;
-};
+    virtual void Save() = 0;
 
-struct AssetHandle
-{
-    std::string name;
-    AssetUUID uuid = 0;
-    EAssetType type = ASSET_TYPE_NONE;
-    AssetInstance* instance = nullptr;
+#if WITH_EDITOR
+
+    // returns true if assetToBeDeleted was referenced
+    virtual bool Editor_FixDependencyDeletion(AssetHandle assetToBeDeleted) = 0;
+
+#endif
 };
 
 // todo move this away

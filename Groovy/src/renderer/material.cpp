@@ -2,6 +2,7 @@
 #include "assets/asset_loader.h"
 #include "classes/object_serializer.h"
 #include "assets/asset_manager.h"
+#include "assets/asset_serializer.h"
 #include "project/project.h"
 #include "platform/filesystem.h"
 
@@ -12,9 +13,6 @@ Material::Material()
 
 void Material::Load()
 {
-	if (mLoaded)
-		return;
-
 	extern Project gProj;
 	AssetHandle myHandle = AssetManager::Get(mUUID);
 	Buffer fileData;
@@ -23,6 +21,42 @@ void Material::Load()
 	FixForRendering();
 
 	mLoaded = true;
+}
+
+void Material::Save()
+{
+	extern Project gProj;
+	AssetHandle myHandle = AssetManager::Get(mUUID);
+	AssetSerializer::SerializeMaterial(this, (gProj.assets / myHandle.name).string());
+}
+
+bool Material::Editor_FixDependencyDeletion(AssetHandle assetToBeDeleted)
+{
+	extern Shader* DEFAULT_SHADER;
+	extern Texture* DEFAULT_TEXTURE;
+
+	if (assetToBeDeleted.type == ASSET_TYPE_SHADER && mShader == assetToBeDeleted.instance)
+	{
+		SetShader(DEFAULT_SHADER);
+		SetResources(DEFAULT_TEXTURE);
+		return true;
+	}
+
+	else if (assetToBeDeleted.type == ASSET_TYPE_TEXTURE)
+	{
+		bool found = false;
+		for (MaterialResource& res : mResources)
+		{
+			if (res.res == assetToBeDeleted.instance)
+			{
+				res.res = DEFAULT_TEXTURE;
+				found = true;
+			}
+		}
+		return found;
+	}
+
+	return false;
 }
 
 bool Material::Validate()

@@ -27,7 +27,29 @@ extern Window* gWindow;
 extern bool gEngineShouldRun;
 extern Project gProj;
 
-bool gEditorPendingSave = false;
+static std::vector<AssetHandle> sPendingSaveAssets;
+static bool sPendingSaveRegistry = false;
+
+inline bool AssetsPendingSave() { return sPendingSaveAssets.size(); }
+
+void FlagAssetPendingSave(const AssetHandle& handle)
+{
+	if (std::find_if(sPendingSaveAssets.begin(), sPendingSaveAssets.end(), [=](AssetHandle& h) { return h.uuid == handle.uuid; }) == sPendingSaveAssets.end())
+		sPendingSaveAssets.push_back(handle);
+}
+
+void SaveAssets()
+{
+	for (AssetHandle& handle : sPendingSaveAssets)
+		handle.instance->Save();
+	sPendingSaveAssets.clear();
+}
+
+void SaveAssetRegistry()
+{
+	AssetManager::SaveRegistry();
+	sPendingSaveRegistry = false;
+}
 
 void EditorInit();
 void EditorUpdate(float deltaTime);
@@ -93,33 +115,48 @@ void OnFilesDropped(const std::vector<std::string>& files)
 		{
 			case ASSET_TYPE_TEXTURE:	
 				AssetImporter::ImportTexture(file, newFileName);
-				AssetManager::SaveRegistry();
+				sPendingSaveRegistry = true;
 				break;
 
 			case ASSET_TYPE_MESH:
 				AssetImporter::ImportMesh(file, newFileName);
-				AssetManager::SaveRegistry();
+				sPendingSaveRegistry = true;
 				break;
 		}
 	}
 }
 
+void SaveWork()
+{
+	if (AssetsPendingSave())
+		SaveAssets();
+
+	if (sPendingSaveRegistry)
+		SaveAssetRegistry();
+}
+
 bool OnCloseRequested()
 {
-	if (gEditorPendingSave)
+	if (sPendingSaveRegistry || AssetsPendingSave())
 	{
 		auto response = SysMessageBox::Show
 		(
-			"Unsaved work",
-			"You are leaving without saving, if you continue you will loose all the latest changes, are you sure?",
+			"Exit & Save",
+			"You are exiting without saving, do you want to save and exit?",
 			MESSAGE_BOX_TYPE_WARNING,
 			MESSAGE_BOX_OPTIONS_YESNOCANCEL
 		);
 
-		if (response != MESSAGE_BOX_RESPONSE_YES)
+		if (response == MESSAGE_BOX_RESPONSE_YES)
 		{
-			return false;
+			SaveWork();
+			return true;
 		}
+		else if (response == MESSAGE_BOX_RESPONSE_NO)
+		{
+			return true;
+		}
+		return false;
 	}
 	return true;
 }
@@ -139,12 +176,6 @@ static Mesh* testMesh;
 static Vec3 camLoc = {0,1.0f,-3};
 static Vec3 camRot = {0,0,0};
 static float camFOV = 60;
-
-void SaveWork()
-{
-	AssetManager::SaveRegistry();
-	gEditorPendingSave = false;
-}
 
 Texture* LoadEditorIcon(const std::string& path)
 {
@@ -343,8 +374,8 @@ namespace panels
 					);
 					if (res == MESSAGE_BOX_RESPONSE_YES)
 					{
-						// replace asset in dependenciese please
-						AssetManager::Editor_Delete(asset.uuid);
+						AssetManager::Editor_Delete(asset.uuid, sPendingSaveAssets);
+						sPendingSaveRegistry = true;
 					}
 				}
 				if (panelAsset.flags & PANEL_ASSET_FLAG_IS_DEFAULT)

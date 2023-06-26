@@ -159,7 +159,7 @@ void AssetRegistryWindow::RenderContent()
 	ImGui::Spacing();
 	ImGui::Spacing();
 	ImGui::Text("Debug add groovyasset");
-	ImGui::InputText("Asset name", &mDebugAssetName);
+	ImGui::InputText("Asset name (relative to assets folder)", &mDebugAssetName);
 	if (ImGui::BeginCombo("Asset type", AssetTypeStr(mDebugAssetType)))
 	{
 		if (ImGui::Selectable(AssetTypeStr(ASSET_TYPE_TEXTURE), mDebugAssetType == ASSET_TYPE_TEXTURE))
@@ -183,7 +183,10 @@ void AssetRegistryWindow::RenderContent()
 		ImGui::BeginDisabled();
 
 	if (ImGui::Button("Add to registry"))
+	{
 		AssetManager::Editor_OnImport(mDebugAssetName, mDebugAssetType);
+		AssetManager::SaveRegistry();
+	}
 	
 	if (!canAdd)
 		ImGui::EndDisabled();

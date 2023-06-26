@@ -40,6 +40,10 @@ public:
 
 	virtual bool IsLoaded() const override { return true; }
 	virtual void Load() override {}
+	virtual void Save() override {}
+#if WITH_EDITOR
+	virtual bool Editor_FixDependencyDeletion(AssetHandle assetToBeDeleted) override { return false; }
+#endif
 
 	virtual void Bind() = 0;
 
