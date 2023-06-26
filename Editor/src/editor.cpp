@@ -368,34 +368,34 @@ namespace panels
 
 			if (ImGui::BeginPopupContextItem(fileNameNoExt.c_str(), ImGuiPopupFlags_MouseButtonRight))
 			{
+				ImGui::SeparatorText("Actions");
 				// delete asset
-				if (panelAsset.flags & PANEL_ASSET_FLAG_IS_DEFAULT)
-					ImGui::BeginDisabled();
-				if (ImGui::Selectable("Delete"))
+				if (!(panelAsset.flags & PANEL_ASSET_FLAG_IS_DEFAULT))
 				{
-					auto res = SysMessageBox::Show
-					(
-						"Asset deletion",
-						"Deleting an asset is dangerous, it could break dependencies with other assets, do you want to continue?",
-						MESSAGE_BOX_TYPE_WARNING, MESSAGE_BOX_OPTIONS_YESNOCANCEL
-					);
-					if (res == MESSAGE_BOX_RESPONSE_YES)
+					if (ImGui::Selectable("Delete"))
 					{
-						AssetManager::Editor_Delete(asset.uuid, sPendingSaveAssets);
-						sPendingSaveRegistry = true;
+						auto res = SysMessageBox::Show
+						(
+							"Asset deletion",
+							"Deleting an asset is dangerous, it could break dependencies with other assets, do you want to continue?",
+							MESSAGE_BOX_TYPE_WARNING, MESSAGE_BOX_OPTIONS_YESNOCANCEL
+						);
+						if (res == MESSAGE_BOX_RESPONSE_YES)
+						{
+							AssetManager::Editor_Delete(asset.uuid, sPendingSaveAssets);
+							sPendingSaveRegistry = true;
+						}
 					}
 				}
-				if (panelAsset.flags & PANEL_ASSET_FLAG_IS_DEFAULT)
-					ImGui::EndDisabled();
 
-
-				// create material if we are shader
-				if (asset.type == ASSET_TYPE_SHADER)
+				switch (asset.type)
 				{
-					if (ImGui::Selectable("Create material"))
+					case ASSET_TYPE_SHADER:
 					{
-						AddWindow<EditMaterialWindow>((Shader*)asset.instance);
+						if (ImGui::Selectable("Create material"))
+							AddWindow<EditMaterialWindow>((Shader*)asset.instance);
 					}
+					break;
 				}
 
 				ImGui::EndPopup();
