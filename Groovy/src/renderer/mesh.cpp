@@ -1,9 +1,6 @@
 #include "mesh.h"
 #include "classes/object_serializer.h"
-#include "assets/asset_manager.h"
-#include "assets/asset_serializer.h"
-#include "project/project.h"
-#include "platform/filesystem.h"
+#include "assets/assets.h"
 
 Mesh::Mesh()
 	: mVertexBuffer(nullptr), mIndexBuffer(nullptr), mUUID(0), mLoaded(false)
@@ -18,21 +15,16 @@ Mesh::~Mesh()
 
 void Mesh::Load()
 {
-	extern Project gProj;
-	AssetHandle myHandle = AssetManager::Get(mUUID);
-	Buffer fileData;
-	FileSystem::ReadFileBinary((gProj.assets / myHandle.name).string(), fileData);
-	Deserialize(fileData);
-
+	AssetLoader::LoadMesh(this);
 	mLoaded = true;
 }
 
 void Mesh::Save()
 {
-	extern Project gProj;
-	AssetHandle myHandle = AssetManager::Get(mUUID);
-	AssetSerializer::SerializeMesh(this, (gProj.assets / myHandle.name).string());
+	AssetSerializer::SerializeMesh(this);
 }
+
+#if WITH_EDITOR
 
 bool Mesh::Editor_FixDependencyDeletion(AssetHandle assetToBeDeleted)
 {
@@ -52,6 +44,8 @@ bool Mesh::Editor_FixDependencyDeletion(AssetHandle assetToBeDeleted)
 	}
 	return false;
 }
+
+#endif
 
 void Mesh::FixForRendering()
 {

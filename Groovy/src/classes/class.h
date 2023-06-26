@@ -36,6 +36,7 @@ struct GroovyProperty
 	uint32 flags;
 	uint32 offset;
 	uint32 arrayCount;
+	// asset type for ASSET_REF properties
 	uint64 param1;
 	uint64 param2;
 };

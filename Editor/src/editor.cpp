@@ -168,6 +168,7 @@ static std::vector<EditorWindow*> sRemoveQueue;
 static Texture* sShaderAssetIcon;
 static Texture* sMaterialAssetIcon;
 static Texture* sMeshAssetIcon;
+static Texture* sClassAssetIcon;
 
 static FrameBuffer* sGameViewportFrameBuffer;
 static ImVec2 sGameViewportSize;
@@ -227,12 +228,19 @@ void UpdateWindows()
 }
 
 extern Shader* DEFAULT_SHADER;
+extern std::vector<GroovyClass*> ENGINE_CLASSES;
+extern std::vector<GroovyClass*> GAME_CLASSES;
+static float sIconSize = 140.0f;
+static const float ICON_SIZE_MAX = 256;
+static const float ICON_SIZE_MIN = 100;
+
 void EditorInit()
 {
 	// assets used by the editor
 	sShaderAssetIcon = LoadEditorIcon("res/shader_asset_icon.png");
 	sMaterialAssetIcon = LoadEditorIcon("res/material_asset_icon.png");
 	sMeshAssetIcon = LoadEditorIcon("res/mesh_asset_icon.png");
+	sClassAssetIcon = LoadEditorIcon("res/class_asset_icon.png");
 	
 	// gameviewport framebuffer
 	FrameBufferSpec gameViewportSpec;
@@ -309,21 +317,20 @@ namespace panels
 
 		float contentWidth = ImGui::GetContentRegionAvail().x;
 		float contentHeight = ImGui::GetContentRegionAvail().y;
-		static float itemSize = 140;
-		int columns = contentWidth / itemSize;
+		int columns = contentWidth / sIconSize;
 		columns = columns < 1 ? 1 : columns;
 
 		// end stolen ui code
 
 		ImGui::Spacing();
 		ImGui::SetNextItemWidth(200);
-		ImGui::SliderFloat("Item size", &itemSize, 100, 256);
+		ImGui::SliderFloat("Item size", &sIconSize, ICON_SIZE_MIN, ICON_SIZE_MAX);
 		ImGui::Spacing();
 		ImGui::Spacing();
 
 		ImGui::Columns(columns, nullptr, false);
 
-		for (size_t i = 0; i < assets.size(); ++i)
+		for (uint32 i = 0; i < assets.size(); ++i)
 		{
 			AssetHandle& asset = assets[i];
 			PanelAsset panelAsset = panelAssets[i];
@@ -336,7 +343,7 @@ namespace panels
 
 			ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, {3,3});
 
-			if (ImGui::ImageButton(fileNameNoExt.c_str(), panelAsset.thumbnail, { itemSize - 10, itemSize - 5 }, {0,0}, {1,1}, {1,1,1,1}))
+			if (ImGui::ImageButton(fileNameNoExt.c_str(), panelAsset.thumbnail, { sIconSize - 10, sIconSize - 5 }, {0,0}, {1,1}, {1,1,1,1}))
 			{
 				switch (asset.type)
 				{
@@ -381,6 +388,16 @@ namespace panels
 				if (panelAsset.flags & PANEL_ASSET_FLAG_IS_DEFAULT)
 					ImGui::EndDisabled();
 
+
+				// create material if we are shader
+				if (asset.type == ASSET_TYPE_SHADER)
+				{
+					if (ImGui::Selectable("Create material"))
+					{
+						AddWindow<EditMaterialWindow>((Shader*)asset.instance);
+					}
+				}
+
 				ImGui::EndPopup();
 			}
 			else if (ImGui::IsItemHovered())
@@ -393,6 +410,86 @@ namespace panels
 			
 			ImGui::EndGroup();
 			
+			ImGui::PopID();
+			ImGui::NextColumn();
+		}
+
+		ImGui::End();
+	}
+
+	void Classes()
+	{
+		ImGui::Begin("C++ classes");
+
+		static bool showEngineClasses = true;
+		static bool showGameClasses = true;
+		
+		std::vector<GroovyClass*> classes;
+		
+		if (showEngineClasses)
+			for (GroovyClass* c : ENGINE_CLASSES)
+				classes.push_back(c);
+
+		/*if (showGameClasses)
+			for (GroovyClass* c : GAME_CLASSES)
+				classes.push_back(c);*/
+
+		// stolen ui code that works pretty well
+
+		float contentWidth = ImGui::GetContentRegionAvail().x;
+		float contentHeight = ImGui::GetContentRegionAvail().y;
+		int columns = contentWidth / sIconSize;
+		columns = columns < 1 ? 1 : columns;
+
+		// end stolen ui code
+
+		ImGui::Spacing();
+		ImGui::SetNextItemWidth(200);
+		ImGui::SliderFloat("Item size", &sIconSize, ICON_SIZE_MIN, ICON_SIZE_MAX);
+		ImGui::Checkbox("Show engine classes", &showEngineClasses);
+		ImGui::SameLine();
+		ImGui::Checkbox("Show game classes", &showGameClasses);
+		ImGui::Spacing();
+		ImGui::Spacing();
+
+		ImGui::Columns(columns, nullptr, false);
+
+		for (size_t i = 0; i < classes.size(); ++i)
+		{
+			GroovyClass* gClass = classes[i];
+
+			ImGui::PushID(i);
+
+			ImGui::BeginGroup();
+
+			ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, { 3,3 });
+
+			ImGui::ImageButton(gClass->name.c_str(), sClassAssetIcon->GetRendererID(), { sIconSize - 10, sIconSize - 5}, {0,0}, {1,1}, {1,1,1,1});
+
+			ImGui::PopStyleVar();
+
+			if (ImGui::BeginPopupContextItem(gClass->name.c_str(), ImGuiPopupFlags_MouseButtonRight))
+			{
+				// delete asset
+				if (ImGui::Selectable("Create blueprint"))
+				{
+					AddWindow<BlueprintEditorWindow>(gClass);
+				}
+
+				ImGui::EndPopup();
+			}
+			else if (ImGui::IsItemHovered())
+			{
+				ImGui::SetTooltip
+				(
+					"Class: %s" "\n" "Size: %i bytes" "\n" "Super class: %s",
+					gClass->name.c_str(), gClass->size, gClass->super ? gClass->super->name.c_str() : "NONE"
+				);
+			}
+			ImGui::Text(gClass->name.c_str());
+
+			ImGui::EndGroup();
+
 			ImGui::PopID();
 			ImGui::NextColumn();
 		}
@@ -502,20 +599,6 @@ void EditorRender()
 			if (ImGui::MenuItem("Asset registry"))
 				AddWindow<AssetRegistryWindow>();
 
-			if (ImGui::MenuItem("Class registry"))
-				AddWindow<ClassRegistryWindow>();
-
-			if (ImGui::MenuItem("Class inspector"))
-				AddWindow<ClassInspectorWindow>();
-
-			ImGui::EndMenu();
-		}
-
-		if (ImGui::BeginMenu("New asset"))
-		{
-			if (ImGui::MenuItem("New material"))
-				AddWindow<EditMaterialWindow>(nullptr);
-
 			ImGui::EndMenu();
 		}
 
@@ -523,6 +606,7 @@ void EditorRender()
     }
 
 	panels::Assets();
+	panels::Classes();
 	panels::GameViewport();
 	panels::EntityList();
 	panels::Properties();
@@ -533,6 +617,7 @@ void EditorRender()
 
 void EditorShutdown()
 {
+	delete sClassAssetIcon;
 	delete sShaderAssetIcon;
 	delete sMaterialAssetIcon;
 	delete sMeshAssetIcon;

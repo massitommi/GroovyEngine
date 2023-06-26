@@ -3,12 +3,12 @@
 #include "vendor/imgui/misc/cpp/imgui_stdlib.h"
 #include "platform/messagebox.h"
 #include "classes/object_serializer.h"
-#include "assets/asset_serializer.h"
 #include "assets/assets.h"
 #include "project/project.h"
 #include "classes/class.h"
 #include "classes/class_db.h"
 #include "renderer/mesh.h"
+#include "classes/blueprint.h"
 
 void EditorWindow::RenderWindow()
 {
@@ -46,20 +46,19 @@ extern Project gProj;
 EditMaterialWindow::EditMaterialWindow(Material* mat)
 	: EditorWindow("Material editor"), mMaterial(mat), mExistsOnDisk(true)
 {
-	if (!mat)
-	{
-		mMaterial = new Material();
-		mMaterial->FixForRendering();
-		check(mMaterial->Validate());
-		SetPendingSave(true);
-		mExistsOnDisk = false;
-		mFileName = "new_material" GROOVY_ASSET_EXT;
-	}
-	else
-	{
-		mFileName = AssetManager::Get(mMaterial->GetUUID()).name;
-		mMaterial->FixForRendering();
-	}
+	mFileName = AssetManager::Get(mMaterial->GetUUID()).name;
+	mMaterial->FixForRendering();
+}
+
+EditMaterialWindow::EditMaterialWindow(Shader* shader)
+	: EditorWindow("Material editor"), mExistsOnDisk(false)
+{
+	checkslow(shader);
+	mMaterial = new Material();
+	mMaterial->SetShader(shader);
+	mMaterial->FixForRendering();
+	SetPendingSave(true);
+	mFileName = "new_material" GROOVY_ASSET_EXT;
 }
 
 EditMaterialWindow::~EditMaterialWindow()
@@ -245,140 +244,40 @@ void MeshPreviewWindow::RenderContent()
 
 	if (ImGui::Button("Save changes"))
 	{
-		AssetSerializer::SerializeMesh(mMesh, (gProj.assets / mFileName).string());
+		mMesh->Save();
 	}
-}
-
-void PrintClasses(std::vector<GroovyClass*> classes)
-{
-	ImGui::Spacing();
-	ImGui::Separator();
-	for (GroovyClass* c : classes)
-	{
-		ImGui::Text("Name: %s", c->name.c_str());
-		ImGui::Text("Size: %i bytes", c->size);
-		ImGui::Text("Super class: %s", c->super ? c->super->name.c_str() : "NONE");
-		ImGui::Text("CDO (Class Default Object): %p", c->cdo);
-
-		ImGui::Separator();
-	}
-	ImGui::Spacing();
 }
 
 extern ClassDB gClassDB;
 extern std::vector<GroovyClass*> ENGINE_CLASSES;
 extern std::vector<GroovyClass*> GAME_CLASSES;
 
-void ClassRegistryWindow::RenderContent()
+BlueprintEditorWindow::BlueprintEditorWindow(Blueprint* blueprint)
+	: EditorWindow("Blueprint editor"), mBlueprint(blueprint), mExistsOnDisk(true)
 {
-	if (ImGui::CollapsingHeader("Engine classes", ImGuiTreeNodeFlags_DefaultOpen))
-	{
-		PrintClasses(ENGINE_CLASSES);
-	}
-	if (ImGui::CollapsingHeader("Game classes", ImGuiTreeNodeFlags_DefaultOpen))
-	{
-		//PrintClasses(GAME_CLASSES);
-	}
-}
-
-
-GroovyClass* ClassInspectorWindow::sSelectedClass = nullptr;
-bool ClassInspectorWindow::sShowInheritedProps = false;
-std::vector<GroovyProperty> ClassInspectorWindow::sSelectedClassInheritedProps;
-std::vector<GroovyProperty> ClassInspectorWindow::sSelectedClassProps;
-std::vector<GroovyClass*> ClassInspectorWindow::sClasses;
-
-ClassInspectorWindow::ClassInspectorWindow()
-	: EditorWindow("Class Inspector")
-{
-	if (!sClasses.size())
-	{
-		sClasses = gClassDB.GetClasses();
-		checkslow(sClasses.size());
-		sSelectedClass = sClasses[0];
-		UpdateData();
-	}
-}
-
-void ClassInspectorWindow::UpdateData()
-{
-	sSelectedClassInheritedProps = gClassDB[sSelectedClass];
-	sSelectedClassProps.clear();
-	sSelectedClass->propertiesGetter(sSelectedClassProps);
-}
-
-const char* GetPropertyTypeStr(EPropertyType type)
-{
-	switch (type)
-	{
-		case PROPERTY_TYPE_INT32:		return "INT32";
-		case PROPERTY_TYPE_INT64:		return "INT64";
-		case PROPERTY_TYPE_UINT32:		return "UINT32";
-		case PROPERTY_TYPE_UINT64:		return "UINT64";
-		case PROPERTY_TYPE_BOOL:		return "BOOL";
-		case PROPERTY_TYPE_FLOAT:		return "FLOAT";
-		case PROPERTY_TYPE_STRING:		return "STRING";
-		case PROPERTY_TYPE_VEC3:		return "VEC3";
-		case PROPERTY_TYPE_TRANSFORM:	return "TRANSFORM";
-		case PROPERTY_TYPE_BUFFER:		return "BUFFER";
-		case PROPERTY_TYPE_ASSET_REF:	return "ASSET_REF";
-		case PROPERTY_TYPE_INTERNAL_SUBMESHDATA:	return "INTERNAL_SUBMESHDATA";
-	}
-	check(0);
-	return "Unknown";
-}
-
-
-void ClassInspectorWindow::RenderContent()
-{
-	if (ImGui::BeginCombo("Class", sSelectedClass->name.c_str()))
-	{
-		for (GroovyClass* c : sClasses)
-		{
-			bool currentlySelected = c == sSelectedClass;
-			if (ImGui::Selectable(c->name.c_str(), &currentlySelected))
-			{
-				sSelectedClass = c;
-				UpdateData();
-			}
-		}
-		ImGui::EndCombo();
-	}
-
-	ImGui::Checkbox("Include inherited properties", &sShowInheritedProps);
-
-	ImGui::Spacing();
-	ImGui::Spacing();
-	ImGui::Spacing();
-
-	ImGui::Text("Reflected properties:");
+	checkslow(blueprint);
+	mClass = blueprint->GetClass();
 	
-	ImGui::Spacing();
-	ImGui::Spacing();
+	mObjInstance = (GroovyObject*)malloc(mClass->size);
+	mClass->constructor(mObjInstance);
+}
 
-	std::vector<GroovyProperty>* props = sShowInheritedProps ? &sSelectedClassInheritedProps : &sSelectedClassProps;
-
-	ImGui::Separator();
-	ImGui::Spacing();
-	for (const GroovyProperty& p : *props)
-	{
-		std::string varName = p.name;
-		if (p.arrayCount > 1)
-			varName += " [" + std::to_string(p.arrayCount) + "]";
-		else if (p.arrayCount < 1)
-			varName += " (dynamic array)";
-
-		if (p.flags & PROPERTY_FLAG_NO_SERIALIZE)
-			ImGui::PushStyleColor(ImGuiCol_::ImGuiCol_Text, 0xff00ffff);
-
-		if (ImGui::BeginCombo(varName.c_str(), GetPropertyTypeStr(p.type)))
-			ImGui::EndCombo();
-
-		if (p.flags & PROPERTY_FLAG_NO_SERIALIZE)
-			ImGui::PopStyleColor();
-
-		ImGui::Spacing();
-		ImGui::Separator();
-	}
+BlueprintEditorWindow::BlueprintEditorWindow(GroovyClass* gClass)
+	: EditorWindow("Blueprint editor"), mExistsOnDisk(false)
+{
+	checkslow(gClass);
+	mClass = gClass;
+	mBlueprint = new Blueprint(gClass);
 	
+	mObjInstance = (GroovyObject*)malloc(mClass->size);
+	mClass->constructor(mObjInstance);
+}
+
+BlueprintEditorWindow::~BlueprintEditorWindow()
+{
+	mClass->destructor(mObjInstance);
+	free(mObjInstance);
+
+	if (!mExistsOnDisk)
+		delete mBlueprint;
 }

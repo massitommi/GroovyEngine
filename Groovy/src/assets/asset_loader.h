@@ -13,4 +13,7 @@ public:
 
 	static Texture* LoadTexture(const std::string& filePath);
 	static Shader* LoadShader(const std::string& filePath);
+
+	static void LoadMaterial(Material* material);
+	static void LoadMesh(Mesh* mesh);
 };

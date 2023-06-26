@@ -1,5 +1,9 @@
 #include "asset_loader.h"
 #include "platform/filesystem.h"
+#include "asset_manager.h"
+#include "project/project.h"
+
+extern Project gProj;
 
 Texture* AssetLoader::LoadTexture(const std::string& filePath)
 {
@@ -30,41 +34,20 @@ Shader* AssetLoader::LoadShader(const std::string& filePath)
 	return Shader::Create(data.data() + vertexStart, vertexSize, data.data() + pixelStart, pixelSize);
 }
 
-//Mesh* AssetLoader::LoadMesh(const std::string& filePath)
-//{
-//	Buffer fileData;
-//	FileSystem::ReadFileBinary(filePath, fileData);
-//	MeshAssetHeader* header = fileData.as<MeshAssetHeader>();
-//
-//	size_t vertexBufferSize = header->vertexBufferSize;
-//	size_t indexBufferSize = header->indexBufferSize;
-//	byte* vertexBufferData = fileData.data() + sizeof(MeshAssetHeader);
-//	byte* indexBufferData = vertexBufferData + vertexBufferSize;
-//	byte* submeshData = indexBufferData + indexBufferSize;
-//	byte* materialData = submeshData + header->submeshCount * sizeof(SubmeshData);
-//
-//	VertexBuffer* vertexBuffer = VertexBuffer::Create(vertexBufferSize, vertexBufferData, sizeof(MeshVertex));
-//	IndexBuffer* indexBuffer = IndexBuffer::Create(indexBufferSize, indexBufferData);
-//
-//	std::vector<SubmeshData> submeshes;
-//	submeshes.resize(header->submeshCount);
-//	memcpy(submeshes.data(), submeshData, header->submeshCount * sizeof(SubmeshData));
-//
-//	std::vector<Material*> materials;
-//	materials.resize(header->submeshCount);
-//	AssetUUID* materialsID = (AssetUUID*)materialData;
-//	for (Material*& mat : materials)
-//	{
-//		Material* material = DEFAULT_MATERIAL;
-//		if (*materialsID)
-//			material = AssetManager::Get<Material>(*materialsID);
-//		
-//		check(material);
-//
-//		mat = material;
-//
-//		materialsID++;
-//	}
-//
-//	return new Mesh(vertexBuffer, indexBuffer, submeshes, materials);
-//}
+void AssetLoader::LoadMaterial(Material* material)
+{
+	AssetHandle handle = AssetManager::Get(material->GetUUID());
+	std::string absPath = (gProj.assets / handle.name).string();
+	Buffer fileData;
+	FileSystem::ReadFileBinary(absPath, fileData);
+	material->Deserialize(fileData);
+}
+
+void AssetLoader::LoadMesh(Mesh* mesh)
+{
+	AssetHandle handle = AssetManager::Get(mesh->GetUUID());
+	std::string absPath = (gProj.assets / handle.name).string();
+	Buffer fileData;
+	FileSystem::ReadFileBinary(absPath, fileData);
+	mesh->Deserialize(fileData);
+}

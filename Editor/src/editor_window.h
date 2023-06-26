@@ -50,6 +50,7 @@ class EditMaterialWindow : public EditorWindow
 {
 public:
 	EditMaterialWindow(class Material* mat);
+	EditMaterialWindow(class Shader* shader);
 	virtual ~EditMaterialWindow();
 	
 	virtual void RenderContent() override;
@@ -85,29 +86,16 @@ private:
 	std::string mFileName;
 };
 
-class ClassRegistryWindow : public EditorWindow
+class BlueprintEditorWindow : public EditorWindow
 {
 public:
-	ClassRegistryWindow()
-		: EditorWindow("Class Registry")
-	{}
-
-	virtual void RenderContent() override;
-};
-
-class ClassInspectorWindow : public EditorWindow
-{
-public:
-	ClassInspectorWindow();
-
-	void UpdateData();
-
-	virtual void RenderContent() override;
+	BlueprintEditorWindow(class Blueprint* blueprint);
+	BlueprintEditorWindow(class GroovyClass* gClass);
+	~BlueprintEditorWindow();
 
 private:
-	static GroovyClass* sSelectedClass;
-	static bool sShowInheritedProps;
-	static std::vector<GroovyProperty> sSelectedClassInheritedProps;
-	static std::vector<GroovyProperty> sSelectedClassProps;
-	static std::vector<GroovyClass*> sClasses;
+	class Blueprint* mBlueprint;
+	class GroovyClass* mClass;
+	class GroovyObject* mObjInstance;
+	bool mExistsOnDisk;
 };
