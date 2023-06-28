@@ -81,7 +81,7 @@ template<>														\
 struct PropType<std::vector<CoreType>> {						\
 	enum : uint64 {												\
 		Type = OutPropertyType,									\
-		Flags = ExFlags | PROPERTY_FLAG_IS_DYNAMIC_ARRAY,		\
+		Flags = ExFlags | PROPERTY_FLAG_IS_ARRAY | PROPERTY_FLAG_IS_DYNAMIC_ARRAY,		\
 		ArrayCount = 0,											\
 		Param1 = ExParam1,										\
 		Param2 = ExParam2										\
@@ -143,27 +143,31 @@ public:																								\
 	virtual GroovyClass* GetClass() const override { return &GROOVY_CLASS_NAME(Class); }			\
 	static void GetClassProperties(std::vector<GroovyProperty>& outProps);							\
 	virtual void GetClassPropertiesRecursive(std::vector<GroovyProperty>& outProps) const override;	\
-	static GroovyClass* StaticClass() { return &GROOVY_CLASS_NAME(Class); }							\
+	static constexpr GroovyClass* StaticClass() { return &GROOVY_CLASS_NAME(Class); }				\
 private:
 
-#define GROOVY_CLASS_IMPL(Class, SuperClass)	GroovyClass GROOVY_CLASS_NAME(Class) =			\
+#define GROOVY_CLASS_IMPL(Class)	GroovyClass GROOVY_CLASS_NAME(Class) =						\
 {																								\
 	#Class,																						\
 	sizeof(Class),																				\
 	[](void* mem) { new(mem) Class(); },														\
 	[](void* mem) { ((Class*)mem)->~Class(); },													\
-	&GROOVY_CLASS_NAME(SuperClass),																\
+	Class::Super::StaticClass(),																\
 	&Class::GetClassProperties,																	\
 	new Class()																					\
-};
+};																								\
+void Class::GetClassPropertiesRecursive(std::vector<GroovyProperty>& outProps) const			\
+{																								\
+	Class::Super::GetClassProperties(outProps);													\
+	Class::GetClassProperties(outProps);														\
+}																								\
+void Class::GetClassProperties(std::vector<GroovyProperty>& outProps) {						
 
 #define GROOVY_PROPERTY(Class, Property, ExFlags)	{ #Property, (EPropertyType)PropType<decltype(Property)>::Type, PropType<decltype(Property)>::Flags | ExFlags, offsetof(Class, Property), PropType<decltype(Property)>::ArrayCount, PropType<decltype(Property)>::Param1, PropType<decltype(Property)>::Param2 }
+#define GROOVY_REFLECT(Property)				outProps.push_back(GROOVY_PROPERTY(ThisClass, Property, 0));
+#define GROOVY_REFLECT_EX(Property, ExFlags)	outProps.push_back(GROOVY_PROPERTY(ThisClass, Property, ExFlags));
 
-
-#define GROOVY_CLASS_REFLECTION_BEGIN(Class)			void Class::GetClassPropertiesRecursive(std::vector<GroovyProperty>& outProps) const { Super::GetClassProperties(outProps); ThisClass::GetClassProperties(outProps); } void Class::GetClassProperties(std::vector<GroovyProperty>& outProps) {
-#define GROOVY_REFLECT(Property)						outProps.push_back(GROOVY_PROPERTY(ThisClass, Property, 0));
-#define GROOVY_REFLECT_EX(Property, ExFlags)			outProps.push_back(GROOVY_PROPERTY(ThisClass, Property, ExFlags));
-#define GROOVY_CLASS_REFLECTION_END()					}
+#define GROOVY_CLASS_END() }
 
 #define CLASS_LIST_BEGIN(ListName)				std::vector<GroovyClass*> ListName = 
 #define CLASS_LIST_ADD(Class)					&GROOVY_CLASS_NAME(Class)
@@ -202,13 +206,11 @@ namespace classUtils
 
 	myclass.cpp
 
-	GROOVY_CLASS_IMPL(MyClass, GroovyObject)
-
-	GROOVY_CLASS_BEGIN_REFLECTION(MyClass)
+	GROOVY_CLASS_IMPL(MyClass)
 		GROOVY_REFLECT(mData1)
 		GROOVY_REFLECT(mData2)
 		GROOVY_REFLECT_EX(mDead, PROPERTY_FLAG_NOSERIALIZE)
-	GROOVY_CLASS_END_REFLECTION()
+	GROOVY_CLASS_END()
 
 	MyClass::MyClass()
 		: mData1(0), mData2{1,2,3,4,5}

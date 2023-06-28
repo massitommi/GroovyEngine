@@ -256,28 +256,217 @@ BlueprintEditorWindow::BlueprintEditorWindow(Blueprint* blueprint)
 	: EditorWindow("Blueprint editor"), mBlueprint(blueprint), mExistsOnDisk(true)
 {
 	checkslow(blueprint);
-	mClass = blueprint->GetClass();
 	
-	mObjInstance = (GroovyObject*)malloc(mClass->size);
-	mClass->constructor(mObjInstance);
+	mObjInstance = (GroovyObject*)malloc(blueprint->GetClass()->size);
+	blueprint->GetClass()->constructor(mObjInstance);
+
+	BuildPropertyCache();
 }
 
 BlueprintEditorWindow::BlueprintEditorWindow(GroovyClass* gClass)
 	: EditorWindow("Blueprint editor"), mExistsOnDisk(false)
 {
 	checkslow(gClass);
-	mClass = gClass;
 	mBlueprint = new Blueprint(gClass);
 	
-	mObjInstance = (GroovyObject*)malloc(mClass->size);
-	mClass->constructor(mObjInstance);
+	mObjInstance = (GroovyObject*)malloc(gClass->size);
+	gClass->constructor(mObjInstance);
+
+	BuildPropertyCache();
 }
 
 BlueprintEditorWindow::~BlueprintEditorWindow()
 {
-	mClass->destructor(mObjInstance);
+	mBlueprint->GetClass()->destructor(mObjInstance);
 	free(mObjInstance);
 
 	if (!mExistsOnDisk)
 		delete mBlueprint;
+}
+
+void BlueprintEditorWindow::BuildPropertyCache()
+{
+	GroovyClass* superClass = mBlueprint->GetClass();
+
+	while (superClass)
+	{
+		ObjectProperties& c = mPropertyCache.emplace_back();
+		c.gClass = superClass;
+		superClass->propertiesGetter(c.props);
+
+		superClass = superClass->super;
+	}
+}
+
+bool PropertyInput(const std::string& label, EPropertyType type, void* data, bool readonly)
+{
+	if (readonly)
+		ImGui::BeginDisabled();
+
+	bool click = false;
+
+	std::string lblVal = "##" + label;
+
+	ImGui::Text(label.c_str());
+	ImGui::SameLine();
+
+	switch (type)
+	{
+		case PROPERTY_TYPE_INT32:
+			click = ImGui::InputScalar(lblVal.c_str(), ImGuiDataType_S32, data, 0, 0, 0);
+			break;
+		case PROPERTY_TYPE_INT64:
+			click = ImGui::InputScalar(lblVal.c_str(), ImGuiDataType_S64, data, 0, 0, 0);
+			break;
+		case PROPERTY_TYPE_UINT32:
+			click = ImGui::InputScalar(lblVal.c_str(), ImGuiDataType_U32, data, 0, 0, 0);
+			break;
+		case PROPERTY_TYPE_UINT64:
+			click = ImGui::InputScalar(lblVal.c_str(), ImGuiDataType_U64, data, 0, 0, 0);
+			break;
+		case PROPERTY_TYPE_FLOAT:
+			click = ImGui::InputScalar(lblVal.c_str(), ImGuiDataType_Float, data, 0, 0, 0);
+			break;
+		case PROPERTY_TYPE_BOOL:
+			click = ImGui::Checkbox(lblVal.c_str(), (bool*)data);
+			break;
+		case PROPERTY_TYPE_STRING:
+			click = ImGui::InputText(lblVal.c_str(), (std::string*)data, readonly ? ImGuiInputTextFlags_ReadOnly : 0);
+			break;
+		case PROPERTY_TYPE_VEC3:
+			click = ImGui::DragFloat3(lblVal.c_str(), (float*)data, 1.0f, 0.0f, 0.0f, "%.3f");
+			break;
+	}
+
+	if (readonly)
+		ImGui::EndDisabled();
+
+	return click;
+}
+
+void Property(const GroovyProperty& prop, void* propData)
+{
+	ImGui::PushID(propData);
+	bool readonly = prop.flags & PROPERTY_FLAG_EDITOR_READONLY;
+
+	if (prop.flags & PROPERTY_FLAG_IS_ARRAY)
+	{
+		if (ImGui::CollapsingHeader(prop.name.c_str()))
+		{
+			uint32 propSize = reflectionUtils::GetPropertySize(prop.type);
+			if (prop.flags & PROPERTY_FLAG_IS_DYNAMIC_ARRAY)
+			{
+				DynamicArrayPtr arrayPtr = reflectionUtils::GetDynamicArrayPtr(prop.type);
+				void* dataData = arrayPtr.data(propData);
+				uint32 dataArrayCount = arrayPtr.size(propData);
+
+				struct DynamicArrayPostRenderAction
+				{
+					uint32 action;
+					uint32 param;
+				};
+
+				enum EPostRenderDynamicArrayAction
+				{
+					NONE,
+					CLEAR,
+					ADD,
+					REMOVE_AT,
+					INSERT_AT
+				};
+
+				DynamicArrayPostRenderAction postAction = { NONE , 0 };
+
+				for (uint32 i = 0; i < dataArrayCount; i++)
+				{
+					std::string labelName = "[" + std::to_string(i) + "]";
+					PropertyInput(labelName, prop.type, (byte*)dataData + (propSize * i), readonly);
+					ImGui::SameLine();
+					ImGui::PushID(i);
+					if (ImGui::Button("X"))
+					{
+						postAction.action = REMOVE_AT;
+						postAction.param = i;
+					}
+					ImGui::SameLine();
+					if (ImGui::Button("+"))
+					{
+						postAction.action = INSERT_AT;
+						postAction.param = i;
+					}
+					ImGui::PopID();
+				}
+
+				if (ImGui::Button("Clear"))
+				{
+					postAction.action = CLEAR;
+				}
+				ImGui::SameLine();
+				if (ImGui::Button("Add"))
+				{
+					postAction.action = ADD;
+				}
+
+				// take action 
+				switch (postAction.action)
+				{
+				case NONE:
+					break;
+				case CLEAR:
+					arrayPtr.clear(propData);
+					break;
+				case REMOVE_AT:
+					arrayPtr.removeAt(propData, postAction.param);
+					break;
+				case INSERT_AT:
+					arrayPtr.insertAt(propData, postAction.param);
+					break;
+				case ADD:
+					arrayPtr.add(propData);
+					break;
+				}
+			}
+			else
+			{
+				for (uint32 i = 0; i < prop.arrayCount; i++)
+				{
+					std::string labelName = "[" + std::to_string(i) + "]";
+					PropertyInput(labelName, prop.type, (byte*)propData + (propSize * i), readonly);
+				}
+			}
+		}
+	}
+	else
+	{
+		PropertyInput(prop.name, prop.type, propData, readonly);
+	}
+	ImGui::PopID();
+}
+
+void Properties(const std::string& name, GroovyObject* obj, const std::vector<ObjectProperties>& props)
+{
+	ImGui::Text(name.c_str());
+	ImGui::Spacing();
+	for (const ObjectProperties& objProp : props)
+	{
+		if (!objProp.props.size())
+			continue;
+
+		ImGui::Text(objProp.gClass->name.c_str());
+		ImGui::Spacing();
+
+		for (const GroovyProperty& prop : objProp.props)
+		{
+			ImGui::Spacing();
+			ImGui::Spacing();
+			Property(prop, (byte*)obj + prop.offset);
+			ImGui::Spacing();
+			ImGui::Spacing();
+		}
+	}
+}
+
+void BlueprintEditorWindow::RenderContent()
+{
+	Properties("Test", mObjInstance, mPropertyCache);
 }

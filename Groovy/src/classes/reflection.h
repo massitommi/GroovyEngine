@@ -7,6 +7,10 @@ struct DynamicArrayPtr
 	void* (*data)(void*);
 	size_t(*size)(void*);
 	void (*resize)(void*, size_t);
+	void (*clear)(void*);
+	void (*removeAt)(void*, size_t);
+	void (*insertAt)(void*, size_t);
+	void (*add)(void*);
 };
 
 namespace reflectionUtils

@@ -245,6 +245,7 @@ void ObjectSerializer::SerializeSimpleObject(GroovyObject* obj, GroovyObject* cd
 	for(const auto& desc : pack.desc)
 	{
 		fileData.push(desc.classProp->name);									// property name
+		fileData.push(desc.classProp->type);									// property type
 		fileData.push(desc.arrayCount);											// property array count
 		fileData.push(desc.sizeBytes);											// property data size
 		fileData.push_bytes(pack.data.data() + bufferOffset, desc.sizeBytes);	// binary data
@@ -267,10 +268,11 @@ void ObjectSerializer::DeserializeSimpleObject(GroovyObject* obj, BufferView& fi
 	{
 		PropertyDesc desc;
 		std::string propName = fileData.read<std::string>();
+		EPropertyType propType = fileData.read<EPropertyType>();
 		desc.arrayCount = fileData.read<uint32>();
 		desc.sizeBytes = fileData.read<size_t>();
 
-		const GroovyProperty* classProp = gClassDB.FindProperty(obj->GetClass(), propName);
+		const GroovyProperty* classProp = gClassDB.FindProperty(obj->GetClass(), propName, propType);
 		if (classProp)
 		{
 			desc.classProp = classProp;

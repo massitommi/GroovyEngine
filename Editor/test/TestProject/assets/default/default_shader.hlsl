@@ -16,6 +16,12 @@ cbuffer anotherBuffer : register(b1)
 {
 	float4 tintColor;
 	float3 LOD;
+};
+
+cbuffer bohBuffer
+{
+	float4 bohdata1;
+	float1 bohdata2;
 }
 
 VertexOutput main(float4 position : POSITION, float4 color : COLOR, float2 textCoords : TEXTCOORDS)

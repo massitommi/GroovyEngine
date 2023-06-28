@@ -86,16 +86,26 @@ private:
 	std::string mFileName;
 };
 
+struct ObjectProperties
+{
+	GroovyClass* gClass;
+	std::vector<GroovyProperty> props;
+};
+
 class BlueprintEditorWindow : public EditorWindow
 {
 public:
 	BlueprintEditorWindow(class Blueprint* blueprint);
-	BlueprintEditorWindow(class GroovyClass* gClass);
+	BlueprintEditorWindow(class GroovyClass* inClass);
 	~BlueprintEditorWindow();
 
+	void BuildPropertyCache();
+
+	virtual void RenderContent() override;
+
 private:
+	std::vector<ObjectProperties> mPropertyCache;
 	class Blueprint* mBlueprint;
-	class GroovyClass* mClass;
 	class GroovyObject* mObjInstance;
 	bool mExistsOnDisk;
 };

@@ -1,10 +1,8 @@
 #include "actorcomponent.h"
 
-GROOVY_CLASS_IMPL(ActorComponent, GroovyObject)
-
-GROOVY_CLASS_REFLECTION_BEGIN(ActorComponent)
-	GROOVY_REFLECT(mNative)
-GROOVY_CLASS_REFLECTION_END()
+GROOVY_CLASS_IMPL(ActorComponent)
+	GROOVY_REFLECT_EX(mNative, PROPERTY_FLAG_NO_SERIALIZE | PROPERTY_FLAG_EDITOR_READONLY)
+GROOVY_CLASS_END()
 
 ActorComponent::ActorComponent()
 	: mNative(true)

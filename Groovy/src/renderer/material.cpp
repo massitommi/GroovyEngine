@@ -134,14 +134,12 @@ void Material::FixForRendering()
 	memset(mConstBuffersData.data(), 0, mConstBuffersData.size());
 }
 
-GROOVY_CLASS_IMPL(MaterialAssetFile, GroovyObject)
-
-GROOVY_CLASS_REFLECTION_BEGIN(MaterialAssetFile)
+GROOVY_CLASS_IMPL(MaterialAssetFile)
 	GROOVY_REFLECT(shader)
 	GROOVY_REFLECT(constBuffersData)
 	GROOVY_REFLECT(shaderResNames)
 	GROOVY_REFLECT(shaderRes)
-GROOVY_CLASS_REFLECTION_END()
+GROOVY_CLASS_END()
 
 void Material::Serialize(DynamicBuffer& fileData)
 {

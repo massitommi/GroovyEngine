@@ -27,10 +27,16 @@ size_t reflectionUtils::GetPropertySize(EPropertyType type)
 }
 
 // implementation for std::vector
-#define GET_GDAPTR(Type)	{ \
-[](void* m) { return (void*)((std::vector<Type>*)m)->data(); }, \
-[](void* m) { return ((std::vector<Type>*)m)->size(); },		\
-[](void* m, size_t s) { ((std::vector<Type>*)m)->resize(s); } }
+#define GET_GDAPTR(Type)																					\
+{																											\
+	[](void* m) { return (void*)((std::vector<Type>*)m)->data(); },											\
+	[](void* m) { return ((std::vector<Type>*)m)->size(); },												\
+	[](void* m, size_t s) { ((std::vector<Type>*)m)->resize(s); },											\
+	[](void* m) {((std::vector<Type>*)m)->clear(); },														\
+	[](void* m, size_t i) { ((std::vector<Type>*)m)->erase(((std::vector<Type>*)m)->begin() + i); },		\
+	[](void* m, size_t i) { ((std::vector<Type>*)m)->insert(((std::vector<Type>*)m)->begin() + i, 1, {}); },	\
+	[](void* m) { ((std::vector<Type>*)m)->push_back({}); }													\
+}
 
 DynamicArrayPtr reflectionUtils::GetDynamicArrayPtr(EPropertyType type)
 {
