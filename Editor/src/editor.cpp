@@ -227,7 +227,6 @@ void UpdateWindows()
 	sInsertQueue.clear();
 }
 
-extern Shader* DEFAULT_SHADER;
 extern std::vector<GroovyClass*> ENGINE_CLASSES;
 extern std::vector<GroovyClass*> GAME_CLASSES;
 static float sIconSize = 140.0f;
@@ -251,8 +250,6 @@ void EditorInit()
 	gameViewportSpec.height = sGameViewportSize.y = 100;
 
 	sGameViewportFrameBuffer = FrameBuffer::Create(gameViewportSpec);
-
-	DEFAULT_SHADER->Bind();
 
 	testMesh = (Mesh*)AssetManager::Editor_GetAssets(ASSET_TYPE_MESH)[0].instance;
 	testMesh->FixForRendering();
@@ -559,7 +556,7 @@ void EditorUpdate(float deltaTime)
 
 	mvp = math::GetMatrixTransposed(mvp);
 
-	DEFAULT_SHADER->OverwriteVertexConstBuffer(0, &mvp);
+	Renderer::BeginScene(mvp);
 }
 
 void EditorRender()

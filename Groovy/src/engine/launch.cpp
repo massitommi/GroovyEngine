@@ -6,6 +6,7 @@
 #include "assets/asset_manager.h"
 #include "project/project.h"
 #include "classes/class_db.h"
+#include "renderer/renderer.h"
 
 bool gEngineShouldRun = true;
 Window* gWindow = nullptr;
@@ -80,6 +81,8 @@ int32 GroovyEntryPoint(const char* args)
 	/*for (GroovyClass* c : GAME_CLASSES)
 		gClassDB.Register(c);*/
 
+	Renderer::Init();
+
 	AssetManager::Init();
 	Application::Init();
 
@@ -106,6 +109,7 @@ int32 GroovyEntryPoint(const char* args)
 	delete gScreenFrameBuffer;
 	AssetManager::Shutdown();
 	Application::Shutdown();
+	Renderer::Shutdown();
 	delete &RendererAPI::Get();
 
 	return 0;

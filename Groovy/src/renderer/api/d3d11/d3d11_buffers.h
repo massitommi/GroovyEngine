@@ -31,3 +31,19 @@ private:
 	size_t mSize;
 };
 
+class D3D11ConstBuffer : public ConstBuffer
+{
+public:
+	D3D11ConstBuffer(size_t size, void* data);
+	virtual ~D3D11ConstBuffer();
+
+	virtual size_t GetSize() const override { return mSize; }
+	virtual void Overwrite(void* data, size_t size) override;
+
+	virtual void BindForVertexShader(uint32 slot) override;
+	virtual void BindForPixelShader(uint32 slot) override;
+
+private:
+	struct ID3D11Buffer* mBuffer;
+	size_t mSize;
+};

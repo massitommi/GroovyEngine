@@ -26,3 +26,15 @@ IndexBuffer* IndexBuffer::Create(size_t size, void* data)
     checkslow("?!?");
     return nullptr;
 }
+
+ConstBuffer* ConstBuffer::Create(size_t size, void* data)
+{
+    switch (RendererAPI::GetAPI())
+    {
+#if PLATFORM_WIN32
+    case RENDERER_API_D3D11:    return new D3D11ConstBuffer(size, data);
+#endif
+    }
+    checkslow("?!?");
+    return nullptr;
+}

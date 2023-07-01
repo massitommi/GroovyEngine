@@ -54,7 +54,6 @@ public:
 	virtual uint32 GetVertexConstBufferIndex(const std::string& bufferName) = 0;
 	virtual uint32 GetPixelConstBufferIndex(const std::string& bufferName) = 0;
 
-	virtual void OverwriteVertexConstBuffer(uint32 index, void* data) = 0;
 	virtual void OverwritePixelConstBuffer(uint32 index, void* data) = 0;
 
 	static Shader* Create(const void* vertexSrc, size_t vertexSize, const void* pixelSrc, size_t pixelSize);

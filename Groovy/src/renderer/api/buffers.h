@@ -23,3 +23,17 @@ public:
 
 	static IndexBuffer* Create(size_t size, void* data);
 };
+
+class ConstBuffer
+{
+public:
+	virtual ~ConstBuffer() = default;
+
+	virtual size_t GetSize() const = 0;
+	virtual void Overwrite(void* data, size_t size) = 0;
+	
+	virtual void BindForVertexShader(uint32 slot) = 0;
+	virtual void BindForPixelShader(uint32 slot) = 0;
+
+	static ConstBuffer* Create(size_t size, void* data);
+};
