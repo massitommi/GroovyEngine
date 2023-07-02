@@ -41,6 +41,62 @@ void EditorWindow::SetPendingSave(bool pendingSave)
 	mPendingSave = pendingSave;
 }
 
+bool PropertyInput(const std::string& label, EPropertyType type, void* data, bool readonly)
+{
+	if (readonly)
+		ImGui::BeginDisabled();
+
+	bool click = false;
+
+	std::string lblVal = "##" + label;
+
+	ImGui::Text(label.c_str());
+	ImGui::SameLine();
+
+	switch (type)
+	{
+	case PROPERTY_TYPE_INT32:
+		click = ImGui::InputScalar(lblVal.c_str(), ImGuiDataType_S32, data, 0, 0, 0);
+		break;
+	case PROPERTY_TYPE_INT64:
+		click = ImGui::InputScalar(lblVal.c_str(), ImGuiDataType_S64, data, 0, 0, 0);
+		break;
+	case PROPERTY_TYPE_UINT32:
+		click = ImGui::InputScalar(lblVal.c_str(), ImGuiDataType_U32, data, 0, 0, 0);
+		break;
+	case PROPERTY_TYPE_UINT64:
+		click = ImGui::InputScalar(lblVal.c_str(), ImGuiDataType_U64, data, 0, 0, 0);
+		break;
+	case PROPERTY_TYPE_FLOAT:
+		click = ImGui::InputScalar(lblVal.c_str(), ImGuiDataType_Float, data, 0, 0, 0);
+		break;
+	case PROPERTY_TYPE_BOOL:
+		click = ImGui::Checkbox(lblVal.c_str(), (bool*)data);
+		break;
+	case PROPERTY_TYPE_VEC2:
+		click = ImGui::DragFloat2(lblVal.c_str(), (float*)data, 1.0f, 0.0f, 0.0f, "%.3f");
+		break;
+	case PROPERTY_TYPE_VEC3:
+		click = ImGui::DragFloat3(lblVal.c_str(), (float*)data, 1.0f, 0.0f, 0.0f, "%.3f");
+		break;
+	case PROPERTY_TYPE_VEC4:
+		click = ImGui::DragFloat4(lblVal.c_str(), (float*)data, 1.0f, 0.0f, 0.0f, "%.3f");
+		break;
+	case PROPERTY_TYPE_STRING:
+		click = ImGui::InputText(lblVal.c_str(), (std::string*)data, readonly ? ImGuiInputTextFlags_ReadOnly : 0);
+		break;
+	default:
+		ImGui::Text("PROPERTY_TYPE_UI_NOT_IMPLEMENTED");
+		click = false;
+		break;
+	}
+
+	if (readonly)
+		ImGui::EndDisabled();
+
+	return click;
+}
+
 extern Project gProj;
 
 EditMaterialWindow::EditMaterialWindow(Material* mat)
@@ -298,52 +354,6 @@ void BlueprintEditorWindow::BuildPropertyCache()
 	}
 }
 
-bool PropertyInput(const std::string& label, EPropertyType type, void* data, bool readonly)
-{
-	if (readonly)
-		ImGui::BeginDisabled();
-
-	bool click = false;
-
-	std::string lblVal = "##" + label;
-
-	ImGui::Text(label.c_str());
-	ImGui::SameLine();
-
-	switch (type)
-	{
-		case PROPERTY_TYPE_INT32:
-			click = ImGui::InputScalar(lblVal.c_str(), ImGuiDataType_S32, data, 0, 0, 0);
-			break;
-		case PROPERTY_TYPE_INT64:
-			click = ImGui::InputScalar(lblVal.c_str(), ImGuiDataType_S64, data, 0, 0, 0);
-			break;
-		case PROPERTY_TYPE_UINT32:
-			click = ImGui::InputScalar(lblVal.c_str(), ImGuiDataType_U32, data, 0, 0, 0);
-			break;
-		case PROPERTY_TYPE_UINT64:
-			click = ImGui::InputScalar(lblVal.c_str(), ImGuiDataType_U64, data, 0, 0, 0);
-			break;
-		case PROPERTY_TYPE_FLOAT:
-			click = ImGui::InputScalar(lblVal.c_str(), ImGuiDataType_Float, data, 0, 0, 0);
-			break;
-		case PROPERTY_TYPE_BOOL:
-			click = ImGui::Checkbox(lblVal.c_str(), (bool*)data);
-			break;
-		case PROPERTY_TYPE_STRING:
-			click = ImGui::InputText(lblVal.c_str(), (std::string*)data, readonly ? ImGuiInputTextFlags_ReadOnly : 0);
-			break;
-		case PROPERTY_TYPE_VEC3:
-			click = ImGui::DragFloat3(lblVal.c_str(), (float*)data, 1.0f, 0.0f, 0.0f, "%.3f");
-			break;
-	}
-
-	if (readonly)
-		ImGui::EndDisabled();
-
-	return click;
-}
-
 void Property(const GroovyProperty& prop, void* propData)
 {
 	ImGui::PushID(propData);
@@ -443,30 +453,36 @@ void Property(const GroovyProperty& prop, void* propData)
 	ImGui::PopID();
 }
 
-void Properties(const std::string& name, GroovyObject* obj, const std::vector<ObjectProperties>& props)
+void PropertiesSingleClass(GroovyObject* obj, GroovyClass* gClass, const std::vector<GroovyProperty>& props)
 {
-	ImGui::Text(name.c_str());
+	ImGui::Text(gClass->name.c_str());
 	ImGui::Spacing();
+
+	for (const GroovyProperty& prop : props)
+	{
+		ImGui::Spacing();
+		ImGui::Spacing();
+		Property(prop, (byte*)obj + prop.offset);
+		ImGui::Spacing();
+		ImGui::Spacing();
+	}
+}
+
+void PropertiesAllClasses(GroovyObject* obj, const std::vector<ObjectProperties>& props)
+{
 	for (const ObjectProperties& objProp : props)
 	{
 		if (!objProp.props.size())
 			continue;
 
-		ImGui::Text(objProp.gClass->name.c_str());
 		ImGui::Spacing();
+		ImGui::Separator();
 
-		for (const GroovyProperty& prop : objProp.props)
-		{
-			ImGui::Spacing();
-			ImGui::Spacing();
-			Property(prop, (byte*)obj + prop.offset);
-			ImGui::Spacing();
-			ImGui::Spacing();
-		}
+		PropertiesSingleClass(obj, objProp.gClass, objProp.props);
 	}
 }
 
 void BlueprintEditorWindow::RenderContent()
 {
-	Properties("Test", mObjInstance, mPropertyCache);
+	PropertiesAllClasses(mObjInstance, mPropertyCache);
 }

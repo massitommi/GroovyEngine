@@ -207,6 +207,7 @@ AssetHandle AssetManager::Editor_OnImport(const std::string& fileName, EAssetTyp
 	handle.uuid = uuid;
 	handle.instance = InstantiateAsset(handle);
 	handle.instance->__internal_SetUUID(uuid);
+	handle.instance->Load();
 
 	return handle;
 }

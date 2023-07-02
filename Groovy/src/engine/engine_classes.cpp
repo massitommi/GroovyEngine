@@ -6,10 +6,24 @@
 #include "gameframework/actor.h"
 #include "gameframework/actorcomponent.h"
 
-GROOVY_CLASS_DECL(TestClass)
-class TestClass : public GroovyObject
+GROOVY_CLASS_DECL(TestClassBase)
+class TestClassBase : public GroovyObject
 {
-	GROOVY_CLASS_BODY(TestClass, GroovyObject)
+	GROOVY_CLASS_BODY(TestClassBase, GroovyObject)
+
+	std::string baseStr = "boh";
+	Vec2 baseVec = { 2,5 };
+};
+
+GROOVY_CLASS_IMPL(TestClassBase)
+	GROOVY_REFLECT(baseStr)
+	GROOVY_REFLECT(baseVec)
+GROOVY_CLASS_END()
+
+GROOVY_CLASS_DECL(TestClass)
+class TestClass : public TestClassBase
+{
+	GROOVY_CLASS_BODY(TestClass, TestClassBase)
 
 	std::vector<std::string> strings = { "ciao", "come", "va?" };
 	std::vector<Vec3> vecs = { { 1,1,1 }, {2,2,2} };
@@ -37,6 +51,7 @@ CLASS_LIST_BEGIN(ENGINE_CLASSES)
 {
 	CLASS_LIST_ADD(GroovyObject),
 
+	CLASS_LIST_ADD(TestClassBase),
 	CLASS_LIST_ADD(TestClass),
 
 	CLASS_LIST_ADD(MaterialAssetFile),

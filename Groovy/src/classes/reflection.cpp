@@ -16,9 +16,12 @@ size_t reflectionUtils::GetPropertySize(EPropertyType type)
 		case PROPERTY_TYPE_UINT64:		return sizeof(uint64);
 		case PROPERTY_TYPE_BOOL:		return sizeof(bool);
 		case PROPERTY_TYPE_FLOAT:		return sizeof(float);
-		case PROPERTY_TYPE_STRING:		return sizeof(std::string);
+		case PROPERTY_TYPE_VEC2:		return sizeof(Vec2);
 		case PROPERTY_TYPE_VEC3:		return sizeof(Vec3);
+		case PROPERTY_TYPE_VEC4:		return sizeof(Vec4);
 		case PROPERTY_TYPE_TRANSFORM:	return sizeof(Transform);
+		case PROPERTY_TYPE_STRING:		return sizeof(std::string);
+		case PROPERTY_TYPE_BUFFER:		return sizeof(Buffer);
 		case PROPERTY_TYPE_ASSET_REF:	return sizeof(AssetInstance*);
 		case PROPERTY_TYPE_INTERNAL_SUBMESHDATA:	return sizeof(SubmeshData);
 	}
@@ -46,11 +49,14 @@ DynamicArrayPtr reflectionUtils::GetDynamicArrayPtr(EPropertyType type)
 		case PROPERTY_TYPE_INT64:		return GET_GDAPTR(int64);
 		case PROPERTY_TYPE_UINT32:		return GET_GDAPTR(uint32);
 		case PROPERTY_TYPE_UINT64:		return GET_GDAPTR(uint64);
-		//	case PROPERTY_TYPE_BOOL:		return GET_GDAPTR(bool); // std::vector<bool> has a strange specialization
+		// case PROPERTY_TYPE_BOOL:		return GET_GDAPTR(bool); std::vector<bool> has a strange specialization
 		case PROPERTY_TYPE_FLOAT:		return GET_GDAPTR(float);
-		case PROPERTY_TYPE_STRING:		return GET_GDAPTR(std::string);
+		case PROPERTY_TYPE_VEC2:		return GET_GDAPTR(Vec2);
 		case PROPERTY_TYPE_VEC3:		return GET_GDAPTR(Vec3);
+		case PROPERTY_TYPE_VEC4:		return GET_GDAPTR(Vec4);
 		case PROPERTY_TYPE_TRANSFORM:	return GET_GDAPTR(Transform);
+		case PROPERTY_TYPE_STRING:		return GET_GDAPTR(std::string);
+		// case PROPERTY_TYPE_BUFFER:		return GET_GDAPTR(Buffer); not implemented
 		case PROPERTY_TYPE_ASSET_REF:	return GET_GDAPTR(AssetInstance*);
 		case PROPERTY_TYPE_INTERNAL_SUBMESHDATA:	return GET_GDAPTR(SubmeshData);
 	}
