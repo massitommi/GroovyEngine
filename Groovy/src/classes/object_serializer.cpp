@@ -275,7 +275,7 @@ void ObjectSerializer::DeserializePropertyPack(GroovyClass* gClass, BufferView& 
 		uint32 arrayCount = fileData.read<uint32>();
 		size_t sizeBytes = fileData.read<size_t>();
 
-		const GroovyProperty* classProp = gClassDB.FindProperty(gClass, name, type);
+		const GroovyProperty* classProp = gClassDB.FindProperty(gClass, name, type, arrayCount);
 
 		if (classProp)
 		{

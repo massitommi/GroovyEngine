@@ -45,12 +45,12 @@ const GroovyProperty* ClassDB::FindProperty(GroovyClass* gClass, const std::stri
 	return nullptr;
 }
 
-const GroovyProperty* ClassDB::FindProperty(GroovyClass* gClass, const std::string& propertyName, EPropertyType typeFilter)
+const GroovyProperty* ClassDB::FindProperty(GroovyClass* gClass, const std::string& propertyName, EPropertyType typeFilter, uint32 arrayCountFilter)
 {
 	const std::vector<GroovyProperty>& props = (*this)[gClass];
 
 	for (const GroovyProperty& prop : props)
-		if (prop.name == propertyName && prop.type == typeFilter)
+		if (prop.name == propertyName && prop.type == typeFilter && prop.arrayCount == arrayCountFilter)
 			return &prop;
 
 	return nullptr;

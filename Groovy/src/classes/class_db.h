@@ -19,7 +19,7 @@ public:
 	const GroovyProperty* FindProperty(GroovyClass* gClass, const std::string& propertyName);
 
 	// useful for blueprint deserialization in the editor, what if someone changes the type of a var but the var has the same name? kaboom
-	const GroovyProperty* FindProperty(GroovyClass* gClass, const std::string& propertyName, EPropertyType typeFilter);
+	const GroovyProperty* FindProperty(GroovyClass* gClass, const std::string& propertyName, EPropertyType typeFilter, uint32 arrayCountFilter);
 
 private:
 	std::map<std::string, GroovyClass*> mClassDB;
