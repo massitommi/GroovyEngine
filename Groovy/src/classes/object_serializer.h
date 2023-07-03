@@ -1,7 +1,6 @@
 #pragma once
 
 #include "object.h"
-#include "reflection.h"
 
 struct PropertyDesc
 {
@@ -19,9 +18,10 @@ struct PropertyPack
 class ObjectSerializer
 {
 public:
-	static void DeserializeOntoObject(const std::vector<PropertyDesc>& desc, byte* data, GroovyObject* obj);
-	static void CreatePropertyPack(PropertyPack& pack, GroovyObject* obj, GroovyObject* cdo);
+	static void CreatePropertyPack(GroovyObject* obj, GroovyObject* cdo, PropertyPack& outPack);
 
-	static void SerializeSimpleObject(GroovyObject* obj, GroovyObject* cdo, DynamicBuffer& fileData);
-	static void DeserializeSimpleObject(GroovyObject* obj, BufferView& fileData);
+	static void SerializePropertyPack(const PropertyPack& pack, DynamicBuffer& fileData);
+	static void DeserializePropertyPack(GroovyClass* gClass, BufferView& fileData, PropertyPack& outPack);
+
+	static void DeserializePropertyPackData(const PropertyPack& pack, GroovyObject* obj);
 };

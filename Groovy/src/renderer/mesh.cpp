@@ -64,7 +64,9 @@ void Mesh::Serialize(DynamicBuffer& fileData)
 	asset.materials = mMaterials;
 	asset.submeshes = mSubmeshes;
 
-	ObjectSerializer::SerializeSimpleObject(&asset, MeshAssetFile::StaticClass()->cdo, fileData);
+	PropertyPack meshAssetPropPack;
+	ObjectSerializer::CreatePropertyPack(&asset, MeshAssetFile::StaticClass()->cdo, meshAssetPropPack);
+	ObjectSerializer::SerializePropertyPack(meshAssetPropPack, fileData);
 }
 
 void Mesh::Deserialize(BufferView fileData)
@@ -75,7 +77,9 @@ void Mesh::Deserialize(BufferView fileData)
 	mIndexBuffer = IndexBuffer::Create(header.indexBufferSize, fileData.read(header.indexBufferSize));
 	// submeshes and materials
 	MeshAssetFile asset;
-	ObjectSerializer::DeserializeSimpleObject(&asset, fileData);
+	PropertyPack meshAssetPropPack;
+	ObjectSerializer::DeserializePropertyPack(MeshAssetFile::StaticClass(), fileData, meshAssetPropPack);
+	ObjectSerializer::DeserializePropertyPackData(meshAssetPropPack, &asset);
 	mSubmeshes = asset.submeshes;
 	mMaterials = asset.materials;
 }

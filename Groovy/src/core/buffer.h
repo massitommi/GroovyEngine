@@ -106,8 +106,16 @@ private:
 	}
 public:
 
+	void free()
+	{
+		Buffer::free();
+		mCurrentPtr = nullptr;
+	}
+
 	void* push_bytes(const void* data, size_t sizeBytes)
 	{
+		check(data);
+
 		size_t bytesUsed = used();
 		if (bytesUsed + sizeBytes > mSize)
 			resize((bytesUsed + sizeBytes) * 2, true);

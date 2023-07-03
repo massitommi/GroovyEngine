@@ -20,6 +20,7 @@
 #include "vendor/imgui/misc/cpp/imgui_stdlib.h"
 #include "imgui_renderer/imgui_renderer.h"
 #include "editor_window.h"
+#include "classes/blueprint.h"
 
 static ImGuiRenderer* sRenderer = nullptr;
 extern ClearColor gScreenClearColor;
@@ -29,6 +30,11 @@ extern Project gProj;
 
 static std::vector<AssetHandle> sPendingSaveAssets;
 static bool sPendingSaveRegistry = false;
+
+void FlagRegistryPendingSave()
+{
+	sPendingSaveRegistry = true;
+}
 
 inline bool AssetsPendingSave() { return sPendingSaveAssets.size(); }
 
@@ -264,7 +270,8 @@ namespace panels
 			"TEXTURE",
 			"SHADER",
 			"MATERIAL",
-			"MESH"
+			"MESH",
+			"BLUEPRINT"
 		};
 
 		enum PanelAssetFlags
@@ -301,6 +308,10 @@ namespace panels
 				case ASSET_TYPE_MESH:
 					panelAssets[i].thumbnail = sMeshAssetIcon->GetRendererID();
 					panelAssets[i].typeNameIndex = 3;
+					break;
+				case ASSET_TYPE_BLUEPRINT:
+					panelAssets[i].thumbnail = sMeshAssetIcon->GetRendererID();
+					panelAssets[i].typeNameIndex = 4;
 					break;
 			}
 
@@ -358,6 +369,10 @@ namespace panels
 					case ASSET_TYPE_MESH:
 						AddWindow<MeshPreviewWindow>((Mesh*)asset.instance);
 						break;
+
+					case ASSET_TYPE_BLUEPRINT:
+						AddWindow<BlueprintEditorWindow>((Blueprint*)asset.instance);
+						break;
 				}
 			}
 
@@ -399,11 +414,33 @@ namespace panels
 			}
 			else if (ImGui::IsItemHovered())
 			{
-				ImGui::SetTooltip("File: %s" "\n" "Type: %s", asset.name.c_str(), TYPES_STR[panelAsset.typeNameIndex]);
+				switch (asset.type)
+				{
+					case ASSET_TYPE_BLUEPRINT:
+					{
+						ImGui::SetTooltip
+						(
+							"File: %s" "\n" "Type: %s" "\n" "Class: %s",
+							asset.name.c_str(),
+							TYPES_STR[panelAsset.typeNameIndex],
+							((Blueprint*)asset.instance)->GetClass()->name.c_str()
+						);
+					}
+					break;
+
+					default:
+					{
+						ImGui::SetTooltip
+						(
+							"File: %s" "\n" "Type: %s",
+							asset.name.c_str(),
+							TYPES_STR[panelAsset.typeNameIndex]
+						);
+					}
+					break;
+				}
 			}
 			ImGui::Text(fileNameNoExt.c_str());
-			
-
 			
 			ImGui::EndGroup();
 			

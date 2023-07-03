@@ -1,104 +1,37 @@
 #include "object_serializer.h"
+#include "reflection.h"
 #include "class_db.h"
 #include "assets/asset_manager.h"
 
-static void DeserializePropertyData(const PropertyDesc& desc, byte* data, GroovyObject* obj)
+namespace utils
 {
-	void* objProp = (byte*)obj + desc.classProp->offset;
+	static bool PropertyIsEqual(const GroovyProperty& prop, GroovyObject* obj1, GroovyObject* obj2)
+	{
+		void* objProp1 = (byte*)obj1 + prop.offset;
+		void* objProp2 = (byte*)obj2 + prop.offset;
+		uint32 objProp1ArrayCount = prop.arrayCount;
+		uint32 objProp2ArrayCount = prop.arrayCount;
 
-	if (desc.classProp->flags & PROPERTY_FLAG_IS_DYNAMIC_ARRAY)
-	{
-		DynamicArrayPtr dap = reflectionUtils::GetDynamicArrayPtr(desc.classProp->type);
-		dap.resize(objProp, desc.arrayCount);
-		objProp = dap.data(objProp);
-	}
-
-	if (!(desc.classProp->flags & PROPERTY_FLAG_IS_COMPLEX))
-	{
-		memcpy(objProp, data, desc.sizeBytes);
-	}
-	else
-	{
-		switch (desc.classProp->type)
+		if (prop.flags & PROPERTY_FLAG_IS_DYNAMIC_ARRAY)
 		{
-			case PROPERTY_TYPE_STRING:
-			{
-				std::string* strPtr = (std::string*)objProp;
-				for (uint32 i = 0; i < desc.arrayCount; i++)
-				{
-					*strPtr = (char*)data;
-					data += strPtr->length() + 1;
-					strPtr++;
-				}
-			}
-			break;
-
-			case PROPERTY_TYPE_BUFFER:
-			{
-				Buffer* bufferPtr = (Buffer*)objProp;
-				for (uint32 i = 0; i < desc.arrayCount; i++)
-				{
-					size_t bufferSize = *(size_t*)data;
-					bufferPtr->resize(bufferSize);
-					data += sizeof(size_t);
-					memcpy(bufferPtr->data(), data, bufferSize);
-					data += bufferSize;
-					bufferPtr++;
-				}
-			}
-			break;
-
-			case PROPERTY_TYPE_ASSET_REF:
-			{
-				AssetInstance** assetPtr = (AssetInstance**)objProp;
-				for (uint32 i = 0; i < desc.arrayCount; i++)
-				{
-					*assetPtr = AssetManager::Get<AssetInstance>(*(AssetUUID*)data);
-					data += sizeof(AssetUUID);
-					assetPtr++;
-				}
-			}
-			break;
+			DynamicArrayPtr dap = reflectionUtils::GetDynamicArrayPtr(prop.type);
+			objProp1ArrayCount = dap.size(objProp1);
+			objProp2ArrayCount = dap.size(objProp2);
+			objProp1 = dap.data(objProp1);
+			objProp2 = dap.data(objProp2);
 		}
-	}
-}
 
-void ObjectSerializer::DeserializeOntoObject(const std::vector<PropertyDesc>& desc, byte* data, GroovyObject* obj)
-{
-	for (const PropertyDesc& d : desc)
-	{
-		DeserializePropertyData(d, data, obj);
-		data += d.sizeBytes;
-	}
-}
+		if (objProp1ArrayCount != objProp2ArrayCount)
+			return false;
 
-static bool PropertyIsEqual(const GroovyProperty& prop, GroovyObject* obj1, GroovyObject* obj2)
-{
-	void* objProp1 = (byte*)obj1 + prop.offset;
-	void* objProp2 = (byte*)obj2 + prop.offset;
-	uint32 objProp1ArrayCount = prop.arrayCount;
-	uint32 objProp2ArrayCount = prop.arrayCount;
-
-	if (prop.flags & PROPERTY_FLAG_IS_DYNAMIC_ARRAY)
-	{
-		DynamicArrayPtr dap = reflectionUtils::GetDynamicArrayPtr(prop.type);
-		objProp1ArrayCount = dap.size(objProp1);
-		objProp2ArrayCount = dap.size(objProp2);
-		objProp1 = dap.data(objProp1);
-		objProp2 = dap.data(objProp2);
-	}
-
-	if (objProp1ArrayCount != objProp2ArrayCount)
-		return false;
-
-	if (!(prop.flags & PROPERTY_FLAG_IS_COMPLEX))
-	{
-		return memcmp(objProp1, objProp2, reflectionUtils::GetPropertySize(prop.type) * objProp1ArrayCount) == 0;
-	}
-	else
-	{
-		switch (prop.type)
+		if (!(prop.flags & PROPERTY_FLAG_IS_COMPLEX))
 		{
+			return memcmp(objProp1, objProp2, reflectionUtils::GetPropertySize(prop.type) * objProp1ArrayCount) == 0;
+		}
+		else
+		{
+			switch (prop.type)
+			{
 			case PROPERTY_TYPE_STRING:
 			{
 				std::string* strPtr1 = (std::string*)objProp1;
@@ -139,42 +72,42 @@ static bool PropertyIsEqual(const GroovyProperty& prop, GroovyObject* obj1, Groo
 				return true;
 			}
 			break;
+			}
 		}
 	}
-}
 
-static void SerializePropertyData(PropertyPack& pack, const GroovyProperty& prop, GroovyObject* obj)
-{
-	void* objProp = (byte*)obj + prop.offset;
-	uint32 objPropArrayCount = prop.arrayCount;
-
-	if (prop.flags & PROPERTY_FLAG_IS_DYNAMIC_ARRAY)
+	static void SerializePropertyData(PropertyPack& pack, const GroovyProperty& prop, GroovyObject* obj)
 	{
-		DynamicArrayPtr dap = reflectionUtils::GetDynamicArrayPtr(prop.type);
-		objPropArrayCount = dap.size(objProp);
-		objProp = dap.data(objProp);
-	}
+		void* objProp = (byte*)obj + prop.offset;
+		uint32 objPropArrayCount = prop.arrayCount;
 
-	PropertyDesc& desc = pack.desc.emplace_back();
-	desc.arrayCount = objPropArrayCount;
-	desc.classProp = &prop;
-
-	if (!(prop.flags & PROPERTY_FLAG_IS_COMPLEX))
-	{
-		size_t dataWidth = reflectionUtils::GetPropertySize(prop.type) * objPropArrayCount;
-		pack.data.push_bytes(objProp, dataWidth);
-		desc.sizeBytes = dataWidth;
-	}
-	else
-	{
-		switch (prop.type)
+		if (prop.flags & PROPERTY_FLAG_IS_DYNAMIC_ARRAY)
 		{
+			DynamicArrayPtr dap = reflectionUtils::GetDynamicArrayPtr(prop.type);
+			objPropArrayCount = dap.size(objProp);
+			objProp = dap.data(objProp);
+		}
+
+		PropertyDesc& desc = pack.desc.emplace_back();
+		desc.arrayCount = objPropArrayCount;
+		desc.classProp = &prop;
+
+		if (!(prop.flags & PROPERTY_FLAG_IS_COMPLEX))
+		{
+			size_t dataWidth = reflectionUtils::GetPropertySize(prop.type) * objPropArrayCount;
+			pack.data.push_bytes(objProp, dataWidth);
+			desc.sizeBytes = dataWidth;
+		}
+		else
+		{
+			switch (prop.type)
+			{
 			case PROPERTY_TYPE_STRING:
 			{
 				std::string* strPtr = (std::string*)objProp;
 				for (uint32 i = 0; i < objPropArrayCount; i++)
 				{
-					pack.data.push(*strPtr);
+					pack.data.push<std::string>(*strPtr);
 					desc.sizeBytes += strPtr->length() + 1;
 					strPtr++;
 				}
@@ -208,41 +141,115 @@ static void SerializePropertyData(PropertyPack& pack, const GroovyProperty& prop
 				desc.sizeBytes += sizeof(AssetUUID) * objPropArrayCount;
 			}
 			break;
+
+			default:
+				checkslowf(0, "Property type serialization not implemented");
+				break;
+			}
+		}
+	}
+
+	static void DeserializePropertyData(const PropertyDesc& desc, const byte* data, GroovyObject* obj)
+	{
+		void* objProp = (byte*)obj + desc.classProp->offset;
+
+		if (desc.classProp->flags & PROPERTY_FLAG_IS_DYNAMIC_ARRAY)
+		{
+			DynamicArrayPtr dap = reflectionUtils::GetDynamicArrayPtr(desc.classProp->type);
+			dap.resize(objProp, desc.arrayCount);
+			objProp = dap.data(objProp);
+		}
+
+		if (!(desc.classProp->flags & PROPERTY_FLAG_IS_COMPLEX))
+		{
+			memcpy(objProp, data, desc.sizeBytes);
+		}
+		else
+		{
+			switch (desc.classProp->type)
+			{
+			case PROPERTY_TYPE_STRING:
+			{
+				std::string* strPtr = (std::string*)objProp;
+				for (uint32 i = 0; i < desc.arrayCount; i++)
+				{
+					*strPtr = (char*)data;
+					data += strPtr->length() + 1;
+					strPtr++;
+				}
+			}
+			break;
+
+			case PROPERTY_TYPE_BUFFER:
+			{
+				Buffer* bufferPtr = (Buffer*)objProp;
+				for (uint32 i = 0; i < desc.arrayCount; i++)
+				{
+					size_t bufferSize = *(size_t*)data;
+					bufferPtr->resize(bufferSize);
+					data += sizeof(size_t);
+					memcpy(bufferPtr->data(), data, bufferSize);
+					data += bufferSize;
+					bufferPtr++;
+				}
+			}
+			break;
+
+			case PROPERTY_TYPE_ASSET_REF:
+			{
+				AssetInstance** assetPtr = (AssetInstance**)objProp;
+				for (uint32 i = 0; i < desc.arrayCount; i++)
+				{
+					*assetPtr = AssetManager::Get<AssetInstance>(*(AssetUUID*)data);
+					data += sizeof(AssetUUID);
+					assetPtr++;
+				}
+			}
+			break;
+			}
 		}
 	}
 }
 
-void ObjectSerializer::CreatePropertyPack(PropertyPack& pack, GroovyObject* obj, GroovyObject* cdo)
+void ObjectSerializer::CreatePropertyPack(GroovyObject* obj, GroovyObject* cdo, PropertyPack& outPack)
 {
+	checkslow(obj);
+
 	extern ClassDB gClassDB;
-
-	check(obj && cdo);
-	check(obj->GetClass() == cdo->GetClass());
-
 	const std::vector<GroovyProperty>& props = gClassDB[obj->GetClass()];
 
-	for (const GroovyProperty& p : props)
+	if (cdo)
 	{
-		if (p.flags & PROPERTY_FLAG_NO_SERIALIZE)
-			continue;
+		checkslow(obj->GetClass() == cdo->GetClass());
 
-		if (PropertyIsEqual(p, obj, cdo))
-			continue;
+		for (const GroovyProperty& p : props)
+		{
+			if (p.flags & PROPERTY_FLAG_NO_SERIALIZE)
+				continue;
 
-		SerializePropertyData(pack, p, obj);
+			if (utils::PropertyIsEqual(p, obj, cdo))
+				continue;
+
+			utils::SerializePropertyData(outPack, p, obj);
+		}
+	}
+	else
+	{
+		for (const GroovyProperty& p : props)
+		{
+			if (p.flags & PROPERTY_FLAG_NO_SERIALIZE)
+				continue;
+
+			utils::SerializePropertyData(outPack, p, obj);
+		}
 	}
 }
 
-void ObjectSerializer::SerializeSimpleObject(GroovyObject* obj, GroovyObject* cdo, DynamicBuffer& fileData)
+void ObjectSerializer::SerializePropertyPack(const PropertyPack& pack, DynamicBuffer& fileData)
 {
-	PropertyPack pack;
-	CreatePropertyPack(pack, obj, cdo);
-
-	fileData.push<uint32>(pack.desc.size());									// number of properties
-
+	fileData.push<uint32>(pack.desc.size());									// property count
 	size_t bufferOffset = 0;
-
-	for(const auto& desc : pack.desc)
+	for (const auto& desc : pack.desc)
 	{
 		fileData.push(desc.classProp->name);									// property name
 		fileData.push(desc.classProp->type);									// property type
@@ -253,39 +260,46 @@ void ObjectSerializer::SerializeSimpleObject(GroovyObject* obj, GroovyObject* cd
 	}
 }
 
-void ObjectSerializer::DeserializeSimpleObject(GroovyObject* obj, BufferView& fileData)
+void ObjectSerializer::DeserializePropertyPack(GroovyClass* gClass, BufferView& fileData, PropertyPack& outPack)
 {
-	check(obj);
+	checkslow(gClass);
+
+	uint32 propCount = fileData.read<uint32>();
 
 	extern ClassDB gClassDB;
 
-	uint32 propertyCount = fileData.read<uint32>();
-
-	PropertyPack pack;
-	pack.desc.reserve(propertyCount);
-
-	for (uint32 i = 0; i < propertyCount; i++)
+	for (uint32 i = 0; i < propCount; i++)
 	{
-		PropertyDesc desc;
-		std::string propName = fileData.read<std::string>();
-		EPropertyType propType = fileData.read<EPropertyType>();
-		desc.arrayCount = fileData.read<uint32>();
-		desc.sizeBytes = fileData.read<size_t>();
+		std::string name = fileData.read<std::string>();
+		EPropertyType type = fileData.read<EPropertyType>();
+		uint32 arrayCount = fileData.read<uint32>();
+		size_t sizeBytes = fileData.read<size_t>();
 
-		const GroovyProperty* classProp = gClassDB.FindProperty(obj->GetClass(), propName, propType);
+		const GroovyProperty* classProp = gClassDB.FindProperty(gClass, name, type);
+
 		if (classProp)
 		{
+			PropertyDesc& desc = outPack.desc.emplace_back();
 			desc.classProp = classProp;
-			pack.data.push_bytes(fileData.seek(), desc.sizeBytes);
-			pack.desc.push_back(desc);
-		}
-		else
-		{
-			// log or something
-		}
-		
-		fileData.advance(desc.sizeBytes);
-	}
+			desc.arrayCount = arrayCount;
+			desc.sizeBytes = sizeBytes;
 
-	DeserializeOntoObject(pack.desc, pack.data.data(), obj);
+			outPack.data.push_bytes(fileData.seek(), sizeBytes);
+		}
+
+		fileData.advance(sizeBytes);
+	}
+}
+
+void ObjectSerializer::DeserializePropertyPackData(const PropertyPack& pack, GroovyObject* obj)
+{
+	checkslow(obj);
+
+	const byte* data = pack.data.data();
+
+	for (const PropertyDesc& desc : pack.desc)
+	{
+		utils::DeserializePropertyData(desc, data, obj);
+		data += desc.sizeBytes;
+	}
 }

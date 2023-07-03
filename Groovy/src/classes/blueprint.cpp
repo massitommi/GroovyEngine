@@ -1,16 +1,61 @@
 #include "blueprint.h"
+#include "class_db.h"
+#include "assets/asset_serializer.h"
+#include "assets/asset_loader.h"
 
-Blueprint::Blueprint(GroovyClass* inClass)
-	: mGroovyClass(inClass), mUUID(0), mLoaded(false)
+Blueprint::Blueprint()
+	: mGroovyClass(nullptr), mUUID(0), mLoaded(false)
 {
 }
 
 void Blueprint::Load()
 {
+	AssetLoader::LoadBlueprint(this);
+	mLoaded = true;
 }
 
 void Blueprint::Save()
 {
+	AssetSerializer::SerializeBlueprint(this);
+}
+
+void Blueprint::Serialize(DynamicBuffer& fileData)
+{
+	checkslow(mGroovyClass);
+
+	fileData.push<std::string>(mGroovyClass->name);
+	ObjectSerializer::SerializePropertyPack(mPropertyPack, fileData);
+}
+
+void Blueprint::Deserialize(BufferView fileData)
+{
+	mGroovyClass = nullptr;
+	mPropertyPack.data.free();
+	mPropertyPack.desc.clear();
+
+	extern ClassDB gClassDB;
+	std::string className = fileData.read<std::string>();
+	GroovyClass* gClass = gClassDB[className];
+	if (gClass)
+	{
+		mGroovyClass = gClass;
+		ObjectSerializer::DeserializePropertyPack(gClass, fileData, mPropertyPack);
+	}
+	else
+	{
+		checkslowf(0, "Class not found?!?!");
+	}
+}
+
+void Blueprint::SetData(GroovyObject* obj)
+{
+	check(obj);
+	check(obj->GetClass() == mGroovyClass);
+
+	mPropertyPack.desc.clear();
+	mPropertyPack.data.free();
+
+	ObjectSerializer::CreatePropertyPack(obj, mGroovyClass->cdo, mPropertyPack);
 }
 
 bool Blueprint::Editor_FixDependencyDeletion(AssetHandle assetToBeDeleted)

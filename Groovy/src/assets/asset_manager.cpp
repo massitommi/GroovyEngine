@@ -4,6 +4,11 @@
 #include "asset_loader.h"
 #include <random>
 #include "renderer/api/renderer_api.h"
+#include "renderer/api/texture.h"
+#include "renderer/api/shader.h"
+#include "renderer/material.h"
+#include "renderer/mesh.h"
+#include "classes/blueprint.h"
 
 static std::map<AssetUUID, AssetHandle> sAssetRegistry;
 
@@ -40,9 +45,13 @@ static AssetInstance* InstantiateAsset(const AssetHandle& handle)
 
 		case ASSET_TYPE_MESH:
 			return new Mesh();
+
+		case ASSET_TYPE_BLUEPRINT:
+			return new Blueprint();
 	}
 
 	checkslowf(0, "Trying to instantiate an unknown type asset??!?!?");
+	return nullptr;
 }
 
 void AssetManager::Init()

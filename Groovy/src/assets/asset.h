@@ -15,7 +15,8 @@ enum EAssetType
     // complex assets that reference other assets and stuff
     
     ASSET_TYPE_MATERIAL = 3,
-    ASSET_TYPE_MESH = 4
+    ASSET_TYPE_MESH = 4,
+    ASSET_TYPE_BLUEPRINT = 5
 };
 
 typedef uint64 AssetUUID;

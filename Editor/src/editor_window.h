@@ -107,5 +107,6 @@ private:
 	std::vector<ObjectProperties> mPropertyCache;
 	class Blueprint* mBlueprint;
 	class GroovyObject* mObjInstance;
+	std::string mFileName;
 	bool mExistsOnDisk;
 };

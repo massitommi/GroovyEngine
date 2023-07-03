@@ -3,6 +3,12 @@
 #include "asset_manager.h"
 #include "project/project.h"
 
+#include "renderer/api/texture.h"
+#include "renderer/api/shader.h"
+#include "renderer/material.h"
+#include "renderer/mesh.h"
+#include "classes/blueprint.h"
+
 extern Project gProj;
 
 Texture* AssetLoader::LoadTexture(const std::string& filePath)
@@ -50,4 +56,13 @@ void AssetLoader::LoadMesh(Mesh* mesh)
 	Buffer fileData;
 	FileSystem::ReadFileBinary(absPath, fileData);
 	mesh->Deserialize(fileData);
+}
+
+void AssetLoader::LoadBlueprint(Blueprint* bp)
+{
+	AssetHandle handle = AssetManager::Get(bp->GetUUID());
+	std::string absPath = (gProj.assets / handle.name).string();
+	Buffer fileData;
+	FileSystem::ReadFileBinary(absPath, fileData);
+	bp->Deserialize(fileData);
 }

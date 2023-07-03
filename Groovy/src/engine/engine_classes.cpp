@@ -12,7 +12,7 @@ class TestClassBase : public GroovyObject
 	GROOVY_CLASS_BODY(TestClassBase, GroovyObject)
 
 	std::string baseStr = "boh";
-	Vec2 baseVec = { 2,5 };
+	Vec2 baseVec = { 2,48};
 };
 
 GROOVY_CLASS_IMPL(TestClassBase)

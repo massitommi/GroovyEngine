@@ -161,13 +161,18 @@ void Material::Serialize(DynamicBuffer& fileData)
 	asset.constBuffersData.resize(mConstBuffersData.size());
 	memcpy(asset.constBuffersData.data(), mConstBuffersData.data(), mConstBuffersData.size());
 
-	ObjectSerializer::SerializeSimpleObject(&asset, MaterialAssetFile::StaticClass()->cdo, fileData);
+	// mat asset file
+	PropertyPack matAssetPropPack;
+	ObjectSerializer::CreatePropertyPack(&asset, MaterialAssetFile::StaticClass()->cdo, matAssetPropPack);
+	ObjectSerializer::SerializePropertyPack(matAssetPropPack, fileData);
 }
 
 void Material::Deserialize(BufferView fileData)
 {
 	MaterialAssetFile asset;
-	ObjectSerializer::DeserializeSimpleObject(&asset, fileData);
+	PropertyPack matAssetPropPack;
+	ObjectSerializer::DeserializePropertyPack(MaterialAssetFile::StaticClass(), fileData, matAssetPropPack);
+	ObjectSerializer::DeserializePropertyPackData(matAssetPropPack, &asset);
 
 	// shader
 	SetShader(asset.shader);

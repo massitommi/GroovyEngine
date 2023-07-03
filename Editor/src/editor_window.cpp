@@ -9,6 +9,7 @@
 #include "classes/class_db.h"
 #include "renderer/mesh.h"
 #include "classes/blueprint.h"
+#include "classes/reflection.h"
 
 void EditorWindow::RenderWindow()
 {
@@ -40,6 +41,8 @@ void EditorWindow::SetPendingSave(bool pendingSave)
 
 	mPendingSave = pendingSave;
 }
+
+extern void FlagRegistryPendingSave();
 
 bool PropertyInput(const std::string& label, EPropertyType type, void* data, bool readonly)
 {
@@ -176,6 +179,7 @@ void EditMaterialWindow::RenderContent()
 		{
 			AssetManager::Editor_OnImport(mFileName, ASSET_TYPE_MATERIAL);
 			mExistsOnDisk = true;
+			FlagRegistryPendingSave();
 		}
 		SetPendingSave(false);
 	}
@@ -312,9 +316,15 @@ BlueprintEditorWindow::BlueprintEditorWindow(Blueprint* blueprint)
 	: EditorWindow("Blueprint editor"), mBlueprint(blueprint), mExistsOnDisk(true)
 {
 	checkslow(blueprint);
+
+	mFileName = AssetManager::Get(blueprint->GetUUID()).name;
 	
 	mObjInstance = (GroovyObject*)malloc(blueprint->GetClass()->size);
 	blueprint->GetClass()->constructor(mObjInstance);
+
+	const auto gClass = blueprint->GetClass();
+	const auto& propPack = blueprint->GetPropertyPack();
+	ObjectSerializer::DeserializePropertyPackData(propPack, mObjInstance);
 
 	BuildPropertyCache();
 }
@@ -323,7 +333,10 @@ BlueprintEditorWindow::BlueprintEditorWindow(GroovyClass* gClass)
 	: EditorWindow("Blueprint editor"), mExistsOnDisk(false)
 {
 	checkslow(gClass);
-	mBlueprint = new Blueprint(gClass);
+	mBlueprint = new Blueprint();
+	mBlueprint->Editor_ClassRef() = gClass;
+
+	mFileName = "new_blueprint_" + gClass->name + GROOVY_ASSET_EXT;
 	
 	mObjInstance = (GroovyObject*)malloc(gClass->size);
 	gClass->constructor(mObjInstance);
@@ -361,6 +374,9 @@ void Property(const GroovyProperty& prop, void* propData)
 
 	if (prop.flags & PROPERTY_FLAG_IS_ARRAY)
 	{
+		ImGui::PushStyleColor(ImGuiCol_Header, { 1.0f, 1.0f, 1.0f, 0.0f });
+		ImGui::PushStyleColor(ImGuiCol_HeaderActive, { 1.0f, 1.0f, 1.0f, 0.1f });
+		ImGui::PushStyleColor(ImGuiCol_HeaderHovered, { 1.0f, 1.0f, 1.0f, 0.1f });
 		if (ImGui::CollapsingHeader(prop.name.c_str()))
 		{
 			uint32 propSize = reflectionUtils::GetPropertySize(prop.type);
@@ -445,6 +461,7 @@ void Property(const GroovyProperty& prop, void* propData)
 				}
 			}
 		}
+		ImGui::PopStyleColor(3);
 	}
 	else
 	{
@@ -484,5 +501,31 @@ void PropertiesAllClasses(GroovyObject* obj, const std::vector<ObjectProperties>
 
 void BlueprintEditorWindow::RenderContent()
 {
+	if (mExistsOnDisk)
+		ImGui::BeginDisabled();
+
+	ImGui::InputText("Filename", &mFileName);
+
+	if (mExistsOnDisk)
+		ImGui::EndDisabled();
+
+	ImGui::Spacing();
+
+	if (ImGui::Button(mExistsOnDisk ? "Save changes" : "Save"))
+	{
+		mBlueprint->SetData(mObjInstance);
+		AssetSerializer::SerializeBlueprint(mBlueprint, (gProj.assets / mFileName).string());
+		if (!mExistsOnDisk)
+		{
+			AssetManager::Editor_OnImport(mFileName, ASSET_TYPE_BLUEPRINT);
+			mExistsOnDisk = true;
+			FlagRegistryPendingSave();
+		}
+		SetPendingSave(false);
+	}
+
+	ImGui::Spacing();
+	ImGui::Spacing();
+
 	PropertiesAllClasses(mObjInstance, mPropertyCache);
 }
