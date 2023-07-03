@@ -175,6 +175,7 @@ static Texture* sShaderAssetIcon;
 static Texture* sMaterialAssetIcon;
 static Texture* sMeshAssetIcon;
 static Texture* sClassAssetIcon;
+static Texture* sBlueprintAssetIcon;
 
 static FrameBuffer* sGameViewportFrameBuffer;
 static ImVec2 sGameViewportSize;
@@ -246,6 +247,7 @@ void EditorInit()
 	sMaterialAssetIcon = LoadEditorIcon("res/material_asset_icon.png");
 	sMeshAssetIcon = LoadEditorIcon("res/mesh_asset_icon.png");
 	sClassAssetIcon = LoadEditorIcon("res/class_asset_icon.png");
+	sBlueprintAssetIcon = LoadEditorIcon("res/blueprint_asset_icon.png");
 	
 	// gameviewport framebuffer
 	FrameBufferSpec gameViewportSpec;
@@ -310,7 +312,7 @@ namespace panels
 					panelAssets[i].typeNameIndex = 3;
 					break;
 				case ASSET_TYPE_BLUEPRINT:
-					panelAssets[i].thumbnail = sMeshAssetIcon->GetRendererID();
+					panelAssets[i].thumbnail = sBlueprintAssetIcon->GetRendererID();
 					panelAssets[i].typeNameIndex = 4;
 					break;
 			}
@@ -639,8 +641,8 @@ void EditorRender()
         ImGui::EndMenuBar();
     }
 
-	panels::Assets();
 	panels::Classes();
+	panels::Assets();
 	panels::GameViewport();
 	panels::EntityList();
 	panels::Properties();
@@ -651,6 +653,7 @@ void EditorRender()
 
 void EditorShutdown()
 {
+	delete sBlueprintAssetIcon;
 	delete sClassAssetIcon;
 	delete sShaderAssetIcon;
 	delete sMaterialAssetIcon;
