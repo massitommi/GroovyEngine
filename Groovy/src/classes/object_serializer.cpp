@@ -275,9 +275,14 @@ void ObjectSerializer::DeserializePropertyPack(GroovyClass* gClass, BufferView& 
 		uint32 arrayCount = fileData.read<uint32>();
 		size_t sizeBytes = fileData.read<size_t>();
 
-		const GroovyProperty* classProp = gClassDB.FindProperty(gClass, name, type, arrayCount);
+		const GroovyProperty* classProp = gClassDB.FindProperty(gClass, name);
 
-		if (classProp)
+		// check property "signature"
+		bool compatiblePropSignature = classProp->type == type;
+		if (!(classProp->flags & PROPERTY_FLAG_IS_DYNAMIC_ARRAY))
+			compatiblePropSignature = compatiblePropSignature && classProp->arrayCount == arrayCount;
+
+		if (classProp && compatiblePropSignature)
 		{
 			PropertyDesc& desc = outPack.desc.emplace_back();
 			desc.classProp = classProp;
