@@ -71,6 +71,12 @@ void Blueprint::SetData(GroovyObject* obj)
 
 void Blueprint::CopyProperties(GroovyObject* obj)
 {
+	if (!mGroovyClass)
+		return;
+
+	check(obj);
+	check(obj->GetClass() == mGroovyClass);
+
 	ObjectSerializer::DeserializePropertyPackData(mPropertyPack, obj);
 }
 
@@ -258,7 +264,11 @@ void ActorBlueprint::SetData(Actor* actor)
 
 void ActorBlueprint::CopyProperties(Actor* actor)
 {
-	checkslow(actor);
+	if (!mActorClass)
+		return;
+	check(actor);
+	check(actor->GetClass() == mActorClass);
+
 	// copy actor data
 	ObjectSerializer::DeserializePropertyPackData(mActorPropertyPack, actor);
 	// copy native components data
