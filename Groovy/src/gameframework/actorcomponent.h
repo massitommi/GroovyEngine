@@ -16,4 +16,6 @@ public:
 
 private:
 	std::string mName;
+
+	friend class Actor;
 };

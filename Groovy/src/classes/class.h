@@ -42,6 +42,7 @@ struct GroovyProperty
 	uint32 arrayCount;
 	// asset type for ASSET_REF properties
 	uint64 param1;
+	// subclass filter for BlueprintRef
 	uint64 param2;
 };
 
@@ -61,35 +62,35 @@ struct PropType
 };
 
 #define IMPL_PROPERTY_TYPE_EX(CoreType, OutPropertyType, ExFlags, ExParam1, ExParam2)	\
-template<>														\
-struct PropType<CoreType> {										\
-	enum : uint64 {												\
-		Type = OutPropertyType,									\
-		Flags = ExFlags,										\
-		ArrayCount = 1,											\
-		Param1 = ExParam1,										\
-		Param2 = ExParam2										\
-	};															\
-};																\
-template<size_t InArrayCount>									\
-struct PropType<CoreType[InArrayCount]> {						\
-	enum : uint64 {												\
-		Type = OutPropertyType,									\
-		Flags = ExFlags | PROPERTY_FLAG_IS_ARRAY,				\
-		ArrayCount = InArrayCount,								\
-		Param1 = ExParam1,										\
-		Param2 = ExParam2										\
-	};															\
-};																\
-template<>														\
-struct PropType<std::vector<CoreType>> {						\
-	enum : uint64 {												\
-		Type = OutPropertyType,									\
+template<>																				\
+struct PropType<CoreType> {																\
+	enum : uint64 {																		\
+		Type = OutPropertyType,															\
+		Flags = ExFlags,																\
+		ArrayCount = 1,																	\
+		Param1 = ExParam1,																\
+		Param2 = ExParam2																\
+	};																					\
+};																						\
+template<size_t InArrayCount>															\
+struct PropType<CoreType[InArrayCount]> {												\
+	enum : uint64 {																		\
+		Type = OutPropertyType,															\
+		Flags = ExFlags | PROPERTY_FLAG_IS_ARRAY,										\
+		ArrayCount = InArrayCount,														\
+		Param1 = ExParam1,																\
+		Param2 = ExParam2																\
+	};																					\
+};																						\
+template<>																				\
+struct PropType<std::vector<CoreType>> {												\
+	enum : uint64 {																		\
+		Type = OutPropertyType,															\
 		Flags = ExFlags | PROPERTY_FLAG_IS_ARRAY | PROPERTY_FLAG_IS_DYNAMIC_ARRAY,		\
-		ArrayCount = 0,											\
-		Param1 = ExParam1,										\
-		Param2 = ExParam2										\
-	};															\
+		ArrayCount = 0,																	\
+		Param1 = ExParam1,																\
+		Param2 = ExParam2																\
+	};																					\
 };
 
 #define IMPL_PROPERTY_TYPE(CoreType, OutPropertyType) IMPL_PROPERTY_TYPE_EX(CoreType, OutPropertyType, 0, 0, 0)
@@ -118,7 +119,52 @@ IMPL_PROPERTY_TYPE_EX(Shader*, PROPERTY_TYPE_ASSET_REF, PROPERTY_FLAG_IS_COMPLEX
 IMPL_PROPERTY_TYPE_EX(Material*, PROPERTY_TYPE_ASSET_REF, PROPERTY_FLAG_IS_COMPLEX, ASSET_TYPE_MATERIAL, 0)
 IMPL_PROPERTY_TYPE_EX(Mesh*, PROPERTY_TYPE_ASSET_REF, PROPERTY_FLAG_IS_COMPLEX, ASSET_TYPE_MESH, 0)
 
-// default property types:
+template<typename TClass>
+class BlueprintRef
+{
+public:
+	using Class = TClass;
+
+	AssetInstance* blueprint = nullptr;
+};
+
+static_assert(sizeof(BlueprintRef<int>) == sizeof(AssetInstance*));
+
+template<typename TClass>
+struct PropType<BlueprintRef<TClass>> {
+	enum : uint64 {
+		Type = PROPERTY_TYPE_ASSET_REF,
+		Flags = PROPERTY_FLAG_IS_COMPLEX,
+		ArrayCount = 1,
+		Param1 = ASSET_TYPE_BLUEPRINT
+	};
+
+	static inline uint64 Param2 = (uint64)TClass::StaticClass();
+};
+
+template<typename TClass, size_t InArrayCount>									
+struct PropType<BlueprintRef<TClass>[InArrayCount]> {
+	enum : uint64 {
+		Type = PROPERTY_TYPE_ASSET_REF,
+		Flags = PROPERTY_FLAG_IS_COMPLEX | PROPERTY_FLAG_IS_ARRAY,
+		ArrayCount = InArrayCount,
+		Param1 = ASSET_TYPE_BLUEPRINT
+	};
+
+	static inline uint64 Param2 = (uint64)TClass::StaticClass();
+};
+
+template<typename TClass>
+struct PropType<std::vector<BlueprintRef<TClass>>> {
+	enum : uint64 {
+		Type = PROPERTY_TYPE_ASSET_REF,
+		Flags = PROPERTY_FLAG_IS_COMPLEX | PROPERTY_FLAG_IS_ARRAY | PROPERTY_FLAG_IS_DYNAMIC_ARRAY,
+		ArrayCount = 0,
+		Param1 = ASSET_TYPE_BLUEPRINT
+	};
+
+	static inline uint64 Param2 = (uint64)TClass::StaticClass();
+};
 
 typedef void(*GroovyConstructor)(void*);
 typedef void(*GroovyDestructor)(void*);

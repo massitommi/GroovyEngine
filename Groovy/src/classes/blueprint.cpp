@@ -3,23 +3,23 @@
 #include "assets/asset_serializer.h"
 #include "assets/asset_loader.h"
 
-Blueprint::Blueprint()
+ObjectBlueprint::ObjectBlueprint()
 	: mGroovyClass(nullptr), mUUID(0), mLoaded(false)
 {
 }
 
-void Blueprint::Load()
+void ObjectBlueprint::Load()
 {
 	AssetLoader::LoadGenericAsset(this);
 	mLoaded = true;
 }
 
-void Blueprint::Save()
+void ObjectBlueprint::Save()
 {
 	AssetSerializer::SerializeGenericAsset(this);
 }
 
-void Blueprint::Serialize(DynamicBuffer& fileData) const
+void ObjectBlueprint::Serialize(DynamicBuffer& fileData) const
 {
 	if (!mGroovyClass)
 	{
@@ -31,7 +31,7 @@ void Blueprint::Serialize(DynamicBuffer& fileData) const
 	ObjectSerializer::SerializePropertyPack(mPropertyPack, fileData);
 }
 
-void Blueprint::Deserialize(BufferView fileData)
+void ObjectBlueprint::Deserialize(BufferView fileData)
 {
 	if (!fileData.remaining())
 	{
@@ -52,14 +52,14 @@ void Blueprint::Deserialize(BufferView fileData)
 	}
 }
 
-void Blueprint::Clear()
+void ObjectBlueprint::Clear()
 {
 	mGroovyClass = nullptr;
 	mPropertyPack.desc.clear();
 	mPropertyPack.data.free();
 }
 
-void Blueprint::SetData(GroovyObject* obj)
+void ObjectBlueprint::SetData(GroovyObject* obj)
 {
 	checkslow(obj);
 
@@ -69,7 +69,7 @@ void Blueprint::SetData(GroovyObject* obj)
 	ObjectSerializer::CreatePropertyPack(obj, mGroovyClass->cdo, mPropertyPack);
 }
 
-void Blueprint::CopyProperties(GroovyObject* obj)
+void ObjectBlueprint::CopyProperties(GroovyObject* obj)
 {
 	if (!mGroovyClass)
 		return;
@@ -105,7 +105,7 @@ uint32 DepencyDeletionFix(const AssetHandle& assetToBeDeleted, PropertyPack& pac
 	return fixed;
 }
 
-bool Blueprint::Editor_FixDependencyDeletion(AssetHandle assetToBeDeleted)
+bool ObjectBlueprint::Editor_FixDependencyDeletion(AssetHandle assetToBeDeleted)
 {
 	return DepencyDeletionFix(assetToBeDeleted, mPropertyPack);
 }
@@ -241,12 +241,18 @@ void ActorBlueprint::SetData(Actor* actor)
 	// native components
 	{
 		const std::vector<ActorComponent*>& comps = actor->GetNativeComponents();
-		mNativeComponents.resize(comps.size());
+		mNativeComponents.reserve(comps.size());
 		for (uint32 i = 0; i < comps.size(); i++)
 		{
-			mNativeComponents[i].name = comps[i]->GetName();
-			mNativeComponents[i].gClass = comps[i]->GetClass();
-			ObjectSerializer::CreatePropertyPack(comps[i], comps[i]->GetCDO(), mNativeComponents[i].pack);
+			PropertyPack pack;
+			ObjectSerializer::CreatePropertyPack(comps[i], comps[i]->GetCDO(), pack);
+			if (pack.desc.size())
+			{
+				ComponentPack& compPack = mNativeComponents.emplace_back();
+				compPack.pack = std::move(pack);
+				compPack.gClass = comps[i]->GetClass();
+				compPack.name = comps[i]->GetName();
+			}
 		}
 	}
 	// editor components

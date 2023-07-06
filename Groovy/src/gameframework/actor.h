@@ -47,13 +47,13 @@ protected:
 	template<typename TComponent>
 	TComponent* AddComponent(const std::string& name)
 	{
-		return AddComponent(TComponent::StaticClass(), name);
+		return (TComponent*)AddComponent(TComponent::StaticClass(), name);
 	}
 
 public:
 	inline const std::vector<ActorComponent*>& GetComponents() const { return mComponents; }
-	inline const std::vector<ActorComponent*>& GetNativeComponents() const { return mEditorComponents; }
-	inline const std::vector<ActorComponent*>& GetEditorComponents() const { return mNativeComponents; }
+	inline const std::vector<ActorComponent*>& GetNativeComponents() const { return mNativeComponents; }
+	inline const std::vector<ActorComponent*>& GetEditorComponents() const { return mEditorComponents; }
 
 	// internal stuff
 private:

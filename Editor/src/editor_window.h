@@ -86,17 +86,17 @@ private:
 	std::string mFileName;
 };
 
-class BlueprintEditorWindow : public EditorWindow
+class ObjectBlueprintEditorWindow : public EditorWindow
 {
 public:
-	BlueprintEditorWindow(class Blueprint* blueprint);
-	BlueprintEditorWindow(class GroovyClass* inClass);
-	~BlueprintEditorWindow();
+	ObjectBlueprintEditorWindow(class ObjectBlueprint* blueprint);
+	ObjectBlueprintEditorWindow(class GroovyClass* inClass);
+	~ObjectBlueprintEditorWindow();
 
 	virtual void RenderContent() override;
 
 private:
-	class Blueprint* mBlueprint;
+	class ObjectBlueprint* mBlueprint;
 	class GroovyObject* mObjInstance;
 
 	std::string mFileName;
@@ -118,4 +118,6 @@ private:
 
 	std::string mFileName;
 	bool mExistsOnDisk;
+
+	class GroovyObject* mSelected;
 };

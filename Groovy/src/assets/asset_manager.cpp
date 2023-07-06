@@ -47,7 +47,7 @@ static AssetInstance* InstantiateAsset(const AssetHandle& handle)
 			return new Mesh();
 
 		case ASSET_TYPE_BLUEPRINT:
-			return new Blueprint();
+			return new ObjectBlueprint();
 
 		case ASSET_TYPE_ACTOR_BLUEPRINT:
 			return new ActorBlueprint();

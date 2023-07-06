@@ -47,7 +47,69 @@ void EditorWindow::SetPendingSave(bool pendingSave)
 
 extern void FlagRegistryPendingSave();
 
-bool PropertyInput(const std::string& label, EPropertyType type, void* data, bool readonly)
+namespace GroovyGui
+{
+	bool AssetRef(const char* label, EAssetType type, void* data, GroovyClass* classFilter)
+	{
+		AssetInstance* assetPtr = *(AssetInstance**)data;
+		std::vector<AssetHandle> assets;
+		// filter stuff out
+		if (classFilter)
+		{
+			for (const AssetHandle& handle : AssetManager::Editor_GetAssets())
+			{
+				if (handle.type == ASSET_TYPE_BLUEPRINT || handle.type == ASSET_TYPE_ACTOR_BLUEPRINT)
+				{
+					Blueprint* bp = (Blueprint*)handle.instance;
+					if (classUtils::IsA(bp->GetClass(), classFilter))
+					{
+						assets.push_back(handle);
+					}
+				}
+			}
+		}
+		else
+		{
+			assets = AssetManager::Editor_GetAssets(type);
+		}
+
+		// draw 
+
+		std::string current = "NONE";
+		if (assetPtr)
+			current = AssetManager::Get(assetPtr->GetUUID()).name;
+
+		if (ImGui::BeginCombo(label, current.c_str()))
+		{
+			if (ImGui::Selectable("NONE"))
+			{
+				assetPtr = nullptr;
+				return true;
+			}
+			for (const AssetHandle& handle : assets)
+			{
+				if (ImGui::Selectable(handle.name.c_str()))
+				{
+					assetPtr = handle.instance;
+					return true;
+				}
+			}
+		}
+
+		return false;
+	}
+	bool Transform(const char* label, void* data, float v_speed = 1.0f, float v_min = 0.0f, float v_max = 0.0f)
+	{
+		struct Transform* t = (struct Transform*)data;
+		bool click = false;
+		click = click || ImGui::DragFloat3("##location", &t->location.x, v_speed, v_min, v_max);
+		click = click || ImGui::DragFloat3("##rotation", &t->rotation.x, v_speed, v_min, v_max);
+		click = click || ImGui::DragFloat3("##scale", &t->scale.x, v_speed, v_min, v_max);
+		return click;
+	}
+}
+
+bool PropertyInput(const std::string& label, EPropertyType type, void* data, bool readonly, uint64 param1 = 0, uint64 param2 = 0)
 {
 	if (readonly)
 		ImGui::BeginDisabled();
@@ -61,36 +123,42 @@ bool PropertyInput(const std::string& label, EPropertyType type, void* data, boo
 
 	switch (type)
 	{
-	case PROPERTY_TYPE_INT32:
-		click = ImGui::InputScalar(lblVal.c_str(), ImGuiDataType_S32, data, 0, 0, 0);
-		break;
-	case PROPERTY_TYPE_INT64:
-		click = ImGui::InputScalar(lblVal.c_str(), ImGuiDataType_S64, data, 0, 0, 0);
-		break;
-	case PROPERTY_TYPE_UINT32:
-		click = ImGui::InputScalar(lblVal.c_str(), ImGuiDataType_U32, data, 0, 0, 0);
-		break;
-	case PROPERTY_TYPE_UINT64:
-		click = ImGui::InputScalar(lblVal.c_str(), ImGuiDataType_U64, data, 0, 0, 0);
-		break;
-	case PROPERTY_TYPE_FLOAT:
-		click = ImGui::InputScalar(lblVal.c_str(), ImGuiDataType_Float, data, 0, 0, 0);
-		break;
-	case PROPERTY_TYPE_BOOL:
-		click = ImGui::Checkbox(lblVal.c_str(), (bool*)data);
-		break;
-	case PROPERTY_TYPE_VEC2:
-		click = ImGui::DragFloat2(lblVal.c_str(), (float*)data, 1.0f, 0.0f, 0.0f, "%.3f");
-		break;
-	case PROPERTY_TYPE_VEC3:
-		click = ImGui::DragFloat3(lblVal.c_str(), (float*)data, 1.0f, 0.0f, 0.0f, "%.3f");
-		break;
-	case PROPERTY_TYPE_VEC4:
-		click = ImGui::DragFloat4(lblVal.c_str(), (float*)data, 1.0f, 0.0f, 0.0f, "%.3f");
-		break;
-	case PROPERTY_TYPE_STRING:
-		click = ImGui::InputText(lblVal.c_str(), (std::string*)data, readonly ? ImGuiInputTextFlags_ReadOnly : 0);
-		break;
+		case PROPERTY_TYPE_INT32:
+			click = ImGui::InputScalar(lblVal.c_str(), ImGuiDataType_S32, data, 0, 0, 0);
+			break;
+		case PROPERTY_TYPE_INT64:
+			click = ImGui::InputScalar(lblVal.c_str(), ImGuiDataType_S64, data, 0, 0, 0);
+			break;
+		case PROPERTY_TYPE_UINT32:
+			click = ImGui::InputScalar(lblVal.c_str(), ImGuiDataType_U32, data, 0, 0, 0);
+			break;
+		case PROPERTY_TYPE_UINT64:
+			click = ImGui::InputScalar(lblVal.c_str(), ImGuiDataType_U64, data, 0, 0, 0);
+			break;
+		case PROPERTY_TYPE_FLOAT:
+			click = ImGui::InputScalar(lblVal.c_str(), ImGuiDataType_Float, data, 0, 0, 0);
+			break;
+		case PROPERTY_TYPE_BOOL:
+			click = ImGui::Checkbox(lblVal.c_str(), (bool*)data);
+			break;
+		case PROPERTY_TYPE_VEC2:
+			click = ImGui::DragFloat2(lblVal.c_str(), (float*)data, 1.0f, 0.0f, 0.0f);
+			break;
+		case PROPERTY_TYPE_VEC3:
+			click = ImGui::DragFloat3(lblVal.c_str(), (float*)data, 1.0f, 0.0f, 0.0f);
+			break;
+		case PROPERTY_TYPE_VEC4:
+			click = ImGui::DragFloat4(lblVal.c_str(), (float*)data, 1.0f, 0.0f, 0.0f);
+			break;
+		case PROPERTY_TYPE_TRANSFORM:
+			click = GroovyGui::Transform(lblVal.c_str(), data, 1.0f, 0.0f, 0.0f);
+			break;
+		case PROPERTY_TYPE_STRING:
+			click = ImGui::InputText(lblVal.c_str(), (std::string*)data, readonly ? ImGuiInputTextFlags_ReadOnly : 0);
+			break;
+		case PROPERTY_TYPE_ASSET_REF:
+			click = GroovyGui::AssetRef(lblVal.c_str(), (EAssetType)param1, data, (GroovyClass*)param2);
+			break;
 	default:
 		ImGui::Text("PROPERTY_TYPE_UI_NOT_IMPLEMENTED");
 		click = false;
@@ -315,23 +383,23 @@ extern ClassDB gClassDB;
 extern std::vector<GroovyClass*> ENGINE_CLASSES;
 extern std::vector<GroovyClass*> GAME_CLASSES;
 
-BlueprintEditorWindow::BlueprintEditorWindow(Blueprint* blueprint)
+ObjectBlueprintEditorWindow::ObjectBlueprintEditorWindow(ObjectBlueprint* blueprint)
 	: EditorWindow("Blueprint editor"), mBlueprint(blueprint), mExistsOnDisk(true)
 {
 	checkslow(blueprint);
 
 	mFileName = AssetManager::Get(blueprint->GetUUID()).name;
 	
-	mObjInstance = ObjectAllocator::Instantiate(blueprint->GetClass());
+	mObjInstance = ObjectAllocator::Instantiate(blueprint->GetObjectClass());
 
 	mBlueprint->CopyProperties(mObjInstance);
 }
 
-BlueprintEditorWindow::BlueprintEditorWindow(GroovyClass* gClass)
+ObjectBlueprintEditorWindow::ObjectBlueprintEditorWindow(GroovyClass* gClass)
 	: EditorWindow("Blueprint editor"), mExistsOnDisk(false)
 {
 	checkslow(gClass);
-	mBlueprint = new Blueprint();
+	mBlueprint = new ObjectBlueprint();
 	mBlueprint->Editor_ClassRef() = gClass;
 
 	mFileName = "new_blueprint_" + gClass->name + GROOVY_ASSET_EXT;
@@ -339,7 +407,7 @@ BlueprintEditorWindow::BlueprintEditorWindow(GroovyClass* gClass)
 	mObjInstance = ObjectAllocator::Instantiate(gClass);
 }
 
-BlueprintEditorWindow::~BlueprintEditorWindow()
+ObjectBlueprintEditorWindow::~ObjectBlueprintEditorWindow()
 {
 	ObjectAllocator::Destroy(mObjInstance);
 
@@ -386,7 +454,7 @@ void Property(const GroovyProperty& prop, void* propData)
 				for (uint32 i = 0; i < dataArrayCount; i++)
 				{
 					std::string labelName = "[" + std::to_string(i) + "]";
-					PropertyInput(labelName, prop.type, (byte*)dataData + (propSize * i), readonly);
+					PropertyInput(labelName, prop.type, (byte*)dataData + (propSize * i), readonly, prop.param1, prop.param2);
 					ImGui::SameLine();
 					ImGui::PushID(i);
 					if (ImGui::Button("X"))
@@ -437,7 +505,7 @@ void Property(const GroovyProperty& prop, void* propData)
 				for (uint32 i = 0; i < prop.arrayCount; i++)
 				{
 					std::string labelName = "[" + std::to_string(i) + "]";
-					PropertyInput(labelName, prop.type, (byte*)propData + (propSize * i), readonly);
+					PropertyInput(labelName, prop.type, (byte*)propData + (propSize * i), readonly, prop.param1, prop.param2);
 				}
 			}
 		}
@@ -445,7 +513,7 @@ void Property(const GroovyProperty& prop, void* propData)
 	}
 	else
 	{
-		PropertyInput(prop.name, prop.type, propData, readonly);
+		PropertyInput(prop.name, prop.type, propData, readonly, prop.param1, prop.param2);
 	}
 	ImGui::PopID();
 }
@@ -486,7 +554,7 @@ void PropertiesAllClasses(GroovyObject* obj)
 	} 
 }
 
-void BlueprintEditorWindow::RenderContent()
+void ObjectBlueprintEditorWindow::RenderContent()
 {
 	if (mExistsOnDisk)
 		ImGui::BeginDisabled();
@@ -526,6 +594,8 @@ ActorBlueprintEditorWindow::ActorBlueprintEditorWindow(ActorBlueprint* blueprint
 
 	mActorInstance = ObjectAllocator::Instantiate<Actor>(blueprint->GetActorClass());
 	mBlueprint->CopyProperties(mActorInstance);
+
+	mSelected = mActorInstance;
 }
 
 ActorBlueprintEditorWindow::ActorBlueprintEditorWindow(GroovyClass* inClass)
@@ -540,6 +610,8 @@ ActorBlueprintEditorWindow::ActorBlueprintEditorWindow(GroovyClass* inClass)
 	mBlueprint->Editor_ActorClassRef() = inClass;
 
 	mActorInstance = ObjectAllocator::Instantiate<Actor>(inClass);
+
+	mSelected = mActorInstance;
 }
 
 ActorBlueprintEditorWindow::~ActorBlueprintEditorWindow()
@@ -579,4 +651,57 @@ void ActorBlueprintEditorWindow::RenderContent()
 	ImGui::Spacing();
 
 	// render groovy stuff
+
+	ImGui::Columns(3);
+
+	ImGui::BeginChild("Actor & Components");
+	ImGui::Text("ACTOR AND COMPONENTS");
+	ImGui::Spacing();
+	ImGui::Spacing();
+	ImGui::Spacing();
+
+	std::string lbl = mBlueprint->GetActorClass()->name + " (self)";
+	if (ImGui::Selectable(lbl.c_str(), mSelected == mActorInstance))
+	{
+		mSelected = mActorInstance;
+	}
+
+	ImGui::Spacing();
+	ImGui::Separator();
+	ImGui::Spacing();
+
+	for (ActorComponent* comp : mActorInstance->GetComponents())
+	{
+		if (ImGui::Selectable(comp->GetName().c_str(), mSelected == comp))
+		{
+			mSelected = comp;
+		}
+	}
+
+	ImGui::EndChild();
+
+	ImGui::NextColumn();
+	
+	ImGui::BeginChild("Viewport");
+	ImGui::Text("VIEWPORT");
+	ImGui::Spacing();
+	ImGui::Spacing();
+	ImGui::Spacing();
+
+
+	ImGui::EndChild();
+	
+	ImGui::NextColumn();
+
+	ImGui::BeginChild("Properties");
+	ImGui::Text("PROPERTIES");
+	ImGui::Spacing();
+	ImGui::Spacing();
+	ImGui::Spacing();
+
+	PropertiesAllClasses(mSelected);
+	
+	ImGui::EndChild();
+	
+	ImGui::Columns();
 }

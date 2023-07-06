@@ -13,6 +13,10 @@ Actor::Actor()
 
 Actor::~Actor()
 {
+	for (ActorComponent* component : mComponents)
+	{
+		ObjectAllocator::Destroy(component);
+	}
 }
 
 ActorComponent* Actor::GetComponent(const std::string& name) const
@@ -67,6 +71,7 @@ uint32 Actor::GetComponentsExact(GroovyClass* componentClass, std::vector<ActorC
 ActorComponent* Actor::__internal_AddComponent(GroovyClass* componentClass, const std::string& name)
 {
 	check(componentClass);
+	checkslow(classUtils::IsA(componentClass, ActorComponent::StaticClass()));
 	check(!name.empty());
 
 	ActorComponent*& dbRecord = mComponentsDB[name];
@@ -76,6 +81,8 @@ ActorComponent* Actor::__internal_AddComponent(GroovyClass* componentClass, cons
 
 	dbRecord = newComponent;
 	mComponents.push_back(newComponent);
+
+	newComponent->mName = name;
 
 	return newComponent;
 }

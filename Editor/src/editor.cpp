@@ -276,7 +276,8 @@ namespace panels
 			"SHADER",
 			"MATERIAL",
 			"MESH",
-			"BLUEPRINT"
+			"BLUEPRINT",
+			"ACTOR BLUEPRINT"
 		};
 
 		enum PanelAssetFlags
@@ -315,9 +316,12 @@ namespace panels
 					panelAssets[i].typeNameIndex = 3;
 					break;
 				case ASSET_TYPE_BLUEPRINT:
-				case ASSET_TYPE_ACTOR_BLUEPRINT:
 					panelAssets[i].thumbnail = sBlueprintAssetIcon->GetRendererID();
 					panelAssets[i].typeNameIndex = 4;
+					break;
+				case ASSET_TYPE_ACTOR_BLUEPRINT:
+					panelAssets[i].thumbnail = sBlueprintAssetIcon->GetRendererID();
+					panelAssets[i].typeNameIndex = 5;
 					break;
 			}
 
@@ -377,7 +381,7 @@ namespace panels
 						break;
 
 					case ASSET_TYPE_BLUEPRINT:
-						AddWindow<BlueprintEditorWindow>((Blueprint*)asset.instance);
+						AddWindow<ObjectBlueprintEditorWindow>((ObjectBlueprint*)asset.instance);
 						break;
 
 					case ASSET_TYPE_ACTOR_BLUEPRINT:
@@ -427,6 +431,7 @@ namespace panels
 				switch (asset.type)
 				{
 					case ASSET_TYPE_BLUEPRINT:
+					case ASSET_TYPE_ACTOR_BLUEPRINT:
 					{
 						ImGui::SetTooltip
 						(
@@ -523,7 +528,7 @@ namespace panels
 					}
 					else
 					{
-						AddWindow<BlueprintEditorWindow>(gClass);
+						AddWindow<ObjectBlueprintEditorWindow>(gClass);
 					}
 				}
 
