@@ -17,6 +17,8 @@ public:
 	virtual bool IsLoaded() const override { return true; }
 	virtual void Load() override {}
 	virtual void Save() override {}
+	virtual void Serialize(DynamicBuffer& fileData) const override {}
+	virtual void Deserialize(BufferView fileData) override {}
 #if WITH_EDITOR
 	virtual bool Editor_FixDependencyDeletion(AssetHandle assetToBeDeleted) override { return false; }
 #endif

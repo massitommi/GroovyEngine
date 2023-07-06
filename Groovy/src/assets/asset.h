@@ -16,7 +16,8 @@ enum EAssetType
     
     ASSET_TYPE_MATERIAL = 3,
     ASSET_TYPE_MESH = 4,
-    ASSET_TYPE_BLUEPRINT = 5
+    ASSET_TYPE_BLUEPRINT = 5,
+    ASSET_TYPE_ACTOR_BLUEPRINT = 6
 };
 
 typedef uint64 AssetUUID;
@@ -47,6 +48,9 @@ public:
     virtual bool IsLoaded() const = 0;
     virtual void Load() = 0;
     virtual void Save() = 0;
+
+    virtual void Serialize(DynamicBuffer& fileData) const = 0;
+    virtual void Deserialize(BufferView fileData) = 0;
 
 #if WITH_EDITOR
 

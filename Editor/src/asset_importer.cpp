@@ -215,7 +215,7 @@ bool AssetImporter::ImportMesh(const std::string& originalFile, const std::strin
 
     DynamicBuffer fileData2;
     PropertyPack meshAssetPropPack;
-    ObjectSerializer::CreatePropertyPack(&asset, MeshAssetFile::StaticClass()->cdo, meshAssetPropPack);
+    ObjectSerializer::CreatePropertyPack(&asset, MeshAssetFile::StaticCDO(), meshAssetPropPack);
     ObjectSerializer::SerializePropertyPack(meshAssetPropPack, fileData2);
 
     Buffer finalFileData;

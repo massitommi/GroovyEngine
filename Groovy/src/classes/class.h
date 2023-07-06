@@ -150,6 +150,8 @@ public:																								\
 	static void GetClassProperties(std::vector<GroovyProperty>& outProps);							\
 	virtual void GetClassPropertiesRecursive(std::vector<GroovyProperty>& outProps) const override;	\
 	static constexpr GroovyClass* StaticClass() { return &GROOVY_CLASS_NAME(Class); }				\
+	inline GroovyObject* GetCDO() const { return GetClass()->cdo; }									\
+	static GroovyObject* StaticCDO() { return GROOVY_CLASS_NAME(Class).cdo; }						\
 private:
 
 #define GROOVY_CLASS_IMPL(Class)	GroovyClass GROOVY_CLASS_NAME(Class) =						\
@@ -184,7 +186,8 @@ namespace classUtils
 	// Gets all the properties exposed by a groovy class, sorted means that the first are the base class ones, and the last are the gClass ones
 	void GetClassPropertiesRecursiveSorted(GroovyClass* gClass, std::vector<GroovyProperty>& outProps);
 	uint32 FindProperty(const std::vector<GroovyProperty>& props, const std::string& propName);
-	GroovyObject* DynamicCast(GroovyObject* obj, GroovyClass* gClass);
+	GroovyObject* DynamicCast(GroovyObject* obj, const GroovyClass* gClass);
+	bool IsA(const GroovyClass* c1, const GroovyClass* c2);
 }
 
 /*

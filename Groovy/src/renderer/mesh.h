@@ -47,8 +47,8 @@ public:
 	void FixForRendering();
 
 	size_t GetAssetOffsetForSerialization() const { return sizeof(MeshAssetHeader) + mVertexBuffer->GetSize() + mIndexBuffer->GetSize(); }
-	void Serialize(DynamicBuffer& fileData);
-	void Deserialize(BufferView fileData);
+	virtual void Serialize(DynamicBuffer& fileData) const override;
+	virtual void Deserialize(BufferView fileData) override;
 
 #if WITH_EDITOR
 

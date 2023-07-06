@@ -3,29 +3,27 @@
 #include "asset_manager.h"
 #include "project/project.h"
 
-#include "renderer/material.h"
 #include "renderer/mesh.h"
-#include "classes/blueprint.h"
 
 extern Project gProj;
 
-void AssetSerializer::SerializeMaterial(Material* material, const std::string& filePath)
+void AssetSerializer::SerializeGenericAsset(AssetInstance* asset, const std::string& filePath)
 {
-	check(material);
-	
+	check(asset);
+
 	DynamicBuffer fileData;
-	material->Serialize(fileData);
+	asset->Serialize(fileData);
 
 	FileSystem::WriteFileBinary(filePath, fileData);
 }
 
-void AssetSerializer::SerializeMaterial(Material* material)
+void AssetSerializer::SerializeGenericAsset(AssetInstance* asset)
 {
-	check(material);
+	check(asset);
 
-	AssetHandle handle = AssetManager::Get(material->GetUUID());
+	AssetHandle handle = AssetManager::Get(asset->GetUUID());
 	std::string absPath = (gProj.assets / handle.name).string();
-	SerializeMaterial(material, absPath);
+	SerializeGenericAsset(asset, absPath);
 }
 
 void AssetSerializer::SerializeMesh(Mesh* mesh, const std::string& filePath)
@@ -45,21 +43,4 @@ void AssetSerializer::SerializeMesh(Mesh* mesh)
 	AssetHandle handle = AssetManager::Get(mesh->GetUUID());
 	std::string absPath = (gProj.assets / handle.name).string();
 	SerializeMesh(mesh, absPath);
-}
-
-void AssetSerializer::SerializeBlueprint(Blueprint* bp, const std::string& filePath)
-{
-	DynamicBuffer fileData;
-	bp->Serialize(fileData);
-
-	FileSystem::WriteFileBinary(filePath, fileData);
-}
-
-void AssetSerializer::SerializeBlueprint(Blueprint* bp)
-{
-	check(bp);
-
-	AssetHandle handle = AssetManager::Get(bp->GetUUID());
-	std::string absPath = (gProj.assets / handle.name).string();
-	SerializeBlueprint(bp, absPath);
 }

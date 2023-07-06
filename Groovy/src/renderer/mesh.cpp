@@ -15,7 +15,7 @@ Mesh::~Mesh()
 
 void Mesh::Load()
 {
-	AssetLoader::LoadMesh(this);
+	AssetLoader::LoadGenericAsset(this);
 	mLoaded = true;
 }
 
@@ -58,14 +58,14 @@ void Mesh::FixForRendering()
 	}
 }
 
-void Mesh::Serialize(DynamicBuffer& fileData)
+void Mesh::Serialize(DynamicBuffer& fileData) const
 {
 	MeshAssetFile asset;
 	asset.materials = mMaterials;
 	asset.submeshes = mSubmeshes;
 
 	PropertyPack meshAssetPropPack;
-	ObjectSerializer::CreatePropertyPack(&asset, MeshAssetFile::StaticClass()->cdo, meshAssetPropPack);
+	ObjectSerializer::CreatePropertyPack(&asset, MeshAssetFile::StaticCDO(), meshAssetPropPack);
 	ObjectSerializer::SerializePropertyPack(meshAssetPropPack, fileData);
 }
 

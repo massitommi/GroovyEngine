@@ -11,13 +11,13 @@ Material::Material()
 
 void Material::Load()
 {
-	AssetLoader::LoadMaterial(this);
+	AssetLoader::LoadGenericAsset(this);
 	mLoaded = true;
 }
 
 void Material::Save()
 {
-	AssetSerializer::SerializeMaterial(this);
+	AssetSerializer::SerializeGenericAsset(this);
 }
 
 #if WITH_EDITOR
@@ -53,7 +53,7 @@ bool Material::Editor_FixDependencyDeletion(AssetHandle assetToBeDeleted)
 
 #endif
 
-bool Material::Validate()
+bool Material::Validate() const
 {
 	if (!mShader)
 		return false;
@@ -141,7 +141,7 @@ GROOVY_CLASS_IMPL(MaterialAssetFile)
 	GROOVY_REFLECT(shaderRes)
 GROOVY_CLASS_END()
 
-void Material::Serialize(DynamicBuffer& fileData)
+void Material::Serialize(DynamicBuffer& fileData) const
 {
 	checkslowf(Validate(), "Trying to serialize a material that is not ready for rendering");
 	
@@ -163,7 +163,7 @@ void Material::Serialize(DynamicBuffer& fileData)
 
 	// mat asset file
 	PropertyPack matAssetPropPack;
-	ObjectSerializer::CreatePropertyPack(&asset, MaterialAssetFile::StaticClass()->cdo, matAssetPropPack);
+	ObjectSerializer::CreatePropertyPack(&asset, MaterialAssetFile::StaticCDO(), matAssetPropPack);
 	ObjectSerializer::SerializePropertyPack(matAssetPropPack, fileData);
 }
 

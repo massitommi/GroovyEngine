@@ -10,6 +10,9 @@
 #include "renderer/mesh.h"
 #include "classes/blueprint.h"
 #include "classes/reflection.h"
+#include "runtime/object_allocator.h"
+#include "gameframework/actor.h"
+#include "gameframework/actorcomponent.h"
 
 void EditorWindow::RenderWindow()
 {
@@ -174,7 +177,7 @@ void EditMaterialWindow::RenderContent()
 
 	if (ImGui::Button(mExistsOnDisk ? "Save changes" : "Save"))
 	{
-		AssetSerializer::SerializeMaterial(mMaterial, (gProj.assets / mFileName).string());
+		AssetSerializer::SerializeGenericAsset(mMaterial, (gProj.assets / mFileName).string());
 		if (!mExistsOnDisk)
 		{
 			AssetManager::Editor_OnImport(mFileName, ASSET_TYPE_MATERIAL);
@@ -319,14 +322,9 @@ BlueprintEditorWindow::BlueprintEditorWindow(Blueprint* blueprint)
 
 	mFileName = AssetManager::Get(blueprint->GetUUID()).name;
 	
-	mObjInstance = (GroovyObject*)malloc(blueprint->GetClass()->size);
-	blueprint->GetClass()->constructor(mObjInstance);
+	mObjInstance = ObjectAllocator::Instantiate(blueprint->GetClass());
 
-	const auto gClass = blueprint->GetClass();
-	const auto& propPack = blueprint->GetPropertyPack();
-	ObjectSerializer::DeserializePropertyPackData(propPack, mObjInstance);
-
-	BuildPropertyCache();
+	mBlueprint->CopyProperties(mObjInstance);
 }
 
 BlueprintEditorWindow::BlueprintEditorWindow(GroovyClass* gClass)
@@ -338,33 +336,15 @@ BlueprintEditorWindow::BlueprintEditorWindow(GroovyClass* gClass)
 
 	mFileName = "new_blueprint_" + gClass->name + GROOVY_ASSET_EXT;
 	
-	mObjInstance = (GroovyObject*)malloc(gClass->size);
-	gClass->constructor(mObjInstance);
-
-	BuildPropertyCache();
+	mObjInstance = ObjectAllocator::Instantiate(gClass);
 }
 
 BlueprintEditorWindow::~BlueprintEditorWindow()
 {
-	mBlueprint->GetClass()->destructor(mObjInstance);
-	free(mObjInstance);
+	ObjectAllocator::Destroy(mObjInstance);
 
 	if (!mExistsOnDisk)
 		delete mBlueprint;
-}
-
-void BlueprintEditorWindow::BuildPropertyCache()
-{
-	GroovyClass* superClass = mBlueprint->GetClass();
-
-	while (superClass)
-	{
-		ObjectProperties& c = mPropertyCache.emplace_back();
-		c.gClass = superClass;
-		superClass->propertiesGetter(c.props);
-
-		superClass = superClass->super;
-	}
 }
 
 void Property(const GroovyProperty& prop, void* propData)
@@ -485,18 +465,25 @@ void PropertiesSingleClass(GroovyObject* obj, GroovyClass* gClass, const std::ve
 	}
 }
 
-void PropertiesAllClasses(GroovyObject* obj, const std::vector<ObjectProperties>& props)
+void PropertiesAllClasses(GroovyObject* obj)
 {
-	for (const ObjectProperties& objProp : props)
+	GroovyClass* superClass = obj->GetClass();
+
+	while (superClass)
 	{
-		if (!objProp.props.size())
-			continue;
+		std::vector<GroovyProperty> props;
+		superClass->propertiesGetter(props);
 
-		ImGui::Spacing();
-		ImGui::Separator();
+		if (props.size())
+		{
+			ImGui::Spacing();
+			ImGui::Separator();
 
-		PropertiesSingleClass(obj, objProp.gClass, objProp.props);
-	}
+			PropertiesSingleClass(obj, superClass, props);
+		}
+
+		superClass = superClass->super;
+	} 
 }
 
 void BlueprintEditorWindow::RenderContent()
@@ -514,7 +501,7 @@ void BlueprintEditorWindow::RenderContent()
 	if (ImGui::Button(mExistsOnDisk ? "Save changes" : "Save"))
 	{
 		mBlueprint->SetData(mObjInstance);
-		AssetSerializer::SerializeBlueprint(mBlueprint, (gProj.assets / mFileName).string());
+		AssetSerializer::SerializeGenericAsset(mBlueprint, (gProj.assets / mFileName).string());
 		if (!mExistsOnDisk)
 		{
 			AssetManager::Editor_OnImport(mFileName, ASSET_TYPE_BLUEPRINT);
@@ -527,5 +514,69 @@ void BlueprintEditorWindow::RenderContent()
 	ImGui::Spacing();
 	ImGui::Spacing();
 
-	PropertiesAllClasses(mObjInstance, mPropertyCache);
+	PropertiesAllClasses(mObjInstance);
+}
+
+ActorBlueprintEditorWindow::ActorBlueprintEditorWindow(ActorBlueprint* blueprint)
+	: EditorWindow("Actor blueprint editor"), mBlueprint(blueprint), mActorInstance(nullptr), mExistsOnDisk(true)
+{
+	checkslow(blueprint);
+
+	mFileName = AssetManager::Get(blueprint->GetUUID()).name;
+
+	mActorInstance = ObjectAllocator::Instantiate<Actor>(blueprint->GetActorClass());
+	mBlueprint->CopyProperties(mActorInstance);
+}
+
+ActorBlueprintEditorWindow::ActorBlueprintEditorWindow(GroovyClass* inClass)
+	: EditorWindow("Actor blueprint editor"), mBlueprint(nullptr), mActorInstance(nullptr), mExistsOnDisk(false)
+{
+	checkslow(inClass);
+	checkslow(classUtils::IsA(inClass, Actor::StaticClass()));
+
+	mFileName = "new_blueprint_" + inClass->name + GROOVY_ASSET_EXT;
+
+	mBlueprint = new ActorBlueprint();
+	mBlueprint->Editor_ActorClassRef() = inClass;
+
+	mActorInstance = ObjectAllocator::Instantiate<Actor>(inClass);
+}
+
+ActorBlueprintEditorWindow::~ActorBlueprintEditorWindow()
+{
+	ObjectAllocator::Destroy(mActorInstance);
+
+	if (!mExistsOnDisk)
+		delete mBlueprint;
+}
+
+void ActorBlueprintEditorWindow::RenderContent()
+{
+	if (mExistsOnDisk)
+		ImGui::BeginDisabled();
+
+	ImGui::InputText("Filename", &mFileName);
+
+	if (mExistsOnDisk)
+		ImGui::EndDisabled();
+
+	ImGui::Spacing();
+
+	if (ImGui::Button(mExistsOnDisk ? "Save changes" : "Save"))
+	{
+		mBlueprint->SetData(mActorInstance);
+		AssetSerializer::SerializeGenericAsset(mBlueprint, (gProj.assets / mFileName).string());
+		if (!mExistsOnDisk)
+		{
+			AssetManager::Editor_OnImport(mFileName, ASSET_TYPE_ACTOR_BLUEPRINT);
+			mExistsOnDisk = true;
+			FlagRegistryPendingSave();
+		}
+		SetPendingSave(false);
+	}
+
+	ImGui::Spacing();
+	ImGui::Spacing();
+
+	// render groovy stuff
 }

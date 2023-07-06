@@ -10,17 +10,19 @@ public:
     Blueprint();
 
     virtual void __internal_SetUUID(AssetUUID uuid) override { mUUID = uuid; }
-
     virtual AssetUUID GetUUID() const override { return mUUID; }
-
     virtual bool IsLoaded() const override { return mLoaded; }
+
     virtual void Load() override;
     virtual void Save() override;
 
-    void Serialize(DynamicBuffer& fileData);
-    void Deserialize(BufferView fileData);
+    virtual void Serialize(DynamicBuffer& fileData) const override;
+    virtual void Deserialize(BufferView fileData) override;
 
+    void Clear();
     void SetData(GroovyObject* obj);
+
+    void CopyProperties(GroovyObject* obj);
 
 #if WITH_EDITOR
     virtual GroovyClass*& Editor_ClassRef() { return mGroovyClass; }
@@ -35,6 +37,57 @@ public:
 private:
     GroovyClass* mGroovyClass;
     PropertyPack mPropertyPack;
+
+    AssetUUID mUUID;
+    bool mLoaded;
+};
+
+class Actor;
+class ActorComponent;
+
+struct ComponentPack
+{
+    std::string name;
+    GroovyClass* gClass;
+    PropertyPack pack;
+};
+
+class ActorBlueprint : public AssetInstance
+{
+public:
+    ActorBlueprint();
+
+    virtual void __internal_SetUUID(AssetUUID uuid) override { mUUID = uuid; }
+    virtual AssetUUID GetUUID() const override { return mUUID; }
+    virtual bool IsLoaded() const override { return mLoaded; }
+    
+    virtual void Load() override;
+    virtual void Save() override;
+
+    virtual void Serialize(DynamicBuffer& fileData) const override;
+    virtual void Deserialize(BufferView fileData) override;
+
+    void Clear();
+    void SetData(Actor* actor);
+
+    void CopyProperties(Actor* actor);
+
+#if WITH_EDITOR
+    virtual GroovyClass*& Editor_ActorClassRef() { return mActorClass; }
+    virtual PropertyPack& Editor_ActorPropertyPackRef() { return mActorPropertyPack; }
+
+    virtual bool Editor_FixDependencyDeletion(AssetHandle assetToBeDeleted) override;
+#endif
+
+    inline GroovyClass* GetActorClass() const { return mActorClass; }
+    inline const PropertyPack& GetActorPropertyPack() const { return mActorPropertyPack; }
+
+private:
+    GroovyClass* mActorClass;
+    PropertyPack mActorPropertyPack;
+
+    std::vector<ComponentPack> mNativeComponents;
+    std::vector<ComponentPack> mEditorComponents;
 
     AssetUUID mUUID;
     bool mLoaded;

@@ -32,46 +32,50 @@ namespace utils
 		{
 			switch (prop.type)
 			{
-			case PROPERTY_TYPE_STRING:
-			{
-				std::string* strPtr1 = (std::string*)objProp1;
-				std::string* strPtr2 = (std::string*)objProp2;
-				for (uint32 i = 0; i < objProp1ArrayCount; i++)
+				case PROPERTY_TYPE_STRING:
 				{
-					if (strPtr1[i] != strPtr2[i])
-						return false;
+					std::string* strPtr1 = (std::string*)objProp1;
+					std::string* strPtr2 = (std::string*)objProp2;
+					for (uint32 i = 0; i < objProp1ArrayCount; i++)
+					{
+						if (strPtr1[i] != strPtr2[i])
+							return false;
+					}
+					return true;
 				}
-				return true;
-			}
-			break;
+				break;
 
-			case PROPERTY_TYPE_BUFFER:
-			{
-				Buffer* bufferPtr1 = (Buffer*)objProp1;
-				Buffer* bufferPtr2 = (Buffer*)objProp2;
-				for (uint32 i = 0; i < objProp1ArrayCount; i++)
+				case PROPERTY_TYPE_BUFFER:
 				{
-					if (bufferPtr1[i].size() != bufferPtr2[i].size())
-						return false;
-					if (memcmp(bufferPtr1[i].data(), bufferPtr2[i].data(), bufferPtr1[i].size()) != 0)
-						return false;
+					Buffer* bufferPtr1 = (Buffer*)objProp1;
+					Buffer* bufferPtr2 = (Buffer*)objProp2;
+					for (uint32 i = 0; i < objProp1ArrayCount; i++)
+					{
+						if (bufferPtr1[i].size() != bufferPtr2[i].size())
+							return false;
+						if (memcmp(bufferPtr1[i].data(), bufferPtr2[i].data(), bufferPtr1[i].size()) != 0)
+							return false;
+					}
+					return true;
 				}
-				return true;
-			}
-			break;
+				break;
 
-			case PROPERTY_TYPE_ASSET_REF:
-			{
-				AssetInstance** assetPtr1 = (AssetInstance**)objProp1;
-				AssetInstance** assetPtr2 = (AssetInstance**)objProp2;
-				for (uint32 i = 0; i < objProp1ArrayCount; i++)
+				case PROPERTY_TYPE_ASSET_REF:
 				{
-					if (assetPtr1[i] != assetPtr2[i])
-						return false;
+					AssetInstance** assetPtr1 = (AssetInstance**)objProp1;
+					AssetInstance** assetPtr2 = (AssetInstance**)objProp2;
+					for (uint32 i = 0; i < objProp1ArrayCount; i++)
+					{
+						if (assetPtr1[i] != assetPtr2[i])
+							return false;
+					}
+					return true;
 				}
-				return true;
-			}
-			break;
+				break;
+
+				default:
+					checkslowf(0, "Property comparison for this type not implemented");
+					break;
 			}
 		}
 	}
@@ -102,49 +106,49 @@ namespace utils
 		{
 			switch (prop.type)
 			{
-			case PROPERTY_TYPE_STRING:
-			{
-				std::string* strPtr = (std::string*)objProp;
-				for (uint32 i = 0; i < objPropArrayCount; i++)
+				case PROPERTY_TYPE_STRING:
 				{
-					pack.data.push<std::string>(*strPtr);
-					desc.sizeBytes += strPtr->length() + 1;
-					strPtr++;
+					std::string* strPtr = (std::string*)objProp;
+					for (uint32 i = 0; i < objPropArrayCount; i++)
+					{
+						pack.data.push<std::string>(*strPtr);
+						desc.sizeBytes += strPtr->length() + 1;
+						strPtr++;
+					}
 				}
-			}
-			break;
-
-			case PROPERTY_TYPE_BUFFER:
-			{
-				Buffer* bufferPtr = (Buffer*)objProp;
-				for (uint32 i = 0; i < objPropArrayCount; i++)
-				{
-					pack.data.push<size_t>(bufferPtr->size());
-					pack.data.push_bytes(bufferPtr->data(), bufferPtr->size());
-					desc.sizeBytes += sizeof(size_t) + bufferPtr->size();
-					bufferPtr++;
-				}
-			}
-			break;
-
-			case PROPERTY_TYPE_ASSET_REF:
-			{
-				AssetInstance** assetPtr = (AssetInstance**)objProp;
-				for (uint32 i = 0; i < objPropArrayCount; i++)
-				{
-					AssetUUID uuid = 0;
-					if (*assetPtr)
-						uuid = (*assetPtr)->GetUUID();
-					pack.data.push<AssetUUID>(uuid);
-					assetPtr++;
-				}
-				desc.sizeBytes += sizeof(AssetUUID) * objPropArrayCount;
-			}
-			break;
-
-			default:
-				checkslowf(0, "Property type serialization not implemented");
 				break;
+
+				case PROPERTY_TYPE_BUFFER:
+				{
+					Buffer* bufferPtr = (Buffer*)objProp;
+					for (uint32 i = 0; i < objPropArrayCount; i++)
+					{
+						pack.data.push<size_t>(bufferPtr->size());
+						pack.data.push_bytes(bufferPtr->data(), bufferPtr->size());
+						desc.sizeBytes += sizeof(size_t) + bufferPtr->size();
+						bufferPtr++;
+					}
+				}
+				break;
+
+				case PROPERTY_TYPE_ASSET_REF:
+				{
+					AssetInstance** assetPtr = (AssetInstance**)objProp;
+					for (uint32 i = 0; i < objPropArrayCount; i++)
+					{
+						AssetUUID uuid = 0;
+						if (*assetPtr)
+							uuid = (*assetPtr)->GetUUID();
+						pack.data.push<AssetUUID>(uuid);
+						assetPtr++;
+					}
+					desc.sizeBytes += sizeof(AssetUUID) * objPropArrayCount;
+				}
+				break;
+
+				default:
+					checkslowf(0, "Property serialization for this type not implemented");
+					break;
 			}
 		}
 	}
@@ -168,44 +172,48 @@ namespace utils
 		{
 			switch (desc.classProp->type)
 			{
-			case PROPERTY_TYPE_STRING:
-			{
-				std::string* strPtr = (std::string*)objProp;
-				for (uint32 i = 0; i < desc.arrayCount; i++)
+				case PROPERTY_TYPE_STRING:
 				{
-					*strPtr = (char*)data;
-					data += strPtr->length() + 1;
-					strPtr++;
+					std::string* strPtr = (std::string*)objProp;
+					for (uint32 i = 0; i < desc.arrayCount; i++)
+					{
+						*strPtr = (char*)data;
+						data += strPtr->length() + 1;
+						strPtr++;
+					}
 				}
-			}
-			break;
+				break;
 
-			case PROPERTY_TYPE_BUFFER:
-			{
-				Buffer* bufferPtr = (Buffer*)objProp;
-				for (uint32 i = 0; i < desc.arrayCount; i++)
+				case PROPERTY_TYPE_BUFFER:
 				{
-					size_t bufferSize = *(size_t*)data;
-					bufferPtr->resize(bufferSize);
-					data += sizeof(size_t);
-					memcpy(bufferPtr->data(), data, bufferSize);
-					data += bufferSize;
-					bufferPtr++;
+					Buffer* bufferPtr = (Buffer*)objProp;
+					for (uint32 i = 0; i < desc.arrayCount; i++)
+					{
+						size_t bufferSize = *(size_t*)data;
+						bufferPtr->resize(bufferSize);
+						data += sizeof(size_t);
+						memcpy(bufferPtr->data(), data, bufferSize);
+						data += bufferSize;
+						bufferPtr++;
+					}
 				}
-			}
-			break;
+				break;
 
-			case PROPERTY_TYPE_ASSET_REF:
-			{
-				AssetInstance** assetPtr = (AssetInstance**)objProp;
-				for (uint32 i = 0; i < desc.arrayCount; i++)
+				case PROPERTY_TYPE_ASSET_REF:
 				{
-					*assetPtr = AssetManager::Get<AssetInstance>(*(AssetUUID*)data);
-					data += sizeof(AssetUUID);
-					assetPtr++;
+					AssetInstance** assetPtr = (AssetInstance**)objProp;
+					for (uint32 i = 0; i < desc.arrayCount; i++)
+					{
+						*assetPtr = AssetManager::Get<AssetInstance>(*(AssetUUID*)data);
+						data += sizeof(AssetUUID);
+						assetPtr++;
+					}
 				}
-			}
-			break;
+				break;
+
+				default:
+					checkslowf(0, "Property deserialization for this type not implemented");
+					break;
 			}
 		}
 	}

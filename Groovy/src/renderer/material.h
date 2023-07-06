@@ -30,7 +30,7 @@ public:
 #endif
 
 	// shader descs and our data is same size ?
-	bool Validate();
+	bool Validate() const;
 
 	void SetShader(Shader* shader);
 	void SetResource(Texture* texture, uint32 slot);
@@ -42,8 +42,8 @@ public:
 	const std::vector<MaterialResource>& GetResources() const { return mResources; }
 	const Buffer& GetConstBuffersData() const { return mConstBuffersData; }
 
-	void Serialize(DynamicBuffer& fileData);
-	void Deserialize(BufferView fileData);
+	virtual void Serialize(DynamicBuffer& fileData) const override;
+	virtual void Deserialize(BufferView fileData) override;
 
 #if WITH_EDITOR
 

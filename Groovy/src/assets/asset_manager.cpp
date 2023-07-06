@@ -48,6 +48,9 @@ static AssetInstance* InstantiateAsset(const AssetHandle& handle)
 
 		case ASSET_TYPE_BLUEPRINT:
 			return new Blueprint();
+
+		case ASSET_TYPE_ACTOR_BLUEPRINT:
+			return new ActorBlueprint();
 	}
 
 	checkslowf(0, "Trying to instantiate an unknown type asset??!?!?");

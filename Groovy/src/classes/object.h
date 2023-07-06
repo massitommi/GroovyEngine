@@ -14,6 +14,7 @@ public:
 	static void GetClassProperties(std::vector<GroovyProperty>& outProps);
 	virtual void GetClassPropertiesRecursive(std::vector<GroovyProperty>& outProps) const;
 	static constexpr GroovyClass* StaticClass() { return &GROOVY_CLASS_NAME(GroovyObject); }
+	virtual GroovyObject* GetCDO() const { return GROOVY_CLASS_NAME(GroovyObject).cdo; }
 	
 	inline bool IsA(GroovyClass* gClass) const { return classUtils::DynamicCast((GroovyObject*)this, gClass); }
 	

@@ -1,6 +1,8 @@
 #pragma once
 #include "classes/object.h"
 
+class Actor;
+
 GROOVY_CLASS_DECL(ActorComponent)
 class ActorComponent : public GroovyObject
 {
@@ -10,7 +12,8 @@ public:
 	ActorComponent();
 	~ActorComponent();
 
+	inline const std::string& GetName() const { return mName; }
+
 private:
-	// true if this component was created from code, false if it was created with the editor
-	bool mNative;
+	std::string mName;
 };

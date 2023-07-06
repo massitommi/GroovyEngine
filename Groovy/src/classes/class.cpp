@@ -20,7 +20,7 @@ uint32 classUtils::FindProperty(const std::vector<GroovyProperty>& props, const 
 	return ~((uint32)0);
 }
 
-GroovyObject* classUtils::DynamicCast(GroovyObject* obj, GroovyClass* gClass)
+GroovyObject* classUtils::DynamicCast(GroovyObject* obj, const GroovyClass* gClass)
 {
 	GroovyClass* superClass = obj->GetClass();
 	while (superClass)
@@ -32,4 +32,18 @@ GroovyObject* classUtils::DynamicCast(GroovyObject* obj, GroovyClass* gClass)
 		superClass = superClass->super;
 	}
 	return nullptr;
+}
+
+bool classUtils::IsA(const GroovyClass* c1, const GroovyClass* c2)
+{
+	const GroovyClass* superClass = c1;
+	while (superClass)
+	{
+		if (superClass == c2)
+		{
+			return true;
+		}
+		superClass = superClass->super;
+	}
+	return false;
 }

@@ -22,6 +22,9 @@
 #include "editor_window.h"
 #include "classes/blueprint.h"
 
+#include "gameframework/actor.h"
+#include "gameframework/actorcomponent.h"
+
 static ImGuiRenderer* sRenderer = nullptr;
 extern ClearColor gScreenClearColor;
 extern Window* gWindow;
@@ -312,6 +315,7 @@ namespace panels
 					panelAssets[i].typeNameIndex = 3;
 					break;
 				case ASSET_TYPE_BLUEPRINT:
+				case ASSET_TYPE_ACTOR_BLUEPRINT:
 					panelAssets[i].thumbnail = sBlueprintAssetIcon->GetRendererID();
 					panelAssets[i].typeNameIndex = 4;
 					break;
@@ -374,6 +378,10 @@ namespace panels
 
 					case ASSET_TYPE_BLUEPRINT:
 						AddWindow<BlueprintEditorWindow>((Blueprint*)asset.instance);
+						break;
+
+					case ASSET_TYPE_ACTOR_BLUEPRINT:
+						AddWindow<ActorBlueprintEditorWindow>((ActorBlueprint*)asset.instance);
 						break;
 				}
 			}
@@ -509,7 +517,14 @@ namespace panels
 				// delete asset
 				if (ImGui::Selectable("Create blueprint"))
 				{
-					AddWindow<BlueprintEditorWindow>(gClass);
+					if (classUtils::IsA(gClass, Actor::StaticClass()))
+					{
+						AddWindow<ActorBlueprintEditorWindow>(gClass);
+					}
+					else
+					{
+						AddWindow<BlueprintEditorWindow>(gClass);
+					}
 				}
 
 				ImGui::EndPopup();

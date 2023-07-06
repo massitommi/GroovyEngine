@@ -5,11 +5,6 @@
 
 #include "renderer/api/texture.h"
 #include "renderer/api/shader.h"
-#include "renderer/material.h"
-#include "renderer/mesh.h"
-#include "classes/blueprint.h"
-
-extern Project gProj;
 
 Texture* AssetLoader::LoadTexture(const std::string& filePath)
 {
@@ -40,29 +35,12 @@ Shader* AssetLoader::LoadShader(const std::string& filePath)
 	return Shader::Create(data.data() + vertexStart, vertexSize, data.data() + pixelStart, pixelSize);
 }
 
-void AssetLoader::LoadMaterial(Material* material)
+void AssetLoader::LoadGenericAsset(AssetInstance* asset)
 {
-	AssetHandle handle = AssetManager::Get(material->GetUUID());
+	extern Project gProj;
+	AssetHandle handle = AssetManager::Get(asset->GetUUID());
 	std::string absPath = (gProj.assets / handle.name).string();
 	Buffer fileData;
 	FileSystem::ReadFileBinary(absPath, fileData);
-	material->Deserialize(fileData);
-}
-
-void AssetLoader::LoadMesh(Mesh* mesh)
-{
-	AssetHandle handle = AssetManager::Get(mesh->GetUUID());
-	std::string absPath = (gProj.assets / handle.name).string();
-	Buffer fileData;
-	FileSystem::ReadFileBinary(absPath, fileData);
-	mesh->Deserialize(fileData);
-}
-
-void AssetLoader::LoadBlueprint(Blueprint* bp)
-{
-	AssetHandle handle = AssetManager::Get(bp->GetUUID());
-	std::string absPath = (gProj.assets / handle.name).string();
-	Buffer fileData;
-	FileSystem::ReadFileBinary(absPath, fileData);
-	bp->Deserialize(fileData);
+	asset->Deserialize(fileData);
 }

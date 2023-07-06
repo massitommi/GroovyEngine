@@ -16,11 +16,35 @@ public:
 		resize(size);
 	}
 
-	Buffer(const Buffer& other) = delete;
+	Buffer(const Buffer& other)
+		: mData(nullptr), mSize(0)
+	{
+		copy(other, *this);
+	}
+
+	Buffer(Buffer&& tmp)
+		: mData(tmp.mData), mSize(tmp.mSize)
+	{
+		tmp.mData = nullptr;
+		tmp.mSize = 0;
+	}
 
 	~Buffer()
 	{
 		free();
+	}
+
+	static void copy(const Buffer& from, Buffer& to)
+	{
+		if (from.mSize)
+		{
+			to.resize(from.mSize);
+			memcpy(to.mData, from.mData, from.mSize);
+		}
+		else
+		{
+			to.free();
+		}
 	}
 
 	void resize(size_t size, bool copyOldData = false)
@@ -51,10 +75,8 @@ public:
 	void free()
 	{
 		if (mData)
-		{
 			::free(mData);
-			mData = nullptr;
-		}
+		mData = nullptr;
 		mSize = 0;
 	}
 
@@ -79,36 +101,108 @@ public:
 
 	inline operator bool() const { return mData; }
 
-	Buffer& operator=(const Buffer& other) = delete;
+	Buffer& operator=(const Buffer& other)
+	{
+		copy(other, *this);
+		return *this;
+	}
+
+	Buffer& operator=(Buffer&& other)
+	{
+		byte* dataToDiscard = mData;
+		size_t sizeToDiscard = mSize;
+		mData = other.mData;
+		mSize = other.mSize;
+		other.mData = dataToDiscard;
+		other.mSize = sizeToDiscard;
+		return *this;
+	}
 
 protected:
 	byte* mData;
 	size_t mSize;
 };
 
-class DynamicBuffer : public Buffer
+class DynamicBuffer
 {
 public:
 	DynamicBuffer()
-		: Buffer(), mCurrentPtr(nullptr)
+		: mData(nullptr), mSize(0), mCurrentPtr(nullptr)
 	{}
 
 	DynamicBuffer(size_t size)
-		: Buffer(size), mCurrentPtr(nullptr)
-	{}
+		: mData(nullptr), mSize(0), mCurrentPtr(nullptr)
+	{
+		resize(size);
+	}
 
-private:
+	DynamicBuffer(const DynamicBuffer& other)
+		: mData(nullptr), mSize(0), mCurrentPtr(nullptr)
+	{
+		copy(other, *this);
+	}
+
+	DynamicBuffer(DynamicBuffer&& tmp)
+		: mData(tmp.mData), mSize(tmp.mSize), mCurrentPtr(tmp.mCurrentPtr)
+	{
+		tmp.mData = nullptr;
+		tmp.mSize = 0;
+		tmp.mCurrentPtr = nullptr;
+	}
+
+	~DynamicBuffer()
+	{
+		free();
+	}
+
 	void resize(size_t size, bool copyOldData = false)
 	{
-		size_t usedBytes = used();
-		Buffer::resize(size, copyOldData);
-		mCurrentPtr = mData + usedBytes;
+		if (!size)
+		{
+			free();
+			return;
+		}
+
+		byte* newData = (byte*)malloc(size);
+
+		if (copyOldData && mData)
+		{
+			size_t cpyLen = size > mSize ? mSize : size;
+			memcpy(newData, mData, cpyLen);
+		}
+
+		if (mData)
+		{
+			::free(mData);
+		}
+
+		mData = newData;
+		mSize = size;
+
+		mCurrentPtr = mData;
 	}
-public:
+
+	static void copy(const DynamicBuffer& from, DynamicBuffer& to)
+	{
+		size_t used = from.used();
+		if (used)
+		{
+			to.resize(from.mSize);
+			to.mCurrentPtr = to.mData + used;
+			memcpy(to.mData, from.mData, from.mSize);
+		}
+		else
+		{
+			to.free();
+		}
+	}
 
 	void free()
 	{
-		Buffer::free();
+		if (mData)
+			::free(mData);
+		mData = nullptr;
+		mSize = 0;
 		mCurrentPtr = nullptr;
 	}
 
@@ -118,7 +212,10 @@ public:
 
 		size_t bytesUsed = used();
 		if (bytesUsed + sizeBytes > mSize)
+		{
 			resize((bytesUsed + sizeBytes) * 2, true);
+			mCurrentPtr = mData + bytesUsed;
+		}
 		void* ptr = mCurrentPtr;
 		memcpy(ptr, data, sizeBytes);
 		mCurrentPtr += sizeBytes;
@@ -149,6 +246,8 @@ public:
 		mCurrentPtr -= size;
 	}
 
+	inline byte* data() const { return mData; }
+	inline size_t size() const { return mSize; }
 	inline size_t used() const { return mCurrentPtr - mData; }
 	inline byte* current() { return mCurrentPtr; }
 	inline const byte* current() const { mCurrentPtr; }
@@ -165,7 +264,29 @@ public:
 		return (T*)current();
 	}
 
+	DynamicBuffer& operator=(const DynamicBuffer& other)
+	{
+		copy(other, *this);
+		return *this;
+	}
+
+	DynamicBuffer& operator=(DynamicBuffer&& other)
+	{
+		byte* dataToDiscard = mData;
+		size_t sizeToDiscard = mSize;
+		byte* currentPtrToDiscard = mCurrentPtr;
+		mData = other.mData;
+		mSize = other.mSize;
+		mCurrentPtr = other.mCurrentPtr;
+		other.mData = dataToDiscard;
+		other.mSize = sizeToDiscard;
+		other.mCurrentPtr = currentPtrToDiscard;
+		return *this;
+	}
+
 private:
+	byte* mData;
+	size_t mSize;
 	byte* mCurrentPtr;
 };
 
