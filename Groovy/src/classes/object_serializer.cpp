@@ -285,19 +285,26 @@ void ObjectSerializer::DeserializePropertyPack(GroovyClass* gClass, BufferView& 
 
 		const GroovyProperty* classProp = gClassDB.FindProperty(gClass, name);
 
-		// check property "signature"
-		bool compatiblePropSignature = classProp->type == type;
-		if (!(classProp->flags & PROPERTY_FLAG_IS_DYNAMIC_ARRAY))
-			compatiblePropSignature = compatiblePropSignature && classProp->arrayCount == arrayCount;
-
-		if (classProp && compatiblePropSignature)
+		if (classProp)
 		{
-			PropertyDesc& desc = outPack.desc.emplace_back();
-			desc.classProp = classProp;
-			desc.arrayCount = arrayCount;
-			desc.sizeBytes = sizeBytes;
+			// check property "signature"
+			bool compatiblePropSignature = classProp->type == type;
+			if (!(classProp->flags & PROPERTY_FLAG_IS_DYNAMIC_ARRAY))
+				compatiblePropSignature = compatiblePropSignature && classProp->arrayCount == arrayCount;
 
-			outPack.data.push_bytes(fileData.seek(), sizeBytes);
+			if (classProp && compatiblePropSignature)
+			{
+				PropertyDesc& desc = outPack.desc.emplace_back();
+				desc.classProp = classProp;
+				desc.arrayCount = arrayCount;
+				desc.sizeBytes = sizeBytes;
+
+				outPack.data.push_bytes(fileData.seek(), sizeBytes);
+			}
+		}
+		else
+		{
+			// TODO: Warning: property not found, class changed, please sanitize blueprint!
 		}
 
 		fileData.advance(sizeBytes);

@@ -93,14 +93,15 @@ private:
 	BoxComponent* mBoxComp;
 	MeshComponent* mMeshComp;
 
-	BlueprintRef<Actor> boh;
+	BlueprintRef<ActorComponent> boh;
 
-
+	Texture* texture;
 };
 
 GROOVY_CLASS_IMPL(TestActor)
 	GROOVY_REFLECT(mReplicated)
 	GROOVY_REFLECT(boh)
+	GROOVY_REFLECT(texture)
 GROOVY_CLASS_END()
 
 

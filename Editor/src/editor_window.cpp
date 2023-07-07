@@ -51,7 +51,7 @@ namespace GroovyGui
 {
 	bool AssetRef(const char* label, EAssetType type, void* data, GroovyClass* classFilter)
 	{
-		AssetInstance* assetPtr = *(AssetInstance**)data;
+		AssetInstance** assetPtr = (AssetInstance**)data;
 		std::vector<AssetHandle> assets;
 		// filter stuff out
 		if (classFilter)
@@ -76,40 +76,60 @@ namespace GroovyGui
 		// draw 
 
 		std::string current = "NONE";
-		if (assetPtr)
-			current = AssetManager::Get(assetPtr->GetUUID()).name;
+		if (*assetPtr)
+			current = AssetManager::Get((*assetPtr)->GetUUID()).name;
+
+		bool validAsset = true;
+		if (*assetPtr)
+			validAsset = std::find_if(assets.begin(), assets.end(), [=](const AssetHandle& h) { return h.instance == *assetPtr; }) != assets.end();
+
+		if (!validAsset)
+			ImGui::PushStyleColor(ImGuiCol_Text, { 1.0f, 0.0f, 0.0f, 1.0f });
+
+
+		bool click = false;
 
 		if (ImGui::BeginCombo(label, current.c_str()))
 		{
+			if (!validAsset)
+			{
+				ImGui::PopStyleColor();
+				validAsset = true; // just for imgui
+			}
+
 			if (ImGui::Selectable("NONE"))
 			{
-				assetPtr = nullptr;
-				return true;
+				*assetPtr = nullptr;
+				click = true;
 			}
 			for (const AssetHandle& handle : assets)
 			{
 				if (ImGui::Selectable(handle.name.c_str()))
 				{
-					assetPtr = handle.instance;
-					return true;
+					*assetPtr = handle.instance;
+					click = true;
 				}
 			}
+			ImGui::EndCombo();
 		}
 
-		return false;
+		if (!validAsset)
+			ImGui::PopStyleColor();
+
+		return click;
 	}
 	bool Transform(const char* label, void* data, float v_speed = 1.0f, float v_min = 0.0f, float v_max = 0.0f)
 	{
 		struct Transform* t = (struct Transform*)data;
-		bool click = false;
-		click = click || ImGui::DragFloat3("##location", &t->location.x, v_speed, v_min, v_max);
-		click = click || ImGui::DragFloat3("##rotation", &t->rotation.x, v_speed, v_min, v_max);
-		click = click || ImGui::DragFloat3("##scale", &t->scale.x, v_speed, v_min, v_max);
-		return click;
+		ImGui::NewLine();
+		bool loc = ImGui::DragFloat3("Location", &t->location.x, v_speed, v_min, v_max);
+		bool rot = ImGui::DragFloat3("Rotation", &t->rotation.x, v_speed, v_min, v_max);
+		bool scale = ImGui::DragFloat3("Scale", &t->scale.x, v_speed, v_min, v_max);
+		return loc || rot || scale;
 	}
 }
 
-bool PropertyInput(const std::string& label, EPropertyType type, void* data, bool readonly, uint64 param1 = 0, uint64 param2 = 0)
+bool PropertyInput(const std::string& label, EPropertyType type, void* data, bool readonly, float lblColWidth, uint64 param1 = 0, uint64 param2 = 0)
 {
 	if (readonly)
 		ImGui::BeginDisabled();
@@ -118,8 +138,17 @@ bool PropertyInput(const std::string& label, EPropertyType type, void* data, boo
 
 	std::string lblVal = "##" + label;
 
+	ImGui::Columns(2, "ciao", false);
+
+	ImGui::SetColumnWidth(0, lblColWidth);
+
+	//ImGui::PushID(data);
+
 	ImGui::Text(label.c_str());
 	ImGui::SameLine();
+
+	ImGui::NextColumn();
+
 
 	switch (type)
 	{
@@ -154,16 +183,21 @@ bool PropertyInput(const std::string& label, EPropertyType type, void* data, boo
 			click = GroovyGui::Transform(lblVal.c_str(), data, 1.0f, 0.0f, 0.0f);
 			break;
 		case PROPERTY_TYPE_STRING:
-			click = ImGui::InputText(lblVal.c_str(), (std::string*)data, readonly ? ImGuiInputTextFlags_ReadOnly : 0);
+			click = ImGui::InputText(lblVal.c_str(), (std::string*)data);
 			break;
 		case PROPERTY_TYPE_ASSET_REF:
 			click = GroovyGui::AssetRef(lblVal.c_str(), (EAssetType)param1, data, (GroovyClass*)param2);
 			break;
-	default:
-		ImGui::Text("PROPERTY_TYPE_UI_NOT_IMPLEMENTED");
-		click = false;
-		break;
+		default:
+			ImGui::Text("PROPERTY_TYPE_UI_NOT_IMPLEMENTED");
+			click = false;
+			break;
 	}
+	
+	//ImGui::PopID();
+
+	ImGui::Columns();
+
 
 	if (readonly)
 		ImGui::EndDisabled();
@@ -415,10 +449,15 @@ ObjectBlueprintEditorWindow::~ObjectBlueprintEditorWindow()
 		delete mBlueprint;
 }
 
-void Property(const GroovyProperty& prop, void* propData)
+bool Property(const GroovyProperty& prop, void* propData)
 {
 	ImGui::PushID(propData);
+
+	float lblColWidth = ImGui::GetContentRegionAvail().x / 100 * 22;
+
 	bool readonly = prop.flags & PROPERTY_FLAG_EDITOR_READONLY;
+
+	bool changed = false;
 
 	if (prop.flags & PROPERTY_FLAG_IS_ARRAY)
 	{
@@ -454,7 +493,7 @@ void Property(const GroovyProperty& prop, void* propData)
 				for (uint32 i = 0; i < dataArrayCount; i++)
 				{
 					std::string labelName = "[" + std::to_string(i) + "]";
-					PropertyInput(labelName, prop.type, (byte*)dataData + (propSize * i), readonly, prop.param1, prop.param2);
+					changed = PropertyInput(labelName, prop.type, (byte*)dataData + (propSize * i), readonly, lblColWidth, prop.param1, prop.param2);
 					ImGui::SameLine();
 					ImGui::PushID(i);
 					if (ImGui::Button("X"))
@@ -505,7 +544,7 @@ void Property(const GroovyProperty& prop, void* propData)
 				for (uint32 i = 0; i < prop.arrayCount; i++)
 				{
 					std::string labelName = "[" + std::to_string(i) + "]";
-					PropertyInput(labelName, prop.type, (byte*)propData + (propSize * i), readonly, prop.param1, prop.param2);
+					changed = PropertyInput(labelName, prop.type, (byte*)propData + (propSize * i), readonly, lblColWidth, prop.param1, prop.param2);
 				}
 			}
 		}
@@ -513,29 +552,38 @@ void Property(const GroovyProperty& prop, void* propData)
 	}
 	else
 	{
-		PropertyInput(prop.name, prop.type, propData, readonly, prop.param1, prop.param2);
+		changed = PropertyInput(prop.name, prop.type, propData, readonly, lblColWidth, prop.param1, prop.param2);
 	}
 	ImGui::PopID();
+
+	return changed;
 }
 
-void PropertiesSingleClass(GroovyObject* obj, GroovyClass* gClass, const std::vector<GroovyProperty>& props)
+bool PropertiesSingleClass(GroovyObject* obj, GroovyClass* gClass, const std::vector<GroovyProperty>& props)
 {
 	ImGui::Text(gClass->name.c_str());
 	ImGui::Spacing();
+
+	bool changed = false;
 
 	for (const GroovyProperty& prop : props)
 	{
 		ImGui::Spacing();
 		ImGui::Spacing();
-		Property(prop, (byte*)obj + prop.offset);
+		if (Property(prop, (byte*)obj + prop.offset))
+			changed = true;
 		ImGui::Spacing();
 		ImGui::Spacing();
 	}
+
+	return changed;
 }
 
-void PropertiesAllClasses(GroovyObject* obj)
+bool PropertiesAllClasses(GroovyObject* obj)
 {
 	GroovyClass* superClass = obj->GetClass();
+
+	bool changed = false;
 
 	while (superClass)
 	{
@@ -547,11 +595,14 @@ void PropertiesAllClasses(GroovyObject* obj)
 			ImGui::Spacing();
 			ImGui::Separator();
 
-			PropertiesSingleClass(obj, superClass, props);
+			if (PropertiesSingleClass(obj, superClass, props))
+				changed = true;
 		}
 
 		superClass = superClass->super;
-	} 
+	}
+
+	return changed;
 }
 
 void ObjectBlueprintEditorWindow::RenderContent()
@@ -699,7 +750,10 @@ void ActorBlueprintEditorWindow::RenderContent()
 	ImGui::Spacing();
 	ImGui::Spacing();
 
-	PropertiesAllClasses(mSelected);
+	if (PropertiesAllClasses(mSelected))
+	{
+		SetPendingSave(true);
+	}
 	
 	ImGui::EndChild();
 	
