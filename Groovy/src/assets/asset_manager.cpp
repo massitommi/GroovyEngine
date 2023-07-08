@@ -8,7 +8,7 @@
 #include "renderer/api/shader.h"
 #include "renderer/material.h"
 #include "renderer/mesh.h"
-#include "classes/blueprint.h"
+#include "gameframework/blueprint.h"
 
 static std::map<AssetUUID, AssetHandle> sAssetRegistry;
 

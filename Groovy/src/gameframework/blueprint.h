@@ -1,8 +1,8 @@
 #pragma once
 
 #include "assets/asset.h"
-#include "class.h"
-#include "object_serializer.h"
+#include "classes/object_serializer.h"
+#include "gameframework/actor.h"
 
 class Blueprint : public AssetInstance
 {
@@ -50,16 +50,6 @@ private:
     bool mLoaded;
 };
 
-class Actor;
-class ActorComponent;
-
-struct ComponentPack
-{
-    std::string name;
-    GroovyClass* gClass;
-    PropertyPack pack;
-};
-
 class ActorBlueprint : public Blueprint
 {
 public:
@@ -81,23 +71,19 @@ public:
     void CopyProperties(Actor* actor);
 
 #if WITH_EDITOR
-    virtual GroovyClass*& Editor_ActorClassRef() { return mActorClass; }
-    virtual PropertyPack& Editor_ActorPropertyPackRef() { return mActorPropertyPack; }
+    virtual GroovyClass*& Editor_ActorClassRef() { return mActorPack.actorClass; }
+    virtual PropertyPack& Editor_ActorPropertyPackRef() { return mActorPack.actorProperties; }
 
     virtual bool Editor_FixDependencyDeletion(AssetHandle assetToBeDeleted) override;
 #endif
 
-    inline GroovyClass* GetActorClass() const { return mActorClass; }
-    inline const PropertyPack& GetActorPropertyPack() const { return mActorPropertyPack; }
+    inline GroovyClass* GetActorClass() const { return mActorPack.actorClass; }
+    inline const PropertyPack& GetActorPropertyPack() const { return mActorPack.actorProperties; }
 
-    virtual GroovyClass* GetClass() const override { return mActorClass; }
+    virtual GroovyClass* GetClass() const override { return  mActorPack.actorClass; }
 
 private:
-    GroovyClass* mActorClass;
-    PropertyPack mActorPropertyPack;
-
-    std::vector<ComponentPack> mNativeComponents;
-    std::vector<ComponentPack> mEditorComponents;
+    ActorPack mActorPack;
 
     AssetUUID mUUID;
     bool mLoaded;

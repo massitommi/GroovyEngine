@@ -8,7 +8,7 @@
 #include "classes/class.h"
 #include "classes/class_db.h"
 #include "renderer/mesh.h"
-#include "classes/blueprint.h"
+#include "gameframework/blueprint.h"
 #include "classes/reflection.h"
 #include "runtime/object_allocator.h"
 #include "gameframework/actor.h"

@@ -227,6 +227,19 @@ void Class::GetClassProperties(std::vector<GroovyProperty>& outProps) {
 #define CLASS_LIST_ADD(Class)					&GROOVY_CLASS_NAME(Class)
 #define CLASS_LIST_END()						;
 
+struct PropertyDesc
+{
+	const GroovyProperty* classProp;
+	uint32 arrayCount;
+	size_t sizeBytes;
+};
+
+struct PropertyPack
+{
+	std::vector<PropertyDesc> desc;
+	DynamicBuffer data;
+};
+
 namespace classUtils
 {
 	// Gets all the properties exposed by a groovy class, sorted means that the first are the base class ones, and the last are the gClass ones

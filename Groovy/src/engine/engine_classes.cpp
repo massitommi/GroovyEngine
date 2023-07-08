@@ -93,7 +93,7 @@ private:
 	BoxComponent* mBoxComp;
 	MeshComponent* mMeshComp;
 
-	BlueprintRef<ActorComponent> boh;
+	BlueprintRef<Actor> boh;
 
 	Texture* texture;
 };

@@ -2,19 +2,6 @@
 
 #include "object.h"
 
-struct PropertyDesc
-{
-	const GroovyProperty* classProp;
-	uint32 arrayCount;
-	size_t sizeBytes;
-};
-
-struct PropertyPack
-{
-	std::vector<PropertyDesc> desc;
-	DynamicBuffer data;
-};
-
 class ObjectSerializer
 {
 public:

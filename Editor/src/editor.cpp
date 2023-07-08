@@ -20,7 +20,7 @@
 #include "vendor/imgui/misc/cpp/imgui_stdlib.h"
 #include "imgui_renderer/imgui_renderer.h"
 #include "editor_window.h"
-#include "classes/blueprint.h"
+#include "gameframework/blueprint.h"
 
 #include "gameframework/actor.h"
 #include "gameframework/actorcomponent.h"
@@ -433,12 +433,13 @@ namespace panels
 					case ASSET_TYPE_BLUEPRINT:
 					case ASSET_TYPE_ACTOR_BLUEPRINT:
 					{
+						std::string bpClass = ((Blueprint*)asset.instance)->GetClass() ? ((Blueprint*)asset.instance)->GetClass()->name : "NULL";
 						ImGui::SetTooltip
 						(
 							"File: %s" "\n" "Type: %s" "\n" "Class: %s",
 							asset.name.c_str(),
 							TYPES_STR[panelAsset.typeNameIndex],
-							((Blueprint*)asset.instance)->GetClass()->name.c_str()
+							bpClass.c_str()
 						);
 					}
 					break;

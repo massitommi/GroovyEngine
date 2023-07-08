@@ -77,4 +77,23 @@ private:
 
 	std::vector<ActorComponent*> mNativeComponents;
 	std::vector<ActorComponent*> mEditorComponents;
+
+	friend class ActorSerializer;
+};
+
+// used for serializing components
+struct ComponentPack
+{
+	std::string componentName;
+	GroovyClass* componentClass;
+	PropertyPack componentProperties;
+};
+
+// used for serializing actors
+struct ActorPack
+{
+	GroovyClass* actorClass;
+	PropertyPack actorProperties;
+	std::vector<ComponentPack> nativeComponents;
+	std::vector<ComponentPack> editorComponents;
 };
