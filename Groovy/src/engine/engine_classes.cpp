@@ -95,7 +95,7 @@ private:
 
 	BlueprintRef<Actor> boh;
 
-	Texture* texture;
+	Texture* texture = nullptr;
 };
 
 GROOVY_CLASS_IMPL(TestActor)

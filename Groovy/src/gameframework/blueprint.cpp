@@ -1,5 +1,6 @@
 #include "blueprint.h"
 #include "classes/class_db.h"
+#include "runtime/object_allocator.h"
 #include "assets/asset_serializer.h"
 #include "assets/asset_loader.h"
 
@@ -118,6 +119,13 @@ ActorBlueprint::ActorBlueprint()
 	: mUUID(0), mLoaded(false)
 {
 	mActorPack.actorClass = nullptr;
+	mDefaultActor = nullptr;
+}
+
+ActorBlueprint::~ActorBlueprint()
+{
+	if(mDefaultActor)
+		ObjectAllocator::Destroy(mDefaultActor);
 }
 
 void ActorBlueprint::Load()
@@ -151,26 +159,9 @@ void ActorBlueprint::Deserialize(BufferView fileData)
 	}
 
 	ActorSerializer::DeserializeActorPack(fileData, mActorPack);
-}
 
-void ActorBlueprint::Clear()
-{
-	mActorPack.actorClass = nullptr;
-	mActorPack.actorProperties.desc.clear();
-	mActorPack.actorProperties.data.free();
-
-	mActorPack.nativeComponents.clear();
-	mActorPack.editorComponents.clear();
-}
-
-void ActorBlueprint::SetData(Actor* actor)
-{
-	checkslow(actor);
-
-	Clear();
-	mActorPack.actorClass = actor->GetClass();
-
-	ActorSerializer::CreateActorPack(actor, (Actor*)actor->GetCDO(), mActorPack);
+	mDefaultActor = ObjectAllocator::Instantiate<Actor>(mActorPack.actorClass);
+	ActorSerializer::DeserializeActorPackData(mActorPack, mDefaultActor);
 }
 
 void ActorBlueprint::CopyProperties(Actor* actor)
@@ -180,6 +171,27 @@ void ActorBlueprint::CopyProperties(Actor* actor)
 	if (mActorPack.actorClass)
 	{
 		ActorSerializer::DeserializeActorPackData(mActorPack, actor);
+	}
+}
+
+void ActorBlueprint::Editor_SetupEmpty(GroovyClass* actorClass)
+{
+	mActorPack.actorClass = actorClass;
+
+	mDefaultActor = ObjectAllocator::Instantiate<Actor>(actorClass);
+}
+
+void ActorBlueprint::Editor_RebuildPack()
+{
+	mActorPack.actorClass = nullptr;
+	mActorPack.actorProperties.data.free();
+	mActorPack.actorProperties.desc.clear();
+	mActorPack.nativeComponents.clear();
+	mActorPack.editorComponents.clear();
+
+	if (mDefaultActor)
+	{
+		ActorSerializer::CreateActorPack(mDefaultActor, (Actor*)mDefaultActor->GetCDO(), mActorPack);
 	}
 }
 

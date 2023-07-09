@@ -38,6 +38,7 @@ class Shader : public AssetInstance
 {
 public:
 
+	virtual bool LazyLoadAndUnload() const override { return false; }
 	virtual bool IsLoaded() const override { return true; }
 	virtual void Load() override {}
 	virtual void Save() override {}

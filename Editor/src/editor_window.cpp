@@ -77,7 +77,9 @@ namespace GroovyGui
 
 		std::string current = "NONE";
 		if (*assetPtr)
+		{
 			current = AssetManager::Get((*assetPtr)->GetUUID()).name;
+		}
 
 		bool validAsset = true;
 		if (*assetPtr)
@@ -637,20 +639,17 @@ void ObjectBlueprintEditorWindow::RenderContent()
 }
 
 ActorBlueprintEditorWindow::ActorBlueprintEditorWindow(ActorBlueprint* blueprint)
-	: EditorWindow("Actor blueprint editor"), mBlueprint(blueprint), mActorInstance(nullptr), mExistsOnDisk(true)
+	: EditorWindow("Actor blueprint editor"), mBlueprint(blueprint), mExistsOnDisk(true)
 {
 	checkslow(blueprint);
 
 	mFileName = AssetManager::Get(blueprint->GetUUID()).name;
 
-	mActorInstance = ObjectAllocator::Instantiate<Actor>(blueprint->GetActorClass());
-	mBlueprint->CopyProperties(mActorInstance);
-
-	mSelected = mActorInstance;
+	mSelected = blueprint->GetDefaultActor();
 }
 
 ActorBlueprintEditorWindow::ActorBlueprintEditorWindow(GroovyClass* inClass)
-	: EditorWindow("Actor blueprint editor"), mBlueprint(nullptr), mActorInstance(nullptr), mExistsOnDisk(false)
+	: EditorWindow("Actor blueprint editor"), mBlueprint(nullptr), mExistsOnDisk(false)
 {
 	checkslow(inClass);
 	checkslow(classUtils::IsA(inClass, Actor::StaticClass()));
@@ -658,17 +657,13 @@ ActorBlueprintEditorWindow::ActorBlueprintEditorWindow(GroovyClass* inClass)
 	mFileName = "new_blueprint_" + inClass->name + GROOVY_ASSET_EXT;
 
 	mBlueprint = new ActorBlueprint();
-	mBlueprint->Editor_ActorClassRef() = inClass;
+	mBlueprint->Editor_SetupEmpty(inClass);
 
-	mActorInstance = ObjectAllocator::Instantiate<Actor>(inClass);
-
-	mSelected = mActorInstance;
+	mSelected = mBlueprint->GetDefaultActor();
 }
 
 ActorBlueprintEditorWindow::~ActorBlueprintEditorWindow()
 {
-	ObjectAllocator::Destroy(mActorInstance);
-
 	if (!mExistsOnDisk)
 		delete mBlueprint;
 }
@@ -687,7 +682,7 @@ void ActorBlueprintEditorWindow::RenderContent()
 
 	if (ImGui::Button(mExistsOnDisk ? "Save changes" : "Save"))
 	{
-		mBlueprint->SetData(mActorInstance);
+		mBlueprint->Editor_RebuildPack();
 		AssetSerializer::SerializeGenericAsset(mBlueprint, (gProj.assets / mFileName).string());
 		if (!mExistsOnDisk)
 		{
@@ -712,16 +707,16 @@ void ActorBlueprintEditorWindow::RenderContent()
 	ImGui::Spacing();
 
 	std::string lbl = mBlueprint->GetActorClass()->name + " (self)";
-	if (ImGui::Selectable(lbl.c_str(), mSelected == mActorInstance))
+	if (ImGui::Selectable(lbl.c_str(), mSelected == mBlueprint->GetDefaultActor()))
 	{
-		mSelected = mActorInstance;
+		mSelected = mBlueprint->GetDefaultActor();
 	}
 
 	ImGui::Spacing();
 	ImGui::Separator();
 	ImGui::Spacing();
 
-	for (ActorComponent* comp : mActorInstance->GetComponents())
+	for (ActorComponent* comp : mBlueprint->GetDefaultActor()->GetComponents())
 	{
 		if (ImGui::Selectable(comp->GetName().c_str(), mSelected == comp))
 		{

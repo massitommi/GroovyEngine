@@ -9,6 +9,7 @@
 #include "renderer/material.h"
 #include "renderer/mesh.h"
 #include "gameframework/blueprint.h"
+#include "gameframework/scene.h"
 
 static std::map<AssetUUID, AssetHandle> sAssetRegistry;
 
@@ -51,6 +52,9 @@ static AssetInstance* InstantiateAsset(const AssetHandle& handle)
 
 		case ASSET_TYPE_ACTOR_BLUEPRINT:
 			return new ActorBlueprint();
+
+		case ASSET_TYPE_SCENE:
+			return new Scene();
 	}
 
 	checkslowf(0, "Trying to instantiate an unknown type asset??!?!?");
@@ -146,7 +150,7 @@ void AssetManager::Init()
 	// load assets
 	for (const AssetHandle& handle : fileAssets)
 	{
-		if (!handle.instance->IsLoaded())
+		if (!handle.instance->LazyLoadAndUnload() && !handle.instance->IsLoaded())
 			handle.instance->Load();
 	}
 }

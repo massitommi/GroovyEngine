@@ -7,6 +7,7 @@
 class Blueprint : public AssetInstance
 {
 public:
+    virtual bool LazyLoadAndUnload() const override { return false; }
     virtual GroovyClass* GetClass() const = 0;
 };
 
@@ -54,6 +55,7 @@ class ActorBlueprint : public Blueprint
 {
 public:
     ActorBlueprint();
+    ~ActorBlueprint();
 
     virtual void __internal_SetUUID(AssetUUID uuid) override { mUUID = uuid; }
     virtual AssetUUID GetUUID() const override { return mUUID; }
@@ -65,12 +67,14 @@ public:
     virtual void Serialize(DynamicBuffer& fileData) const override;
     virtual void Deserialize(BufferView fileData) override;
 
-    void Clear();
-    void SetData(Actor* actor);
-
     void CopyProperties(Actor* actor);
 
+    Actor* GetDefaultActor() const { return mDefaultActor; }
+
 #if WITH_EDITOR
+    void Editor_SetupEmpty(GroovyClass* actorClass);
+    void Editor_RebuildPack();
+
     virtual GroovyClass*& Editor_ActorClassRef() { return mActorPack.actorClass; }
     virtual PropertyPack& Editor_ActorPropertyPackRef() { return mActorPack.actorProperties; }
 
@@ -84,6 +88,7 @@ public:
 
 private:
     ActorPack mActorPack;
+    Actor* mDefaultActor;
 
     AssetUUID mUUID;
     bool mLoaded;

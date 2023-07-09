@@ -22,6 +22,7 @@ public:
 
 	void __internal_SetUUID(AssetUUID uuid) override { mUUID = uuid; }
 	AssetUUID GetUUID() const override { return mUUID; }
+	virtual bool LazyLoadAndUnload() const override { return false; }
 	virtual bool IsLoaded() const override { return mLoaded; }
 	virtual void Load() override;
 	virtual void Save() override;

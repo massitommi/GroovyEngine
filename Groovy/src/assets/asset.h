@@ -17,7 +17,8 @@ enum EAssetType
     ASSET_TYPE_MATERIAL = 3,
     ASSET_TYPE_MESH = 4,
     ASSET_TYPE_BLUEPRINT = 5,
-    ASSET_TYPE_ACTOR_BLUEPRINT = 6
+    ASSET_TYPE_ACTOR_BLUEPRINT = 6,
+    ASSET_TYPE_SCENE = 7
 };
 
 typedef uint64 AssetUUID;
@@ -45,6 +46,7 @@ public:
 
     virtual AssetUUID GetUUID() const = 0;
 
+    virtual bool LazyLoadAndUnload() const = 0;
     virtual bool IsLoaded() const = 0;
     virtual void Load() = 0;
     virtual void Save() = 0;

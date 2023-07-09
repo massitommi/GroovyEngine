@@ -114,7 +114,6 @@ public:
 
 private:
 	class ActorBlueprint* mBlueprint;
-	class Actor* mActorInstance;
 
 	std::string mFileName;
 	bool mExistsOnDisk;

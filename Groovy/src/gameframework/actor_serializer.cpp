@@ -17,6 +17,7 @@ void ActorSerializer::CreateActorPack(Actor* actor, Actor* cdo, ActorPack& outPa
 	}
 
 	// actor data
+	outPack.actorClass = actor->GetClass();
 	ObjectSerializer::CreatePropertyPack(actor, cdo, outPack.actorProperties);
 
 	// native components
@@ -56,7 +57,11 @@ void ActorSerializer::SerializeActorPack(const ActorPack& pack, DynamicBuffer& f
 
 	// actor class name
 	fileData.push<std::string>(pack.actorClass->name);
-	
+
+	// ALL DATA SIZE (actor props, native comps, editor comps)
+	size_t allDataSizeIndex = fileData.used();
+	fileData.push<size_t>(0);
+
 	// actor properties
 	ObjectSerializer::SerializePropertyPack(pack.actorProperties, fileData);
 
@@ -81,12 +86,16 @@ void ActorSerializer::SerializeActorPack(const ActorPack& pack, DynamicBuffer& f
 		fileData.push<size_t>(compPack.componentProperties.data.size());
 		ObjectSerializer::SerializePropertyPack(compPack.componentProperties, fileData);
 	}
+
+	byte* allDataSizePtr = fileData.data() + allDataSizeIndex;
+	*(size_t*)allDataSizePtr = fileData.used() - allDataSizeIndex - sizeof(size_t);
 }
 
 void ActorSerializer::DeserializeActorPack(BufferView& fileData, ActorPack& outPack)
 {
 	extern ClassDB gClassDB;
 	std::string actorClassName = fileData.read<std::string>();
+	size_t allDataSize = fileData.read<size_t>();
 	GroovyClass* actorClass = gClassDB[actorClassName];
 
 	if (actorClass && classUtils::IsA(actorClass, Actor::StaticClass()))
@@ -97,6 +106,7 @@ void ActorSerializer::DeserializeActorPack(BufferView& fileData, ActorPack& outP
 	else
 	{
 		// Warning: this file is not up to date, this class no longer exists or does not inherit from Actor anymore
+		fileData.advance(allDataSize);
 		return;
 	}
 
