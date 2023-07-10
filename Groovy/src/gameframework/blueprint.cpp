@@ -5,8 +5,14 @@
 #include "assets/asset_loader.h"
 
 ObjectBlueprint::ObjectBlueprint()
-	: mGroovyClass(nullptr), mUUID(0), mLoaded(false)
+	: mGroovyClass(nullptr), mDefaultObject(nullptr), mUUID(0), mLoaded(false)
 {
+}
+
+ObjectBlueprint::~ObjectBlueprint()
+{
+	if (mDefaultObject)
+		ObjectAllocator::Destroy(mDefaultObject);
 }
 
 void ObjectBlueprint::Load()
@@ -46,28 +52,13 @@ void ObjectBlueprint::Deserialize(BufferView fileData)
 	if (mGroovyClass)
 	{
 		ObjectSerializer::DeserializePropertyPack(mGroovyClass, fileData, mPropertyPack);
+		mDefaultObject = ObjectAllocator::Instantiate(mGroovyClass);
+		ObjectSerializer::DeserializePropertyPackData(mPropertyPack, mDefaultObject);
 	}
 	else
 	{
 		// TODO: Warning: This Class does not exist anymore
 	}
-}
-
-void ObjectBlueprint::Clear()
-{
-	mGroovyClass = nullptr;
-	mPropertyPack.desc.clear();
-	mPropertyPack.data.free();
-}
-
-void ObjectBlueprint::SetData(GroovyObject* obj)
-{
-	checkslow(obj);
-
-	Clear();
-	mGroovyClass = obj->GetClass();
-
-	ObjectSerializer::CreatePropertyPack(obj, mGroovyClass->cdo, mPropertyPack);
 }
 
 void ObjectBlueprint::CopyProperties(GroovyObject* obj)
@@ -79,6 +70,27 @@ void ObjectBlueprint::CopyProperties(GroovyObject* obj)
 	check(obj->GetClass() == mGroovyClass);
 
 	ObjectSerializer::DeserializePropertyPackData(mPropertyPack, obj);
+}
+
+void ObjectBlueprint::SetupEmpty(GroovyClass* objClass)
+{
+	mPropertyPack.desc.clear();
+	mPropertyPack.data.free();
+
+	mGroovyClass = objClass;
+
+	mDefaultObject = ObjectAllocator::Instantiate(objClass);
+}
+
+void ObjectBlueprint::RebuildPack()
+{
+	mPropertyPack.desc.clear();
+	mPropertyPack.data.free();
+
+	if (mDefaultObject)
+	{
+		ObjectSerializer::CreatePropertyPack(mDefaultObject, mDefaultObject->GetCDO(), mPropertyPack);
+	}
 }
 
 uint32 DepencyDeletionFix(const AssetHandle& assetToBeDeleted, PropertyPack& packToSanitize)
@@ -174,14 +186,14 @@ void ActorBlueprint::CopyProperties(Actor* actor)
 	}
 }
 
-void ActorBlueprint::Editor_SetupEmpty(GroovyClass* actorClass)
+void ActorBlueprint::SetupEmpty(GroovyClass* actorClass)
 {
 	mActorPack.actorClass = actorClass;
 
 	mDefaultActor = ObjectAllocator::Instantiate<Actor>(actorClass);
 }
 
-void ActorBlueprint::Editor_RebuildPack()
+void ActorBlueprint::RebuildPack()
 {
 	mActorPack.actorClass = nullptr;
 	mActorPack.actorProperties.data.free();

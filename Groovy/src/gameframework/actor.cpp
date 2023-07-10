@@ -3,7 +3,6 @@
 #include "runtime/object_allocator.h"
 
 GROOVY_CLASS_IMPL(Actor)
-	GROOVY_REFLECT(mTransform)
 GROOVY_CLASS_END()
 
 Actor::Actor()

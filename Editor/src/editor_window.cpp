@@ -13,6 +13,9 @@
 #include "runtime/object_allocator.h"
 #include "gameframework/actor.h"
 #include "gameframework/actorcomponent.h"
+#include "editor.h"
+
+extern Project gProj;
 
 void EditorWindow::RenderWindow()
 {
@@ -44,170 +47,6 @@ void EditorWindow::SetPendingSave(bool pendingSave)
 
 	mPendingSave = pendingSave;
 }
-
-extern void FlagRegistryPendingSave();
-
-namespace GroovyGui
-{
-	bool AssetRef(const char* label, EAssetType type, void* data, GroovyClass* classFilter)
-	{
-		AssetInstance** assetPtr = (AssetInstance**)data;
-		std::vector<AssetHandle> assets;
-		// filter stuff out
-		if (classFilter)
-		{
-			for (const AssetHandle& handle : AssetManager::Editor_GetAssets())
-			{
-				if (handle.type == ASSET_TYPE_BLUEPRINT || handle.type == ASSET_TYPE_ACTOR_BLUEPRINT)
-				{
-					Blueprint* bp = (Blueprint*)handle.instance;
-					if (classUtils::IsA(bp->GetClass(), classFilter))
-					{
-						assets.push_back(handle);
-					}
-				}
-			}
-		}
-		else
-		{
-			assets = AssetManager::Editor_GetAssets(type);
-		}
-
-		// draw 
-
-		std::string current = "NONE";
-		if (*assetPtr)
-		{
-			current = AssetManager::Get((*assetPtr)->GetUUID()).name;
-		}
-
-		bool validAsset = true;
-		if (*assetPtr)
-			validAsset = std::find_if(assets.begin(), assets.end(), [=](const AssetHandle& h) { return h.instance == *assetPtr; }) != assets.end();
-
-		if (!validAsset)
-			ImGui::PushStyleColor(ImGuiCol_Text, { 1.0f, 0.0f, 0.0f, 1.0f });
-
-
-		bool click = false;
-
-		if (ImGui::BeginCombo(label, current.c_str()))
-		{
-			if (!validAsset)
-			{
-				ImGui::PopStyleColor();
-				validAsset = true; // just for imgui
-			}
-
-			if (ImGui::Selectable("NONE"))
-			{
-				*assetPtr = nullptr;
-				click = true;
-			}
-			for (const AssetHandle& handle : assets)
-			{
-				if (ImGui::Selectable(handle.name.c_str()))
-				{
-					*assetPtr = handle.instance;
-					click = true;
-				}
-			}
-			ImGui::EndCombo();
-		}
-
-		if (!validAsset)
-			ImGui::PopStyleColor();
-
-		return click;
-	}
-	bool Transform(const char* label, void* data, float v_speed = 1.0f, float v_min = 0.0f, float v_max = 0.0f)
-	{
-		struct Transform* t = (struct Transform*)data;
-		ImGui::NewLine();
-		bool loc = ImGui::DragFloat3("Location", &t->location.x, v_speed, v_min, v_max);
-		bool rot = ImGui::DragFloat3("Rotation", &t->rotation.x, v_speed, v_min, v_max);
-		bool scale = ImGui::DragFloat3("Scale", &t->scale.x, v_speed, v_min, v_max);
-		return loc || rot || scale;
-	}
-}
-
-bool PropertyInput(const std::string& label, EPropertyType type, void* data, bool readonly, float lblColWidth, uint64 param1 = 0, uint64 param2 = 0)
-{
-	if (readonly)
-		ImGui::BeginDisabled();
-
-	bool click = false;
-
-	std::string lblVal = "##" + label;
-
-	ImGui::Columns(2, "ciao", false);
-
-	ImGui::SetColumnWidth(0, lblColWidth);
-
-	//ImGui::PushID(data);
-
-	ImGui::Text(label.c_str());
-	ImGui::SameLine();
-
-	ImGui::NextColumn();
-
-
-	switch (type)
-	{
-		case PROPERTY_TYPE_INT32:
-			click = ImGui::InputScalar(lblVal.c_str(), ImGuiDataType_S32, data, 0, 0, 0);
-			break;
-		case PROPERTY_TYPE_INT64:
-			click = ImGui::InputScalar(lblVal.c_str(), ImGuiDataType_S64, data, 0, 0, 0);
-			break;
-		case PROPERTY_TYPE_UINT32:
-			click = ImGui::InputScalar(lblVal.c_str(), ImGuiDataType_U32, data, 0, 0, 0);
-			break;
-		case PROPERTY_TYPE_UINT64:
-			click = ImGui::InputScalar(lblVal.c_str(), ImGuiDataType_U64, data, 0, 0, 0);
-			break;
-		case PROPERTY_TYPE_FLOAT:
-			click = ImGui::InputScalar(lblVal.c_str(), ImGuiDataType_Float, data, 0, 0, 0);
-			break;
-		case PROPERTY_TYPE_BOOL:
-			click = ImGui::Checkbox(lblVal.c_str(), (bool*)data);
-			break;
-		case PROPERTY_TYPE_VEC2:
-			click = ImGui::DragFloat2(lblVal.c_str(), (float*)data, 1.0f, 0.0f, 0.0f);
-			break;
-		case PROPERTY_TYPE_VEC3:
-			click = ImGui::DragFloat3(lblVal.c_str(), (float*)data, 1.0f, 0.0f, 0.0f);
-			break;
-		case PROPERTY_TYPE_VEC4:
-			click = ImGui::DragFloat4(lblVal.c_str(), (float*)data, 1.0f, 0.0f, 0.0f);
-			break;
-		case PROPERTY_TYPE_TRANSFORM:
-			click = GroovyGui::Transform(lblVal.c_str(), data, 1.0f, 0.0f, 0.0f);
-			break;
-		case PROPERTY_TYPE_STRING:
-			click = ImGui::InputText(lblVal.c_str(), (std::string*)data);
-			break;
-		case PROPERTY_TYPE_ASSET_REF:
-			click = GroovyGui::AssetRef(lblVal.c_str(), (EAssetType)param1, data, (GroovyClass*)param2);
-			break;
-		default:
-			ImGui::Text("PROPERTY_TYPE_UI_NOT_IMPLEMENTED");
-			click = false;
-			break;
-	}
-	
-	//ImGui::PopID();
-
-	ImGui::Columns();
-
-
-	if (readonly)
-		ImGui::EndDisabled();
-
-	return click;
-}
-
-extern Project gProj;
 
 EditMaterialWindow::EditMaterialWindow(Material* mat)
 	: EditorWindow("Material editor"), mMaterial(mat), mExistsOnDisk(true)
@@ -286,28 +125,21 @@ void EditMaterialWindow::RenderContent()
 		{
 			AssetManager::Editor_OnImport(mFileName, ASSET_TYPE_MATERIAL);
 			mExistsOnDisk = true;
-			FlagRegistryPendingSave();
+			editor::FlagRegistryPendingSave();
 		}
 		SetPendingSave(false);
 	}
-}
-
-const char* AssetRegistryWindow::AssetTypeStr(EAssetType type)
-{
-	switch (type)
-	{
-		case ASSET_TYPE_TEXTURE:	return "TEXTURE";
-		case ASSET_TYPE_SHADER:		return "SHADER";
-		case ASSET_TYPE_MATERIAL:	return "MATERIAL";
-		case ASSET_TYPE_MESH:		return "MESH";
-	}
-	return "NONE";
 }
 
 void AssetRegistryWindow::RenderContent()
 {
 	ImGui::Spacing();
 	ImGui::Separator();
+
+	auto AssetTypeStr = [](EAssetType type)
+	{
+		return editor::utils::AssetTypeToStr(type);
+	};
 
 	for (const auto& [uuid, handle] : AssetManager::Editor_GetRegistry())
 	{
@@ -339,6 +171,15 @@ void AssetRegistryWindow::RenderContent()
 
 		if (ImGui::Selectable(AssetTypeStr(ASSET_TYPE_MESH), mDebugAssetType == ASSET_TYPE_MESH))
 			mDebugAssetType = ASSET_TYPE_MESH;
+
+		if (ImGui::Selectable(AssetTypeStr(ASSET_TYPE_BLUEPRINT), mDebugAssetType == ASSET_TYPE_BLUEPRINT))
+			mDebugAssetType = ASSET_TYPE_BLUEPRINT;
+
+		if (ImGui::Selectable(AssetTypeStr(ASSET_TYPE_ACTOR_BLUEPRINT), mDebugAssetType == ASSET_TYPE_ACTOR_BLUEPRINT))
+			mDebugAssetType = ASSET_TYPE_ACTOR_BLUEPRINT;
+
+		if (ImGui::Selectable(AssetTypeStr(ASSET_TYPE_SCENE), mDebugAssetType == ASSET_TYPE_SCENE))
+			mDebugAssetType = ASSET_TYPE_SCENE;
 
 		ImGui::EndCombo();
 	}
@@ -425,10 +266,6 @@ ObjectBlueprintEditorWindow::ObjectBlueprintEditorWindow(ObjectBlueprint* bluepr
 	checkslow(blueprint);
 
 	mFileName = AssetManager::Get(blueprint->GetUUID()).name;
-	
-	mObjInstance = ObjectAllocator::Instantiate(blueprint->GetObjectClass());
-
-	mBlueprint->CopyProperties(mObjInstance);
 }
 
 ObjectBlueprintEditorWindow::ObjectBlueprintEditorWindow(GroovyClass* gClass)
@@ -436,175 +273,15 @@ ObjectBlueprintEditorWindow::ObjectBlueprintEditorWindow(GroovyClass* gClass)
 {
 	checkslow(gClass);
 	mBlueprint = new ObjectBlueprint();
-	mBlueprint->Editor_ClassRef() = gClass;
+	mBlueprint->SetupEmpty(gClass);
 
 	mFileName = "new_blueprint_" + gClass->name + GROOVY_ASSET_EXT;
-	
-	mObjInstance = ObjectAllocator::Instantiate(gClass);
 }
 
 ObjectBlueprintEditorWindow::~ObjectBlueprintEditorWindow()
 {
-	ObjectAllocator::Destroy(mObjInstance);
-
 	if (!mExistsOnDisk)
 		delete mBlueprint;
-}
-
-bool Property(const GroovyProperty& prop, void* propData)
-{
-	ImGui::PushID(propData);
-
-	float lblColWidth = ImGui::GetContentRegionAvail().x / 100 * 22;
-
-	bool readonly = prop.flags & PROPERTY_FLAG_EDITOR_READONLY;
-
-	bool changed = false;
-
-	if (prop.flags & PROPERTY_FLAG_IS_ARRAY)
-	{
-		ImGui::PushStyleColor(ImGuiCol_Header, { 1.0f, 1.0f, 1.0f, 0.0f });
-		ImGui::PushStyleColor(ImGuiCol_HeaderActive, { 1.0f, 1.0f, 1.0f, 0.1f });
-		ImGui::PushStyleColor(ImGuiCol_HeaderHovered, { 1.0f, 1.0f, 1.0f, 0.1f });
-		if (ImGui::CollapsingHeader(prop.name.c_str()))
-		{
-			uint32 propSize = reflectionUtils::GetPropertySize(prop.type);
-			if (prop.flags & PROPERTY_FLAG_IS_DYNAMIC_ARRAY)
-			{
-				DynamicArrayPtr arrayPtr = reflectionUtils::GetDynamicArrayPtr(prop.type);
-				void* dataData = arrayPtr.data(propData);
-				uint32 dataArrayCount = arrayPtr.size(propData);
-
-				struct DynamicArrayPostRenderAction
-				{
-					uint32 action;
-					uint32 param;
-				};
-
-				enum EPostRenderDynamicArrayAction
-				{
-					NONE,
-					CLEAR,
-					ADD,
-					REMOVE_AT,
-					INSERT_AT
-				};
-
-				DynamicArrayPostRenderAction postAction = { NONE , 0 };
-
-				for (uint32 i = 0; i < dataArrayCount; i++)
-				{
-					std::string labelName = "[" + std::to_string(i) + "]";
-					changed = PropertyInput(labelName, prop.type, (byte*)dataData + (propSize * i), readonly, lblColWidth, prop.param1, prop.param2);
-					ImGui::SameLine();
-					ImGui::PushID(i);
-					if (ImGui::Button("X"))
-					{
-						postAction.action = REMOVE_AT;
-						postAction.param = i;
-					}
-					ImGui::SameLine();
-					if (ImGui::Button("+"))
-					{
-						postAction.action = INSERT_AT;
-						postAction.param = i;
-					}
-					ImGui::PopID();
-				}
-
-				if (ImGui::Button("Clear"))
-				{
-					postAction.action = CLEAR;
-				}
-				ImGui::SameLine();
-				if (ImGui::Button("Add"))
-				{
-					postAction.action = ADD;
-				}
-
-				// take action 
-				switch (postAction.action)
-				{
-				case NONE:
-					break;
-				case CLEAR:
-					arrayPtr.clear(propData);
-					break;
-				case REMOVE_AT:
-					arrayPtr.removeAt(propData, postAction.param);
-					break;
-				case INSERT_AT:
-					arrayPtr.insertAt(propData, postAction.param);
-					break;
-				case ADD:
-					arrayPtr.add(propData);
-					break;
-				}
-			}
-			else
-			{
-				for (uint32 i = 0; i < prop.arrayCount; i++)
-				{
-					std::string labelName = "[" + std::to_string(i) + "]";
-					changed = PropertyInput(labelName, prop.type, (byte*)propData + (propSize * i), readonly, lblColWidth, prop.param1, prop.param2);
-				}
-			}
-		}
-		ImGui::PopStyleColor(3);
-	}
-	else
-	{
-		changed = PropertyInput(prop.name, prop.type, propData, readonly, lblColWidth, prop.param1, prop.param2);
-	}
-	ImGui::PopID();
-
-	return changed;
-}
-
-bool PropertiesSingleClass(GroovyObject* obj, GroovyClass* gClass, const std::vector<GroovyProperty>& props)
-{
-	ImGui::Text(gClass->name.c_str());
-	ImGui::Spacing();
-
-	bool changed = false;
-
-	for (const GroovyProperty& prop : props)
-	{
-		ImGui::Spacing();
-		ImGui::Spacing();
-		if (Property(prop, (byte*)obj + prop.offset))
-			changed = true;
-		ImGui::Spacing();
-		ImGui::Spacing();
-	}
-
-	return changed;
-}
-
-bool PropertiesAllClasses(GroovyObject* obj)
-{
-	GroovyClass* superClass = obj->GetClass();
-
-	bool changed = false;
-
-	while (superClass)
-	{
-		std::vector<GroovyProperty> props;
-		superClass->propertiesGetter(props);
-
-		if (props.size())
-		{
-			ImGui::Spacing();
-			ImGui::Separator();
-
-			if (PropertiesSingleClass(obj, superClass, props))
-				changed = true;
-		}
-
-		superClass = superClass->super;
-	}
-
-	return changed;
 }
 
 void ObjectBlueprintEditorWindow::RenderContent()
@@ -621,13 +298,13 @@ void ObjectBlueprintEditorWindow::RenderContent()
 
 	if (ImGui::Button(mExistsOnDisk ? "Save changes" : "Save"))
 	{
-		mBlueprint->SetData(mObjInstance);
+		mBlueprint->RebuildPack();
 		AssetSerializer::SerializeGenericAsset(mBlueprint, (gProj.assets / mFileName).string());
 		if (!mExistsOnDisk)
 		{
 			AssetManager::Editor_OnImport(mFileName, ASSET_TYPE_BLUEPRINT);
 			mExistsOnDisk = true;
-			FlagRegistryPendingSave();
+			editor::FlagRegistryPendingSave();
 		}
 		SetPendingSave(false);
 	}
@@ -635,7 +312,7 @@ void ObjectBlueprintEditorWindow::RenderContent()
 	ImGui::Spacing();
 	ImGui::Spacing();
 
-	PropertiesAllClasses(mObjInstance);
+	editorGui::PropertiesAllClasses(mBlueprint->GetDefaultObject());
 }
 
 ActorBlueprintEditorWindow::ActorBlueprintEditorWindow(ActorBlueprint* blueprint)
@@ -657,7 +334,7 @@ ActorBlueprintEditorWindow::ActorBlueprintEditorWindow(GroovyClass* inClass)
 	mFileName = "new_blueprint_" + inClass->name + GROOVY_ASSET_EXT;
 
 	mBlueprint = new ActorBlueprint();
-	mBlueprint->Editor_SetupEmpty(inClass);
+	mBlueprint->SetupEmpty(inClass);
 
 	mSelected = mBlueprint->GetDefaultActor();
 }
@@ -682,13 +359,13 @@ void ActorBlueprintEditorWindow::RenderContent()
 
 	if (ImGui::Button(mExistsOnDisk ? "Save changes" : "Save"))
 	{
-		mBlueprint->Editor_RebuildPack();
+		mBlueprint->RebuildPack();
 		AssetSerializer::SerializeGenericAsset(mBlueprint, (gProj.assets / mFileName).string());
 		if (!mExistsOnDisk)
 		{
 			AssetManager::Editor_OnImport(mFileName, ASSET_TYPE_ACTOR_BLUEPRINT);
 			mExistsOnDisk = true;
-			FlagRegistryPendingSave();
+			editor::FlagRegistryPendingSave();
 		}
 		SetPendingSave(false);
 	}
@@ -745,7 +422,7 @@ void ActorBlueprintEditorWindow::RenderContent()
 	ImGui::Spacing();
 	ImGui::Spacing();
 
-	if (PropertiesAllClasses(mSelected))
+	if (editorGui::PropertiesAllClasses(mSelected))
 	{
 		SetPendingSave(true);
 	}

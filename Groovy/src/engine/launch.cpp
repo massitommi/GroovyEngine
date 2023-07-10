@@ -7,6 +7,7 @@
 #include "project/project.h"
 #include "classes/class_db.h"
 #include "renderer/renderer.h"
+#include "gameframework/scene.h"
 
 bool gEngineShouldRun = true;
 Window* gWindow = nullptr;
@@ -14,6 +15,7 @@ FrameBuffer* gScreenFrameBuffer = nullptr;
 Project gProj;
 ClassDB gClassDB;
 ClearColor gScreenClearColor = { 0.9f, 0.7f, 0.7f, 1.0f };
+Scene gScene;
 
 extern std::vector<GroovyClass*> ENGINE_CLASSES;
 //extern std::vector<GroovyClass*> GAME_CLASSES;

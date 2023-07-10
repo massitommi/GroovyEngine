@@ -55,6 +55,13 @@ public:
 	inline const std::vector<ActorComponent*>& GetNativeComponents() const { return mNativeComponents; }
 	inline const std::vector<ActorComponent*>& GetEditorComponents() const { return mEditorComponents; }
 
+	inline const Transform& GetTransform() const { return mTransform; }
+	inline Vec3 GetLocation() const { return mTransform.location; }
+	inline Vec3 GetRotation() const { return mTransform.rotation; }
+	inline Vec3 GetScale() const { return mTransform.scale; }
+
+	inline const std::string& GetName() const { return mName; }
+
 	// internal stuff
 private:
 	ActorComponent* __internal_AddComponent(GroovyClass* componentClass, const std::string& name);
@@ -71,6 +78,7 @@ public:
 
 private:
 	Transform mTransform;
+	std::string mName;
 	
 	std::vector<ActorComponent*> mComponents;
 	std::map<std::string, ActorComponent*> mComponentsDB;
@@ -79,6 +87,7 @@ private:
 	std::vector<ActorComponent*> mEditorComponents;
 
 	friend class ActorSerializer;
+	friend class Scene;
 };
 
 // used for serializing components

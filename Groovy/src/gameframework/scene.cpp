@@ -26,6 +26,7 @@ void Scene::Serialize(DynamicBuffer& fileData) const
 	fileData.push<uint32>(mGenericActors.size());
 	for (Actor* actor : mGenericActors)
 	{
+		fileData.push(actor->GetTransform());
 		ActorPack pack;
 		ActorSerializer::CreateActorPack(actor, (Actor*)actor->GetCDO(), pack);
 		ActorSerializer::SerializeActorPack(pack, fileData);
@@ -35,6 +36,7 @@ void Scene::Serialize(DynamicBuffer& fileData) const
 	for (auto [actor, bp] : mBPActors)
 	{
 		fileData.push<AssetUUID>(bp->GetUUID());
+		fileData.push(actor->GetTransform());
 		ActorPack pack;
 		ActorSerializer::CreateActorPack(actor, bp->GetDefaultActor(), pack);
 		ActorSerializer::SerializeActorPack(pack, fileData);
@@ -46,6 +48,7 @@ void Scene::Deserialize(BufferView fileData)
 	uint32 genericActorsCount = fileData.read<uint32>();
 	for (uint32 i = 0; i < genericActorsCount; i++)
 	{
+		Transform transform = fileData.read<Transform>();
 		ActorPack pack;
 		ActorSerializer::DeserializeActorPack(fileData, pack);
 
@@ -54,6 +57,7 @@ void Scene::Deserialize(BufferView fileData)
 			Actor* newActor = SpawnActor<Actor>(pack.actorClass);
 			ActorSerializer::DeserializeActorPackData(pack, newActor);
 			mGenericActors.push_back(newActor);
+			newActor->mTransform = transform;
 		}
 		else
 		{
@@ -65,6 +69,7 @@ void Scene::Deserialize(BufferView fileData)
 	for (uint32 i = 0; i < bpActors; i++)
 	{
 		AssetUUID bpUUID = fileData.read<AssetUUID>();
+		Transform transform = fileData.read<Transform>();
 		ActorBlueprint* bpInstance = AssetManager::Get<ActorBlueprint>(bpUUID);
 
 		ActorPack pack;
@@ -77,6 +82,7 @@ void Scene::Deserialize(BufferView fileData)
 			newActorBP.bp = bpInstance;
 			ActorSerializer::DeserializeActorPackData(pack, newActorBP.instance);
 			mBPActors.push_back(newActorBP);
+			newActorBP.instance->mTransform = transform;
 		}
 		else
 		{

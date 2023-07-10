@@ -97,7 +97,6 @@ public:
 
 private:
 	class ObjectBlueprint* mBlueprint;
-	class GroovyObject* mObjInstance;
 
 	std::string mFileName;
 	bool mExistsOnDisk;

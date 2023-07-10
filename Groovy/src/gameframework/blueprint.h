@@ -15,6 +15,7 @@ class ObjectBlueprint : public Blueprint
 {
 public:
     ObjectBlueprint();
+    ~ObjectBlueprint();
 
     virtual void __internal_SetUUID(AssetUUID uuid) override { mUUID = uuid; }
     virtual AssetUUID GetUUID() const override { return mUUID; }
@@ -26,10 +27,12 @@ public:
     virtual void Serialize(DynamicBuffer& fileData) const override;
     virtual void Deserialize(BufferView fileData) override;
 
-    void Clear();
-    void SetData(GroovyObject* obj);
-
     void CopyProperties(GroovyObject* obj);
+
+    GroovyObject* GetDefaultObject() const { return mDefaultObject; }
+
+    void SetupEmpty(GroovyClass* objClass);
+    void RebuildPack();
 
 #if WITH_EDITOR
     virtual GroovyClass*& Editor_ClassRef() { return mGroovyClass; }
@@ -46,6 +49,7 @@ public:
 private:
     GroovyClass* mGroovyClass;
     PropertyPack mPropertyPack;
+    GroovyObject* mDefaultObject;
 
     AssetUUID mUUID;
     bool mLoaded;
@@ -71,10 +75,10 @@ public:
 
     Actor* GetDefaultActor() const { return mDefaultActor; }
 
-#if WITH_EDITOR
-    void Editor_SetupEmpty(GroovyClass* actorClass);
-    void Editor_RebuildPack();
+    void SetupEmpty(GroovyClass* actorClass);
+    void RebuildPack();
 
+#if WITH_EDITOR
     virtual GroovyClass*& Editor_ActorClassRef() { return mActorPack.actorClass; }
     virtual PropertyPack& Editor_ActorPropertyPackRef() { return mActorPack.actorProperties; }
 

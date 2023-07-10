@@ -45,6 +45,8 @@ public:
 
 	void DestroyActor(Actor* actor);
 
+	inline const std::vector<Actor*>& GetActors() const { return mActors; }
+
 private:
 	std::vector<Actor*> mActors;
 
