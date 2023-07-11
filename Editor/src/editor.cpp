@@ -380,11 +380,11 @@ namespace panels
 			for (GroovyClass* c : ENGINE_CLASSES)
 				classes.push_back(c);
 
-		/*if (showGameClasses)
+		if (sShowGameClasses)
 			for (GroovyClass* c : GAME_CLASSES)
-				classes.push_back(c);*/
+				classes.push_back(c);
 
-				// stolen ui code that works pretty well
+		// stolen ui code that works pretty well
 
 		float contentWidth = ImGui::GetContentRegionAvail().x;
 		float contentHeight = ImGui::GetContentRegionAvail().y;

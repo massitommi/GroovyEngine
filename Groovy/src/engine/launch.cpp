@@ -76,7 +76,11 @@ int32 GroovyEntryPoint(const char* args)
 	wnd.SubmitToWndResizeCallback(OnWndResizeCallback);
 
 	// load project and settings
+#if WITH_EDITOR
 	gProj.BuildPaths(args);
+#else
+	#error Sandbox not supported yet!
+#endif
 
 	AssetManager::Init();
 	Application::Init();
