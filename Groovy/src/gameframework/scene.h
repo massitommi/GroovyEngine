@@ -8,6 +8,7 @@ class Scene : public AssetInstance
 {
 public:
 	Scene();
+	~Scene();
 
 	virtual void __internal_SetUUID(AssetUUID uuid) override { mUUID = uuid; }
 

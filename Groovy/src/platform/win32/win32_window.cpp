@@ -58,7 +58,7 @@ static LRESULT CALLBACK GroovyWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARA
 			Window* wnd = (Window*)GetWindowLongPtrA(hWnd, GWLP_USERDATA);
 			if (!wnd->OnClose())
 			{
-				return TRUE; // event handled
+				return FALSE; // event handled
 			}
 			gEngineShouldRun = false;
 		}
@@ -76,6 +76,13 @@ static LRESULT CALLBACK GroovyWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARA
 			std::vector<std::string> droppedFiles = GetDroppedFiles((HDROP)wParam);
 			Window* wnd = (Window*)GetWindowLongPtrA(hWnd, GWLP_USERDATA);
 			wnd->OnFilesDropped(droppedFiles);
+		}
+		break;
+
+		case WM_DESTROY:
+		{
+			Window* wnd = (Window*)GetWindowLongPtrA(hWnd, GWLP_USERDATA);
+			wnd->OnDestroy();
 		}
 		break;
 	}
@@ -158,6 +165,11 @@ void Window::OnFilesDropped(const std::vector<std::string>& files)
 	{
 		fileDropCallback(files);
 	}
+}
+
+void Window::OnDestroy()
+{
+	mHandle = nullptr;
 }
 
 void Window::InitSystem()

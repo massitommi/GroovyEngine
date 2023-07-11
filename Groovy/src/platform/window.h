@@ -32,6 +32,7 @@ public:
 	bool OnClose();
 	void OnResize(uint32 width, uint32 height);
 	void OnFilesDropped(const std::vector<std::string>& files);
+	void OnDestroy();
 
 	inline const WindowProps& GetProps() const { return mProps; }
 	inline void* GetNativeHandle() const { return mHandle; }

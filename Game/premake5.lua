@@ -1,4 +1,4 @@
-project "Groovy"
+project "Game"
     kind "StaticLib"
     language "C++"
     cppdialect "C++17"
@@ -11,10 +11,6 @@ project "Groovy"
 
     includedirs
     {
-        "src"
-    }
-
-    links
-    {
-        "Game"
+        "src",
+        "%{wks.location}/Groovy/src"
     }

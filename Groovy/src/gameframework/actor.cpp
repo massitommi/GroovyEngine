@@ -67,6 +67,18 @@ uint32 Actor::GetComponentsExact(GroovyClass* componentClass, std::vector<ActorC
 	return found;
 }
 
+void Actor::BeginPlay()
+{
+}
+
+void Actor::Tick(float deltaTime)
+{
+}
+
+void Actor::Destroy()
+{
+}
+
 ActorComponent* Actor::__internal_AddComponent(GroovyClass* componentClass, const std::string& name)
 {
 	check(componentClass);

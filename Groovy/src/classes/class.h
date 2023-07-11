@@ -113,11 +113,13 @@ class Texture;
 class Shader;
 class Material;
 class Mesh;
+class Scene;
 
 IMPL_PROPERTY_TYPE_EX(Texture*, PROPERTY_TYPE_ASSET_REF, PROPERTY_FLAG_IS_COMPLEX, ASSET_TYPE_TEXTURE, 0)
 IMPL_PROPERTY_TYPE_EX(Shader*, PROPERTY_TYPE_ASSET_REF, PROPERTY_FLAG_IS_COMPLEX, ASSET_TYPE_SHADER, 0)
 IMPL_PROPERTY_TYPE_EX(Material*, PROPERTY_TYPE_ASSET_REF, PROPERTY_FLAG_IS_COMPLEX, ASSET_TYPE_MATERIAL, 0)
 IMPL_PROPERTY_TYPE_EX(Mesh*, PROPERTY_TYPE_ASSET_REF, PROPERTY_FLAG_IS_COMPLEX, ASSET_TYPE_MESH, 0)
+IMPL_PROPERTY_TYPE_EX(Scene*, PROPERTY_TYPE_ASSET_REF, PROPERTY_FLAG_IS_COMPLEX, ASSET_TYPE_SCENE, 0)
 
 template<typename TClass>
 class BlueprintRef
@@ -208,7 +210,7 @@ private:
 	[](void* mem) { ((Class*)mem)->~Class(); },													\
 	Class::Super::StaticClass(),																\
 	&Class::GetClassProperties,																	\
-	new Class()																					\
+	nullptr																						\
 };																								\
 void Class::GetClassPropertiesRecursive(std::vector<GroovyProperty>& outProps) const			\
 {																								\

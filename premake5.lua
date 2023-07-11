@@ -1,8 +1,10 @@
 workspace "GroovyEngine"
     configurations
     {
-        "Debug",
-        "Release"
+        "Debug_Editor",
+        "Development_Editor",
+        "Debug_Game",
+        "Shipping"
     }
 
     platforms
@@ -12,13 +14,21 @@ workspace "GroovyEngine"
 
     startproject "Editor"
 
-    defines { "PLATFORM_WIN32" }
-    defines { "WITH_EDITOR" }
+    defines "PLATFORM_WIN32"
 
-    filter "configurations:Debug"
-        defines { "BUILD_DEBUG" }
-    filter{}
+    filter "configurations:Debug_Editor or Development_Editor"
+        defines "WITH_EDITOR"
+    filter {}
+
+    filter "configurations:Debug_Editor or Debug_Game"
+        defines "BUILD_DEBUG"
+    filter {}
+
+    filter "configurations:Shipping"
+        defines "BUILD_SHIPPING"
+    filter {}
 
 include "Groovy"
 include "Editor"
 include "Sandbox"
+include "Game"

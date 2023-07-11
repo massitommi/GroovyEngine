@@ -93,6 +93,9 @@ void ActorSerializer::SerializeActorPack(const ActorPack& pack, DynamicBuffer& f
 
 void ActorSerializer::DeserializeActorPack(BufferView& fileData, ActorPack& outPack)
 {
+	if (!fileData.remaining())
+		return;
+
 	extern ClassDB gClassDB;
 	std::string actorClassName = fileData.read<std::string>();
 	size_t allDataSize = fileData.read<size_t>();

@@ -20,4 +20,6 @@ public:
 	{
 		return (TClass*)Instantiate(TClass::StaticClass());
 	}
+
+	static uint32 Debug_GetLiveObjectsCount();
 };

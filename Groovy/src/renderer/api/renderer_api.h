@@ -20,6 +20,7 @@ public:
 	inline static ERendererAPI GetAPI() { return sSelectedAPI; }
 	
 	static void Create(ERendererAPI api, class Window* wnd);
+	static void Destroy();
 
 private:
 	static RendererAPI* sInstance;

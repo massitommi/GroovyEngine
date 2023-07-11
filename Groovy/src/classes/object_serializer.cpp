@@ -272,6 +272,9 @@ void ObjectSerializer::DeserializePropertyPack(GroovyClass* gClass, BufferView& 
 {
 	checkslow(gClass);
 
+	if (!fileData.remaining())
+		return;
+
 	uint32 propCount = fileData.read<uint32>();
 
 	extern ClassDB gClassDB;

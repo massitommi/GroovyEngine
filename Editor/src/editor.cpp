@@ -22,6 +22,8 @@
 #include "editor_window.h"
 #include "gameframework/blueprint.h"
 
+#include "engine/world.h"
+
 #include "gameframework/actor.h"
 #include "gameframework/actorcomponent.h"
 #include "gameframework/scene.h"
@@ -30,8 +32,7 @@
 
 extern ClearColor gScreenClearColor;
 extern Window* gWindow;
-extern Scene gScene;
-extern Project gProj;
+extern GroovyProject gProj;
 extern std::vector<GroovyClass*> ENGINE_CLASSES;
 extern std::vector<GroovyClass*> GAME_CLASSES;
 
@@ -457,7 +458,7 @@ namespace panels
 	{
 		ImGui::Begin("Entity list");
 
-		for (Actor* actor : gScene.GetActors())
+		for (Actor* actor : World::GetScene()->GetActors())
 		{
 			if (ImGui::Selectable(actor->GetName().c_str(), sCurrentlySelectedActor == actor))
 			{

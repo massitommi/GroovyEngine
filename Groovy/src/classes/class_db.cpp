@@ -1,4 +1,5 @@
 #include "class_db.h"
+#include "runtime/object_allocator.h"
 
 ClassDB::ClassDB()
 {
@@ -12,6 +13,23 @@ void ClassDB::Register(GroovyClass* gClass)
 	
 	mClassDB[gClass->name] = gClass;
 	mPropsDB[gClass] = props;
+}
+
+void ClassDB::BuildCDOs()
+{
+	for (auto [name, gClass] : mClassDB)
+	{
+		gClass->cdo = ObjectAllocator::Instantiate(gClass);
+	}
+}
+
+void ClassDB::DestroyCDOs()
+{
+	for (auto [name, gClass] : mClassDB)
+	{
+		if(gClass)
+			ObjectAllocator::Destroy(gClass->cdo);
+	}
 }
 
 const std::vector<GroovyProperty>& ClassDB::operator[](GroovyClass* gClass)

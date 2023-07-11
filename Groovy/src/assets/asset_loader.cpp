@@ -37,9 +37,9 @@ Shader* AssetLoader::LoadShader(const std::string& filePath)
 
 void AssetLoader::LoadGenericAsset(AssetInstance* asset)
 {
-	extern Project gProj;
+	extern GroovyProject gProj;
 	AssetHandle handle = AssetManager::Get(asset->GetUUID());
-	std::string absPath = (gProj.assets / handle.name).string();
+	std::string absPath = (gProj.GetAssetsPath() / handle.name).string();
 	Buffer fileData;
 	FileSystem::ReadFileBinary(absPath, fileData);
 	asset->Deserialize(fileData);

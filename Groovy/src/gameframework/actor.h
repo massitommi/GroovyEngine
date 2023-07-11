@@ -50,6 +50,10 @@ protected:
 		return (TComponent*)AddComponent(TComponent::StaticClass(), name);
 	}
 
+	virtual void BeginPlay();
+	virtual void Tick(float deltaTime);
+	virtual void Destroy();
+
 public:
 	inline const std::vector<ActorComponent*>& GetComponents() const { return mComponents; }
 	inline const std::vector<ActorComponent*>& GetNativeComponents() const { return mNativeComponents; }

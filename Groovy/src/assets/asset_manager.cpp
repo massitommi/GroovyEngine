@@ -24,14 +24,14 @@ static AssetUUID GenUUID()
 	return sRandomDistributor(sRandomEngine);
 }
 
-extern Project gProj;
+extern GroovyProject gProj;
 Texture* DEFAULT_TEXTURE = nullptr;
 Shader* DEFAULT_SHADER = nullptr;
 Material* DEFAULT_MATERIAL = nullptr;
 
 static AssetInstance* InstantiateAsset(const AssetHandle& handle)
 {
-	std::string absFilePath = (gProj.assets / handle.name).string();
+	std::string absFilePath = (gProj.GetAssetsPath() / handle.name).string();
 
 	switch (handle.type)
 	{
@@ -84,7 +84,7 @@ void AssetManager::Init()
 					break;
 			}
 
-			DEFAULT_SHADER = AssetLoader::LoadShader((gProj.assets / "default" / shaderFile).string());
+			DEFAULT_SHADER = AssetLoader::LoadShader((gProj.GetAssetsPath() / "default" / shaderFile).string());
 		}
 		// default material
 		{
@@ -121,7 +121,7 @@ void AssetManager::Init()
 	}
 
 	Buffer registryFile;
-	FileSystem::ReadFileBinary(gProj.assetRegistry.string(), registryFile);
+	FileSystem::ReadFileBinary(gProj.GetAssetRegistryPath().string(), registryFile);
 
 	if (!registryFile.size())
 		return;
@@ -184,7 +184,7 @@ void AssetManager::SaveRegistry()
 		registryFile.push(handle.type);
 	}
 
-	FileSystem::WriteFileBinary(gProj.assetRegistry.string(), registryFile);
+	FileSystem::WriteFileBinary(gProj.GetAssetRegistryPath().string(), registryFile);
 }
 
 #if WITH_EDITOR

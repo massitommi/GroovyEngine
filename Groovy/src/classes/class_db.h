@@ -10,6 +10,11 @@ public:
 
 	void Register(GroovyClass* gClass);
 
+	// called at engine startup
+	void BuildCDOs();
+	// called at engine shutdown
+	void DestroyCDOs();
+
 	const std::vector<GroovyProperty>& operator[](GroovyClass* gClass);
 	GroovyClass* operator[](const std::string& className);
 

@@ -10,6 +10,18 @@ Scene::Scene()
 {
 }
 
+Scene::~Scene()
+{
+	for (Actor* actor : mActors)
+	{
+		actor->Destroy();
+	}
+	for (Actor* actor : mActors)
+	{
+		ObjectAllocator::Destroy(actor);
+	}
+}
+
 void Scene::Load()
 {
 	AssetLoader::LoadGenericAsset(this);
@@ -127,6 +139,7 @@ void Scene::DestroyActor(Actor* actor)
 
 	if (it != mActors.end())
 	{
+		actor->Destroy();
 		ObjectAllocator::Destroy(actor);
 		mActors.erase(it);
 	}

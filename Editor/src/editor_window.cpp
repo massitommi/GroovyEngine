@@ -15,7 +15,7 @@
 #include "gameframework/actorcomponent.h"
 #include "editor.h"
 
-extern Project gProj;
+extern GroovyProject gProj;
 
 void EditorWindow::RenderWindow()
 {
@@ -120,7 +120,7 @@ void EditMaterialWindow::RenderContent()
 
 	if (ImGui::Button(mExistsOnDisk ? "Save changes" : "Save"))
 	{
-		AssetSerializer::SerializeGenericAsset(mMaterial, (gProj.assets / mFileName).string());
+		AssetSerializer::SerializeGenericAsset(mMaterial, (gProj.GetAssetsPath() / mFileName).string());
 		if (!mExistsOnDisk)
 		{
 			AssetManager::Editor_OnImport(mFileName, ASSET_TYPE_MATERIAL);
@@ -299,7 +299,7 @@ void ObjectBlueprintEditorWindow::RenderContent()
 	if (ImGui::Button(mExistsOnDisk ? "Save changes" : "Save"))
 	{
 		mBlueprint->RebuildPack();
-		AssetSerializer::SerializeGenericAsset(mBlueprint, (gProj.assets / mFileName).string());
+		AssetSerializer::SerializeGenericAsset(mBlueprint, (gProj.GetAssetsPath() / mFileName).string());
 		if (!mExistsOnDisk)
 		{
 			AssetManager::Editor_OnImport(mFileName, ASSET_TYPE_BLUEPRINT);
@@ -360,7 +360,7 @@ void ActorBlueprintEditorWindow::RenderContent()
 	if (ImGui::Button(mExistsOnDisk ? "Save changes" : "Save"))
 	{
 		mBlueprint->RebuildPack();
-		AssetSerializer::SerializeGenericAsset(mBlueprint, (gProj.assets / mFileName).string());
+		AssetSerializer::SerializeGenericAsset(mBlueprint, (gProj.GetAssetsPath() / mFileName).string());
 		if (!mExistsOnDisk)
 		{
 			AssetManager::Editor_OnImport(mFileName, ASSET_TYPE_ACTOR_BLUEPRINT);

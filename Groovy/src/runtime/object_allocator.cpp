@@ -24,3 +24,8 @@ void ObjectAllocator::Destroy(GroovyObject* instance)
 
 	sObjects.erase(std::find(sObjects.begin(), sObjects.end(), instance));
 }
+
+uint32 ObjectAllocator::Debug_GetLiveObjectsCount()
+{
+	return sObjects.size();
+}

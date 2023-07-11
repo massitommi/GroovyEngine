@@ -21,3 +21,8 @@ void RendererAPI::Create(ERendererAPI api, Window* wnd)
 	}
 	checkslowf(0, "No supported renderer API selected!");
 }
+
+void RendererAPI::Destroy()
+{
+	delete sInstance;
+}

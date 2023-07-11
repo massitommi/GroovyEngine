@@ -5,7 +5,7 @@
 
 #include "renderer/mesh.h"
 
-extern Project gProj;
+extern GroovyProject gProj;
 
 void AssetSerializer::SerializeGenericAsset(AssetInstance* asset, const std::string& filePath)
 {
@@ -22,7 +22,7 @@ void AssetSerializer::SerializeGenericAsset(AssetInstance* asset)
 	check(asset);
 
 	AssetHandle handle = AssetManager::Get(asset->GetUUID());
-	std::string absPath = (gProj.assets / handle.name).string();
+	std::string absPath = (gProj.GetAssetsPath() / handle.name).string();
 	SerializeGenericAsset(asset, absPath);
 }
 
@@ -41,6 +41,6 @@ void AssetSerializer::SerializeMesh(Mesh* mesh)
 	check(mesh);
 
 	AssetHandle handle = AssetManager::Get(mesh->GetUUID());
-	std::string absPath = (gProj.assets / handle.name).string();
+	std::string absPath = (gProj.GetAssetsPath() / handle.name).string();
 	SerializeMesh(mesh, absPath);
 }

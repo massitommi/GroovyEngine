@@ -8,17 +8,19 @@
 #include "classes/class_db.h"
 #include "renderer/renderer.h"
 #include "gameframework/scene.h"
+#include "gameframework/game_module.h"
+#include "world.h"
+#include "runtime/object_allocator.h"
 
 bool gEngineShouldRun = true;
 Window* gWindow = nullptr;
 FrameBuffer* gScreenFrameBuffer = nullptr;
-Project gProj;
+GroovyProject gProj;
 ClassDB gClassDB;
 ClearColor gScreenClearColor = { 0.9f, 0.7f, 0.7f, 1.0f };
-Scene gScene;
 
 extern std::vector<GroovyClass*> ENGINE_CLASSES;
-//extern std::vector<GroovyClass*> GAME_CLASSES;
+extern std::vector<GroovyClass*> GAME_CLASSES;
 
 void OnWndResizeCallback(uint32 width, uint32 height)
 {
@@ -27,7 +29,7 @@ void OnWndResizeCallback(uint32 width, uint32 height)
 	if (gScreenFrameBuffer->GetSpecs().width != width || gScreenFrameBuffer->GetSpecs().height != height)
 	{
 		gScreenFrameBuffer->Resize(width, height);
-#if BUILD_SHIPPING
+#if !WITH_EDITOR
 		gScreenFrameBuffer->Bind();
 #endif
 	}
@@ -35,24 +37,18 @@ void OnWndResizeCallback(uint32 width, uint32 height)
 
 int32 GroovyEntryPoint(const char* args)
 {
-	gProj.projFile = args;
-	if (gProj.projFile.empty())
-	{
-		SysMessageBox::Show_Error("Error", "No project selected!");
-		return -1;
-	}
+	// register classes
+	for (GroovyClass* c : ENGINE_CLASSES)
+		gClassDB.Register(c);
+	for (GroovyClass* c : GAME_CLASSES)
+		gClassDB.Register(c);
+	
+	gClassDB.BuildCDOs();
 
-	Buffer projFile;
-	FileSystem::ReadFileBinary(gProj.projFile.string(), projFile);
-	gProj.name = std::string((char*)projFile.data(), projFile.size());
-	gProj.assetRegistry = (gProj.projFile.parent_path() / "assets" / "assetregistry").string();
-	gProj.assets = gProj.assetRegistry.parent_path().string();
-
-	projFile.free();
-
+	// windowing system
 	WindowProps wndProps =
 	{
-		gProj.name,			// wndTitle			
+		"Groovy",			// title
 		1600, 900,			// resolution
 		0,					// refreshrate (0 = max)
 		false,				// fullscreen
@@ -65,6 +61,7 @@ int32 GroovyEntryPoint(const char* args)
 	wnd.Spawn();
 	wnd.Show();
 
+	// startup renderering
 	RendererAPI::Create(RENDERER_API_D3D11, &wnd);
 
 	FrameBufferSpec screenBufferSpec;
@@ -78,17 +75,17 @@ int32 GroovyEntryPoint(const char* args)
 
 	wnd.SubmitToWndResizeCallback(OnWndResizeCallback);
 
-	for (GroovyClass* c : ENGINE_CLASSES)
-		gClassDB.Register(c);
-	/*for (GroovyClass* c : GAME_CLASSES)
-		gClassDB.Register(c);*/
-
-	Renderer::Init();
+	// load project and settings
+	gProj.BuildPaths(args);
 
 	AssetManager::Init();
 	Application::Init();
+	GameModule::Startup();
 
 	gScreenFrameBuffer->Bind();
+	Renderer::Init();
+
+	World::Travel(gProj.GetStartupScene());
 
 	while (gEngineShouldRun)
 	{
@@ -107,12 +104,32 @@ int32 GroovyEntryPoint(const char* args)
 #endif
 		RendererAPI::Get().Present(0);
 	}
+
+	World::End();
+	Renderer::Shutdown();
+
+	GameModule::Shutdown();
+	Application::Shutdown();
+
+	gProj.Save();
+
+	AssetManager::Shutdown();
+
+	gClassDB.DestroyCDOs();
 	
 	delete gScreenFrameBuffer;
-	AssetManager::Shutdown();
-	Application::Shutdown();
-	Renderer::Shutdown();
-	delete &RendererAPI::Get();
+	RendererAPI::Destroy();
 
+#if BUILD_DEBUG
+	if (ObjectAllocator::Debug_GetLiveObjectsCount())
+	{
+		SysMessageBox::Show_Warning
+		(
+			"Dear engine programmer",
+			"Some groovy objects are still alive after shutdown, how is that?"
+		);
+	}
+#endif
+	
 	return 0;
 }

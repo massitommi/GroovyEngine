@@ -172,6 +172,9 @@ void ActorBlueprint::Deserialize(BufferView fileData)
 
 	ActorSerializer::DeserializeActorPack(fileData, mActorPack);
 
+	if (!mActorPack.actorClass)
+		return;
+
 	mDefaultActor = ObjectAllocator::Instantiate<Actor>(mActorPack.actorClass);
 	ActorSerializer::DeserializeActorPackData(mActorPack, mDefaultActor);
 }
