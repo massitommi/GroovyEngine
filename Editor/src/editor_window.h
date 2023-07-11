@@ -119,3 +119,15 @@ private:
 
 	class GroovyObject* mSelected;
 };
+
+class ProjectSettingsWindow : public EditorWindow
+{
+public:
+	ProjectSettingsWindow();
+
+	virtual void RenderContent() override;
+
+private:
+	std::string mProjName;
+	Scene* mStartupScene;
+};

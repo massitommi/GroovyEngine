@@ -56,14 +56,14 @@ bool editorGui::AssetRef(const char* label, EAssetType type, void* data, GroovyC
 			validAsset = true; // just for imgui
 		}
 
-		if (ImGui::Selectable("NONE"))
+		if (ImGui::Selectable("NONE", *assetPtr == nullptr))
 		{
 			*assetPtr = nullptr;
 			click = true;
 		}
 		for (const AssetHandle& handle : assets)
 		{
-			if (ImGui::Selectable(handle.name.c_str()))
+			if (ImGui::Selectable(handle.name.c_str(), *assetPtr == handle.instance))
 			{
 				*assetPtr = handle.instance;
 				click = true;

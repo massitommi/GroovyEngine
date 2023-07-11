@@ -83,6 +83,9 @@ int32 GroovyEntryPoint(const char* args)
 #endif
 
 	AssetManager::Init();
+
+	gProj.Load();
+
 	Application::Init();
 	GameModule::Startup();
 

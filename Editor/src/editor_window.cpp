@@ -76,32 +76,11 @@ EditMaterialWindow::~EditMaterialWindow()
 
 void EditMaterialWindow::RenderContent()
 {
-	ImGui::Separator();
-
-	std::vector<AssetHandle> textures = AssetManager::Editor_GetAssets(ASSET_TYPE_TEXTURE);
+	float colWidth = ImGui::GetContentRegionAvail().x / 100 * 20;
 
 	for (MaterialResource& res : mMaterial->Editor_ResourcesRef())
 	{
-		ImGui::Text(res.name.c_str());
-		ImGui::Spacing();
-
-		std::string resName = AssetManager::Get(res.res->GetUUID()).name;
-
-		if (ImGui::BeginCombo(res.name.c_str(), resName.c_str()))
-		{
-			for (const AssetHandle& tex : textures)
-			{
-				bool selected = res.res == tex.instance;
-				if (ImGui::Selectable(tex.name.c_str(), &selected))
-				{
-					res.res = (Texture*)tex.instance;
-				}
-			}
-
-			ImGui::EndCombo();
-		}
-
-		ImGui::Separator();
+		editorGui::PropertyInput(res.name, PROPERTY_TYPE_ASSET_REF, &res.res, false, colWidth, ASSET_TYPE_TEXTURE);
 	}
 
 	ImGui::Spacing();
@@ -214,32 +193,12 @@ MeshPreviewWindow::MeshPreviewWindow(Mesh* mesh)
 
 void MeshPreviewWindow::RenderContent()
 {
-	ImGui::Separator();
+	float colWidth = ImGui::GetContentRegionAvail().x / 100 * 20;
 
-	std::vector<AssetHandle> assets = AssetManager::Editor_GetAssets(ASSET_TYPE_MATERIAL);
-
-	std::vector<Material*>& mats = mMesh->Editor_MaterialsRef();
-
-	for (uint32 i = 0; i < mats.size(); i++)
+	for (uint32 i = 0; i < mMesh->Editor_MaterialsRef().size(); i++)
 	{
-		Material*& mat = mats[i];
-
-		AssetHandle currentMatHandle = AssetManager::Get(mat->GetUUID());
-		std::string dropdropName = "[" + std::to_string(i) + "]";
-
-		if (ImGui::BeginCombo(dropdropName.c_str(), currentMatHandle.name.c_str()))
-		{
-			for (const AssetHandle& assetMat : assets)
-			{
-				bool selected = mat == assetMat.instance;
-				if (ImGui::Selectable(assetMat.name.c_str(), &selected))
-				{
-					mat = (Material*)assetMat.instance;
-				}
-			}
-
-			ImGui::EndCombo();
-		}
+		std::string lbl = "[" + std::to_string(i) + "]";
+		editorGui::PropertyInput(lbl, PROPERTY_TYPE_ASSET_REF, &mMesh->Editor_MaterialsRef()[i], false, colWidth, ASSET_TYPE_MATERIAL);
 	}
 
 	ImGui::Spacing();
@@ -430,4 +389,33 @@ void ActorBlueprintEditorWindow::RenderContent()
 	ImGui::EndChild();
 	
 	ImGui::Columns();
+}
+
+ProjectSettingsWindow::ProjectSettingsWindow()
+	: EditorWindow("Project settings"), mProjName(gProj.GetName()),
+		mStartupScene(gProj.GetStartupScene())
+{
+}
+
+void ProjectSettingsWindow::RenderContent()
+{
+	float colWidth = ImGui::GetContentRegionAvail().x / 100 * 30;
+	editorGui::PropertyInput("Project name", PROPERTY_TYPE_STRING, &mProjName, false, colWidth);
+	editorGui::PropertyInput("Startup scene", PROPERTY_TYPE_ASSET_REF, &mStartupScene, false, colWidth, ASSET_TYPE_SCENE);
+
+	bool invalidName = mProjName.empty() || std::count(mProjName.begin(), mProjName.end(), ' ') == mProjName.length();
+
+	if (invalidName)
+		ImGui::BeginDisabled();
+
+	ImGui::Spacing();
+	ImGui::Spacing();
+	if (ImGui::Button("Save settings"))
+	{
+		gProj.__internal_Editor_Rename(mProjName);
+		gProj.SetStartupScene(mStartupScene);
+	}
+
+	if (invalidName)
+		ImGui::EndDisabled();
 }

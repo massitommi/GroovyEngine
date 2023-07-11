@@ -576,6 +576,14 @@ void editor::internal::Render()
 			ImGui::EndMenu();
 		}
 
+		if (ImGui::BeginMenu("Settings"))
+		{
+			if(ImGui::MenuItem("Project settings"))
+				windows::AddWindow<ProjectSettingsWindow>();
+			
+			ImGui::EndMenu();
+		}
+
 		ImGui::EndMenuBar();
 	}
 
