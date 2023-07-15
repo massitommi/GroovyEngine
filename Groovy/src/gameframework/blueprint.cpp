@@ -82,15 +82,22 @@ void ObjectBlueprint::SetupEmpty(GroovyClass* objClass)
 	mDefaultObject = ObjectAllocator::Instantiate(objClass);
 }
 
-void ObjectBlueprint::RebuildPack()
+void ObjectBlueprint::RebuildPack(GroovyObject* basedOn)
 {
+	checkslow(basedOn);
+	checkslow(basedOn->GetClass() == mGroovyClass);
+
+	// cleanup
 	mPropertyPack.desc.clear();
 	mPropertyPack.data.free();
+	ObjectAllocator::Destroy(mDefaultObject);
 
-	if (mDefaultObject)
-	{
-		ObjectSerializer::CreatePropertyPack(mDefaultObject, mDefaultObject->GetCDO(), mPropertyPack);
-	}
+	// rebuild pack
+	ObjectSerializer::CreatePropertyPack(basedOn, basedOn->GetCDO(), mPropertyPack);
+
+	// create new default object and copy properties
+	mDefaultObject = ObjectAllocator::Instantiate(mGroovyClass);
+	ObjectSerializer::DeserializePropertyPackData(mPropertyPack, mDefaultObject);
 }
 
 uint32 DepencyDeletionFix(const AssetHandle& assetToBeDeleted, PropertyPack& packToSanitize)
@@ -122,10 +129,6 @@ bool ObjectBlueprint::Editor_FixDependencyDeletion(AssetHandle assetToBeDeleted)
 {
 	return DepencyDeletionFix(assetToBeDeleted, mPropertyPack);
 }
-
-#include "actor.h"
-#include "actorcomponent.h"
-#include "actor_serializer.h"
 
 ActorBlueprint::ActorBlueprint()
 	: mUUID(0), mLoaded(false)
@@ -196,18 +199,23 @@ void ActorBlueprint::SetupEmpty(GroovyClass* actorClass)
 	mDefaultActor = ObjectAllocator::Instantiate<Actor>(actorClass);
 }
 
-void ActorBlueprint::RebuildPack()
+void ActorBlueprint::RebuildPack(Actor* basedOn)
 {
-	mActorPack.actorClass = nullptr;
-	mActorPack.actorProperties.data.free();
-	mActorPack.actorProperties.desc.clear();
-	mActorPack.nativeComponents.clear();
-	mActorPack.editorComponents.clear();
+	checkslow(basedOn);
+	checkslow(basedOn->GetClass() == mDefaultActor->GetClass());
 
-	if (mDefaultActor)
-	{
-		ActorSerializer::CreateActorPack(mDefaultActor, (Actor*)mDefaultActor->GetCDO(), mActorPack);
-	}
+	// cleanup
+	mActorPack.actorProperties.desc.clear();
+	mActorPack.actorProperties.data.free();
+	mActorPack.actorComponents.clear();
+	ObjectAllocator::Destroy(mDefaultActor);
+
+	// rebuild pack
+	ActorSerializer::CreateActorPack(basedOn, mActorPack);
+
+	// create new default object and copy properties
+	mDefaultActor = ObjectAllocator::Instantiate<Actor>(basedOn->GetClass());
+	ActorSerializer::DeserializeActorPackData(mActorPack, mDefaultActor);
 }
 
 bool ActorBlueprint::Editor_FixDependencyDeletion(AssetHandle assetToBeDeleted)
@@ -218,19 +226,11 @@ bool ActorBlueprint::Editor_FixDependencyDeletion(AssetHandle assetToBeDeleted)
 
 	actorFixed = DepencyDeletionFix(assetToBeDeleted, mActorPack.actorProperties);
 
-	for (ComponentPack& pack : mActorPack.nativeComponents)
+	for (ComponentPack& pack : mActorPack.actorComponents)
 	{
 		if (DepencyDeletionFix(assetToBeDeleted, pack.componentProperties))
 		{
 			nativeComponentsFixed = true;
-		}
-	}
-
-	for (ComponentPack& pack : mActorPack.editorComponents)
-	{
-		if (DepencyDeletionFix(assetToBeDeleted, pack.componentProperties))
-		{
-			editorComponentsFixed = true;
 		}
 	}
 

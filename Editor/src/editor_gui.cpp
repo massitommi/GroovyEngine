@@ -5,15 +5,18 @@
 #include "classes/class.h"
 #include "classes/reflection.h"
 #include "gameframework/blueprint.h"
+#include "gameframework/actor.h"
+#include "gameframework/actorcomponent.h"
 
 bool editorGui::AssetRef(const char* label, EAssetType type, void* data, GroovyClass* classFilter)
 {
 	AssetInstance** assetPtr = (AssetInstance**)data;
 	std::vector<AssetHandle> assets;
 	// filter stuff out
-	if (classFilter)
+
+	if ((type == ASSET_TYPE_BLUEPRINT || type == ASSET_TYPE_ACTOR_BLUEPRINT) && classFilter)
 	{
-		for (const AssetHandle& handle : AssetManager::Editor_GetAssets())
+		for (const AssetHandle& handle : AssetManager::GetAssets())
 		{
 			if (handle.type == ASSET_TYPE_BLUEPRINT || handle.type == ASSET_TYPE_ACTOR_BLUEPRINT)
 			{
@@ -27,7 +30,7 @@ bool editorGui::AssetRef(const char* label, EAssetType type, void* data, GroovyC
 	}
 	else
 	{
-		assets = AssetManager::Editor_GetAssets(type);
+		assets = AssetManager::GetAssets(type);
 	}
 
 	// draw 
@@ -121,22 +124,22 @@ bool editorGui::PropertyInput(const std::string& label, EPropertyType type, void
 			click = ImGui::InputScalar(lblVal.c_str(), ImGuiDataType_U64, data, 0, 0, 0);
 			break;
 		case PROPERTY_TYPE_FLOAT:
-			click = ImGui::InputScalar(lblVal.c_str(), ImGuiDataType_Float, data, 0, 0, 0);
+			click = ImGui::DragFloat(lblVal.c_str(), (float*)data, 0.01f, 0.0f, 0.0f, "%.3f");
 			break;
 		case PROPERTY_TYPE_BOOL:
 			click = ImGui::Checkbox(lblVal.c_str(), (bool*)data);
 			break;
 		case PROPERTY_TYPE_VEC2:
-			click = ImGui::DragFloat2(lblVal.c_str(), (float*)data, 1.0f, 0.0f, 0.0f);
+			click = ImGui::DragFloat2(lblVal.c_str(), (float*)data, 0.01f, 0.0f, 0.0f);
 			break;
 		case PROPERTY_TYPE_VEC3:
-			click = ImGui::DragFloat3(lblVal.c_str(), (float*)data, 1.0f, 0.0f, 0.0f);
+			click = ImGui::DragFloat3(lblVal.c_str(), (float*)data, 0.01f, 0.0f, 0.0f);
 			break;
 		case PROPERTY_TYPE_VEC4:
-			click = ImGui::DragFloat4(lblVal.c_str(), (float*)data, 1.0f, 0.0f, 0.0f);
+			click = ImGui::DragFloat4(lblVal.c_str(), (float*)data, 0.01f, 0.0f, 0.0f);
 			break;
 		case PROPERTY_TYPE_TRANSFORM:
-			click = Transform(lblVal.c_str(), data, 1.0f, 0.0f, 0.0f);
+			click = Transform(lblVal.c_str(), data, 0.01f, 0.0f, 0.0f);
 			break;
 		case PROPERTY_TYPE_STRING:
 			click = ImGui::InputText(lblVal.c_str(), (std::string*)data);
@@ -149,8 +152,6 @@ bool editorGui::PropertyInput(const std::string& label, EPropertyType type, void
 			click = false;
 			break;
 	}
-
-	//ImGui::PopID();
 
 	ImGui::Columns();
 
@@ -274,6 +275,8 @@ bool editorGui::Property(const GroovyProperty& prop, void* propData)
 bool editorGui::PropertiesSingleClass(GroovyObject* obj, GroovyClass* gClass, const std::vector<GroovyProperty>& props)
 {
 	ImGui::Text(gClass->name.c_str());
+	ImGui::Spacing();
+	ImGui::Spacing();
 	ImGui::Spacing();
 
 	bool changed = false;

@@ -1,4 +1,5 @@
 #include "world.h"
+#include "assets/asset_manager.h"
 
 static Scene* sCurrentScene;
 

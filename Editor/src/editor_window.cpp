@@ -15,167 +15,124 @@
 #include "gameframework/actorcomponent.h"
 #include "editor.h"
 
-extern GroovyProject gProj;
-
 void EditorWindow::RenderWindow()
 {
-	ImGui::Begin(mTitle.c_str(), &mOpen, mFlags);
+	ImGui::Begin(mTitle.c_str(), &mOpen, mFlags | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings);
 	RenderContent();
 	ImGui::End();
 
 	if (!mOpen)
-	{
-		bool shouldClose = OnClose();
-		mOpen = !shouldClose;
-	}
+		OnCloseRequested();
 }
 
-bool EditorWindow::OnClose()
+AssetEditorWindow::AssetEditorWindow(const AssetHandle& asset)
+	: EditorWindow(), mAsset(asset), mPendingSave(false)
+{
+	checkslowf(asset.instance, "NULL asset?!?!");
+
+	SetTitle(asset.name);
+}
+
+void AssetEditorWindow::OnCloseRequested()
 {
 	if (!mPendingSave)
-		return true;
-	EMessageBoxResponse res = SysMessageBox::Show("Unsaved work", "Unsaved work will be lost, continue?", MESSAGE_BOX_TYPE_WARNING, MESSAGE_BOX_OPTIONS_YESNOCANCEL);
-	return res == MESSAGE_BOX_RESPONSE_YES;
-}
-
-void EditorWindow::SetPendingSave(bool pendingSave)
-{
-	if (pendingSave)
-		mFlags |= ImGuiWindowFlags_UnsavedDocument;
-	else
-		mFlags &= ~ImGuiWindowFlags_UnsavedDocument;
-
-	mPendingSave = pendingSave;
-}
-
-EditMaterialWindow::EditMaterialWindow(Material* mat)
-	: EditorWindow("Material editor"), mMaterial(mat), mExistsOnDisk(true)
-{
-	mFileName = AssetManager::Get(mMaterial->GetUUID()).name;
-	mMaterial->FixForRendering();
-}
-
-EditMaterialWindow::EditMaterialWindow(Shader* shader)
-	: EditorWindow("Material editor"), mExistsOnDisk(false)
-{
-	checkslow(shader);
-	mMaterial = new Material();
-	mMaterial->SetShader(shader);
-	mMaterial->FixForRendering();
-	SetPendingSave(true);
-	mFileName = "new_material" GROOVY_ASSET_EXT;
-}
-
-EditMaterialWindow::~EditMaterialWindow()
-{
-	if (!mExistsOnDisk)
 	{
-		delete mMaterial;
+		Close();
+		return;
 	}
+
+	ImGui::OpenPopup("Save content");
+
+	if (ImGui::BeginPopupModal("Save content", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+	{
+		ImGui::Text("You are exiting without saving");
+		
+		if (ImGui::Button("Save"))
+		{
+			Save();
+			Close();
+			ImGui::CloseCurrentPopup();
+		}
+
+		ImGui::SameLine();
+
+		if (ImGui::Button("Discard"))
+		{
+			Close();
+			ImGui::CloseCurrentPopup();
+		}
+
+		ImGui::SameLine();
+
+		if (ImGui::Button("Cancel") || ImGui::IsKeyPressed(ImGuiKey_Escape))
+		{
+			mOpen = true;
+			ImGui::CloseCurrentPopup();
+		}
+
+		ImGui::EndPopup();
+	}
+}
+
+void AssetEditorWindow::Save()
+{
+	mPendingSave = false;
+	mFlags &= ~ImGuiWindowFlags_UnsavedDocument;
+}
+
+inline void AssetEditorWindow::FlagPendingSave()
+{
+	mPendingSave = true;
+	mFlags |= ImGuiWindowFlags_UnsavedDocument;
+}
+
+EditMaterialWindow::EditMaterialWindow(const AssetHandle& asset)
+	: AssetEditorWindow(asset), mMaterial((Material*)asset.instance)
+{
+	checkslowf(asset.type == ASSET_TYPE_MATERIAL, "Invalid asset type");
+
+	mMatResources = mMaterial->GetResources();
 }
 
 void EditMaterialWindow::RenderContent()
 {
-	float colWidth = ImGui::GetContentRegionAvail().x / 100 * 20;
-
-	for (MaterialResource& res : mMaterial->Editor_ResourcesRef())
-	{
-		editorGui::PropertyInput(res.name, PROPERTY_TYPE_ASSET_REF, &res.res, false, colWidth, ASSET_TYPE_TEXTURE);
-	}
-
-	ImGui::Spacing();
-	ImGui::Spacing();
-	ImGui::Spacing();
-
-	if (mExistsOnDisk)
+	if (!IsPendingSave())
 		ImGui::BeginDisabled();
 
-	ImGui::InputText("Filename", &mFileName);
+	bool click = ImGui::Button("Save");
 
-	if (mExistsOnDisk)
+	if (!IsPendingSave())
 		ImGui::EndDisabled();
 
 	ImGui::Spacing();
+	ImGui::Spacing();
+	ImGui::Spacing();
 
-	if (ImGui::Button(mExistsOnDisk ? "Save changes" : "Save"))
+	for (MaterialResource& res : mMatResources)
 	{
-		AssetSerializer::SerializeGenericAsset(mMaterial, (gProj.GetAssetsPath() / mFileName).string());
-		if (!mExistsOnDisk)
-		{
-			AssetManager::Editor_OnImport(mFileName, ASSET_TYPE_MATERIAL);
-			mExistsOnDisk = true;
-			editor::FlagRegistryPendingSave();
-		}
-		SetPendingSave(false);
+		std::string resLbl = "##" + res.name;
+		ImGui::Text(res.name.c_str());
+		ImGui::SameLine();
+		if (editorGui::AssetRef(resLbl.c_str(), ASSET_TYPE_TEXTURE, &res.res))
+			FlagPendingSave();
+	}
+
+	if (click)
+	{
+		Save();
 	}
 }
 
-void AssetRegistryWindow::RenderContent()
+void EditMaterialWindow::Save()
 {
-	ImGui::Spacing();
-	ImGui::Separator();
+	mMaterial->Editor_ResourcesRef() = mMatResources;
+	mMaterial->Save();
+	AssetEditorWindow::Save();
+}
 
-	auto AssetTypeStr = [](EAssetType type)
-	{
-		return editor::utils::AssetTypeToStr(type);
-	};
-
-	for (const auto& [uuid, handle] : AssetManager::Editor_GetRegistry())
-	{
-		ImGui::InputText("Name", (std::string*)&(handle.name), ImGuiInputTextFlags_ReadOnly);
-		ImGui::InputText("Type", &(std::string)AssetTypeStr(handle.type), ImGuiInputTextFlags_ReadOnly);
-		ImGui::InputText("UUID", &std::to_string(handle.uuid), ImGuiInputTextFlags_ReadOnly);
-
-		ImGui::Separator();
-		ImGui::Spacing();
-		ImGui::Spacing();
-		ImGui::Spacing();
-	}
-
-	ImGui::Spacing();
-	ImGui::Spacing();
-	ImGui::Spacing();
-	ImGui::Text("Debug add groovyasset");
-	ImGui::InputText("Asset name (relative to assets folder)", &mDebugAssetName);
-	if (ImGui::BeginCombo("Asset type", AssetTypeStr(mDebugAssetType)))
-	{
-		if (ImGui::Selectable(AssetTypeStr(ASSET_TYPE_TEXTURE), mDebugAssetType == ASSET_TYPE_TEXTURE))
-			mDebugAssetType = ASSET_TYPE_TEXTURE;
-
-		if (ImGui::Selectable(AssetTypeStr(ASSET_TYPE_SHADER), mDebugAssetType == ASSET_TYPE_SHADER))
-			mDebugAssetType = ASSET_TYPE_SHADER;
-
-		if (ImGui::Selectable(AssetTypeStr(ASSET_TYPE_MATERIAL), mDebugAssetType == ASSET_TYPE_MATERIAL))
-			mDebugAssetType = ASSET_TYPE_MATERIAL;
-
-		if (ImGui::Selectable(AssetTypeStr(ASSET_TYPE_MESH), mDebugAssetType == ASSET_TYPE_MESH))
-			mDebugAssetType = ASSET_TYPE_MESH;
-
-		if (ImGui::Selectable(AssetTypeStr(ASSET_TYPE_BLUEPRINT), mDebugAssetType == ASSET_TYPE_BLUEPRINT))
-			mDebugAssetType = ASSET_TYPE_BLUEPRINT;
-
-		if (ImGui::Selectable(AssetTypeStr(ASSET_TYPE_ACTOR_BLUEPRINT), mDebugAssetType == ASSET_TYPE_ACTOR_BLUEPRINT))
-			mDebugAssetType = ASSET_TYPE_ACTOR_BLUEPRINT;
-
-		if (ImGui::Selectable(AssetTypeStr(ASSET_TYPE_SCENE), mDebugAssetType == ASSET_TYPE_SCENE))
-			mDebugAssetType = ASSET_TYPE_SCENE;
-
-		ImGui::EndCombo();
-	}
-
-	bool canAdd = !mDebugAssetName.empty();
-
-	if (!canAdd)
-		ImGui::BeginDisabled();
-
-	if (ImGui::Button("Add to registry"))
-	{
-		AssetManager::Editor_OnImport(mDebugAssetName, mDebugAssetType);
-		AssetManager::SaveRegistry();
-	}
-	
-	if (!canAdd)
-		ImGui::EndDisabled();
+TexturePreviewWindow::TexturePreviewWindow(const AssetHandle& asset)
+	: EditorWindow(), mTexture((Texture*)asset.instance)
+{
 }
 
 void TexturePreviewWindow::RenderContent()
@@ -183,218 +140,358 @@ void TexturePreviewWindow::RenderContent()
 	ImGui::Image(mTexture->GetRendererID(), ImGui::GetContentRegionAvail());
 }
 
-MeshPreviewWindow::MeshPreviewWindow(Mesh* mesh)
-	: EditorWindow("Mesh viewer"), mMesh(mesh)
+MeshPreviewWindow::MeshPreviewWindow(const AssetHandle& asset)
+	: AssetEditorWindow(asset), mMesh((Mesh*)asset.instance)
 {
-	check(mesh);
-	mesh->FixForRendering();
-	mFileName = AssetManager::Get(mesh->GetUUID()).name;
+	checkslowf(asset.type == ASSET_TYPE_MESH, "Invalid asset type");
+
+	mMeshMats = mMesh->GetMaterials();
 }
 
 void MeshPreviewWindow::RenderContent()
 {
-	float colWidth = ImGui::GetContentRegionAvail().x / 100 * 20;
+	if (!IsPendingSave())
+		ImGui::BeginDisabled();
 
-	for (uint32 i = 0; i < mMesh->Editor_MaterialsRef().size(); i++)
+	bool click = ImGui::Button("Save");
+
+	if (!IsPendingSave())
+		ImGui::EndDisabled();
+
+	ImGui::Spacing();
+	ImGui::Spacing();
+	ImGui::Spacing();
+
+	for (uint32 i = 0; i < mMeshMats.size(); i++)
 	{
-		std::string lbl = "[" + std::to_string(i) + "]";
-		editorGui::PropertyInput(lbl, PROPERTY_TYPE_ASSET_REF, &mMesh->Editor_MaterialsRef()[i], false, colWidth, ASSET_TYPE_MATERIAL);
+		std::string lbl = "##_mesh_res_" + std::to_string(i);
+		ImGui::Text("[%i]", i);
+		ImGui::SameLine();
+		if (editorGui::AssetRef(lbl.c_str(), ASSET_TYPE_MATERIAL, &mMeshMats[i]))
+			FlagPendingSave();
 	}
 
-	ImGui::Spacing();
-	ImGui::Spacing();
-	ImGui::Spacing();
-
-	ImGui::BeginDisabled();
-	ImGui::InputText("Filename", &mFileName);
-	ImGui::EndDisabled();
-
-	if (ImGui::Button("Save changes"))
+	if (click)
 	{
-		mMesh->Save();
+		Save();
 	}
 }
 
-extern ClassDB gClassDB;
-extern std::vector<GroovyClass*> ENGINE_CLASSES;
-extern std::vector<GroovyClass*> GAME_CLASSES;
-
-ObjectBlueprintEditorWindow::ObjectBlueprintEditorWindow(ObjectBlueprint* blueprint)
-	: EditorWindow("Blueprint editor"), mBlueprint(blueprint), mExistsOnDisk(true)
+void MeshPreviewWindow::Save()
 {
-	checkslow(blueprint);
-
-	mFileName = AssetManager::Get(blueprint->GetUUID()).name;
+	mMesh->Editor_MaterialsRef() = mMeshMats;
+	mMesh->Save();
+	AssetEditorWindow::Save();
 }
 
-ObjectBlueprintEditorWindow::ObjectBlueprintEditorWindow(GroovyClass* gClass)
-	: EditorWindow("Blueprint editor"), mExistsOnDisk(false)
+ObjectBlueprintEditorWindow::ObjectBlueprintEditorWindow(const AssetHandle& asset)
+	: AssetEditorWindow(asset), mBlueprint((ObjectBlueprint*)asset.instance)
 {
-	checkslow(gClass);
-	mBlueprint = new ObjectBlueprint();
-	mBlueprint->SetupEmpty(gClass);
+	checkslow(asset.type == ASSET_TYPE_BLUEPRINT);
 
-	mFileName = "new_blueprint_" + gClass->name + GROOVY_ASSET_EXT;
+	mLiveObject = ObjectAllocator::Instantiate(mBlueprint->GetClass());
+	mBlueprint->CopyProperties(mLiveObject);
 }
 
 ObjectBlueprintEditorWindow::~ObjectBlueprintEditorWindow()
 {
-	if (!mExistsOnDisk)
-		delete mBlueprint;
+	ObjectAllocator::Destroy(mLiveObject);
 }
 
 void ObjectBlueprintEditorWindow::RenderContent()
 {
-	if (mExistsOnDisk)
+	if (!IsPendingSave())
 		ImGui::BeginDisabled();
 
-	ImGui::InputText("Filename", &mFileName);
+	bool click = ImGui::Button("Save");
 
-	if (mExistsOnDisk)
+	if (!IsPendingSave())
 		ImGui::EndDisabled();
 
 	ImGui::Spacing();
+	ImGui::Spacing();
+	ImGui::Spacing();
 
-	if (ImGui::Button(mExistsOnDisk ? "Save changes" : "Save"))
+	if (editorGui::PropertiesAllClasses(mLiveObject))
+		FlagPendingSave();
+
+	if (click)
 	{
-		mBlueprint->RebuildPack();
-		AssetSerializer::SerializeGenericAsset(mBlueprint, (gProj.GetAssetsPath() / mFileName).string());
-		if (!mExistsOnDisk)
-		{
-			AssetManager::Editor_OnImport(mFileName, ASSET_TYPE_BLUEPRINT);
-			mExistsOnDisk = true;
-			editor::FlagRegistryPendingSave();
-		}
-		SetPendingSave(false);
+		Save();
 	}
-
-	ImGui::Spacing();
-	ImGui::Spacing();
-
-	editorGui::PropertiesAllClasses(mBlueprint->GetDefaultObject());
 }
 
-ActorBlueprintEditorWindow::ActorBlueprintEditorWindow(ActorBlueprint* blueprint)
-	: EditorWindow("Actor blueprint editor"), mBlueprint(blueprint), mExistsOnDisk(true)
+void ObjectBlueprintEditorWindow::Save()
 {
-	checkslow(blueprint);
-
-	mFileName = AssetManager::Get(blueprint->GetUUID()).name;
-
-	mSelected = blueprint->GetDefaultActor();
+	mBlueprint->RebuildPack(mLiveObject);
+	mBlueprint->Save();
+	AssetEditorWindow::Save();
 }
 
-ActorBlueprintEditorWindow::ActorBlueprintEditorWindow(GroovyClass* inClass)
-	: EditorWindow("Actor blueprint editor"), mBlueprint(nullptr), mExistsOnDisk(false)
+ActorBlueprintEditorWindow::ActorBlueprintEditorWindow(const AssetHandle& asset)
+	: AssetEditorWindow(asset), mBlueprint((ActorBlueprint*)asset.instance)
 {
-	checkslow(inClass);
-	checkslow(classUtils::IsA(inClass, Actor::StaticClass()));
+	checkslow(asset.type == ASSET_TYPE_ACTOR_BLUEPRINT);
 
-	mFileName = "new_blueprint_" + inClass->name + GROOVY_ASSET_EXT;
+	mLiveActor = ObjectAllocator::Instantiate<Actor>(mBlueprint->GetClass());
+	mBlueprint->CopyProperties(mLiveActor);
 
-	mBlueprint = new ActorBlueprint();
-	mBlueprint->SetupEmpty(inClass);
+	mTmpCompName = "";
+	mCanRenameOrAddComp = false;
 
-	mSelected = mBlueprint->GetDefaultActor();
+	mPendingRemove = nullptr;
+	mPendingRename = nullptr;
+	mShowRenamePopup = false;
+	
+	mSelected = mLiveActor;
 }
 
 ActorBlueprintEditorWindow::~ActorBlueprintEditorWindow()
 {
-	if (!mExistsOnDisk)
-		delete mBlueprint;
+	ObjectAllocator::Destroy(mLiveActor);
 }
 
 void ActorBlueprintEditorWindow::RenderContent()
 {
-	if (mExistsOnDisk)
+	if (!IsPendingSave())
 		ImGui::BeginDisabled();
 
-	ImGui::InputText("Filename", &mFileName);
+	bool click = ImGui::Button("Save");
 
-	if (mExistsOnDisk)
+	if (!IsPendingSave())
 		ImGui::EndDisabled();
 
 	ImGui::Spacing();
+	ImGui::Spacing();
+	ImGui::Spacing();
 
-	if (ImGui::Button(mExistsOnDisk ? "Save changes" : "Save"))
+	
+	// groovy stuff
 	{
-		mBlueprint->RebuildPack();
-		AssetSerializer::SerializeGenericAsset(mBlueprint, (gProj.GetAssetsPath() / mFileName).string());
-		if (!mExistsOnDisk)
+		ImGui::Columns(3);
+		ImGui::BeginChild("Actor & Components");
+		ImGui::Text("ACTOR AND COMPONENTS");
+		ImGui::Spacing();
+		ImGui::Spacing();
+		ImGui::Spacing();
+
+		// add component
 		{
-			AssetManager::Editor_OnImport(mFileName, ASSET_TYPE_ACTOR_BLUEPRINT);
-			mExistsOnDisk = true;
-			editor::FlagRegistryPendingSave();
+			if (ImGui::Button("Add component"))
+			{
+				mTmpCompName = "My new component";
+				mCanRenameOrAddComp = 
+					!mTmpCompName.empty() &&
+					std::count(mTmpCompName.begin(), mTmpCompName.end(), ' ') < mTmpCompName.length() &&
+					!mLiveActor->GetComponent(mTmpCompName);
+				ImGui::OpenPopup("Add component");
+			}
+
+			if (ImGui::BeginPopupModal("Add component"))
+			{
+				if (!mCanRenameOrAddComp)
+					ImGui::PushStyleColor(ImGuiCol_Text, { 1.0f, 0.7f, 0.0f, 1.0f });
+
+				bool needCheck = ImGui::InputText("##add_comp_name", &mTmpCompName);
+
+				if (!mCanRenameOrAddComp)
+					ImGui::PopStyleColor();
+
+				ImGui::Spacing();
+				ImGui::Spacing();
+				ImGui::Spacing();
+
+				if (!mCanRenameOrAddComp)
+					ImGui::BeginDisabled();
+
+				extern ClassDB gClassDB;
+				for (const GroovyClass* gClass : gClassDB.GetClasses())
+				{
+					if (classUtils::IsA(gClass, ActorComponent::StaticClass()))
+					{
+						if (ImGui::Selectable(gClass->name.c_str()))
+						{
+							mLiveActor->__internal_Editor_AddEditorcomponent_BP((GroovyClass*)gClass, mTmpCompName);
+							FlagPendingSave();
+							break;
+						}
+					}
+				}
+
+				if (!mCanRenameOrAddComp)
+					ImGui::EndDisabled();
+
+				if (needCheck)
+				{
+					mCanRenameOrAddComp =
+						!mTmpCompName.empty() &&
+						std::count(mTmpCompName.begin(), mTmpCompName.end(), ' ') < mTmpCompName.length() &&
+						!mLiveActor->GetComponent(mTmpCompName);
+				}
+
+				if (ImGui::IsKeyPressed(ImGuiKey_Escape))
+					ImGui::CloseCurrentPopup();
+
+				ImGui::EndPopup();
+			}
 		}
-		SetPendingSave(false);
-	}
 
-	ImGui::Spacing();
-	ImGui::Spacing();
+		ImGui::Spacing();
+		ImGui::Spacing();
+		ImGui::Spacing();
 
-	// render groovy stuff
-
-	ImGui::Columns(3);
-
-	ImGui::BeginChild("Actor & Components");
-	ImGui::Text("ACTOR AND COMPONENTS");
-	ImGui::Spacing();
-	ImGui::Spacing();
-	ImGui::Spacing();
-
-	std::string lbl = mBlueprint->GetActorClass()->name + " (self)";
-	if (ImGui::Selectable(lbl.c_str(), mSelected == mBlueprint->GetDefaultActor()))
-	{
-		mSelected = mBlueprint->GetDefaultActor();
-	}
-
-	ImGui::Spacing();
-	ImGui::Separator();
-	ImGui::Spacing();
-
-	for (ActorComponent* comp : mBlueprint->GetDefaultActor()->GetComponents())
-	{
-		if (ImGui::Selectable(comp->GetName().c_str(), mSelected == comp))
+		// components
 		{
-			mSelected = comp;
+			if (ImGui::Selectable(mLiveActor->GetClass()->name.c_str(), mSelected == mLiveActor))
+				mSelected = mLiveActor;
+
+			ImGui::Spacing();
+			ImGui::Separator();
+			ImGui::Spacing();
+
+			for (ActorComponent* component : mLiveActor->GetComponents())
+			{
+				std::string name = component->GetName();
+				bool isInherited = component->GetType() == ACTOR_COMPONENT_TYPE_NATIVE;
+
+				if (isInherited)
+					name += " (inherited)";
+
+				if (ImGui::Selectable(name.c_str(), mSelected == component))
+					mSelected = component;
+
+				if (!isInherited && ImGui::BeginPopupContextItem(name.c_str(), ImGuiPopupFlags_MouseButtonRight))
+				{
+					if (ImGui::Selectable("Rename"))
+					{
+						mShowRenamePopup = true;
+						mPendingRename = component;
+					}
+					else if (ImGui::Selectable("Remove"))
+					{
+						mPendingRemove = component;
+					}
+
+					ImGui::EndPopup();
+				}
+				else if (ImGui::IsItemHovered())
+				{
+					ImGui::SetTooltip(component->GetClass()->name.c_str());
+				}
+			}
+
+			// rename / remove
+			{
+
+				if (mShowRenamePopup)
+				{
+					ImGui::OpenPopup("Rename component");
+					mTmpCompName = mPendingRename->GetName();
+					mCanRenameOrAddComp =
+						!mTmpCompName.empty() &&
+						std::count(mTmpCompName.begin(), mTmpCompName.end(), ' ') < mTmpCompName.length() &&
+						!mLiveActor->GetComponent(mTmpCompName);
+					mShowRenamePopup = false;
+				}
+
+				if (ImGui::BeginPopupModal("Rename component", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+				{
+					if (!mCanRenameOrAddComp)
+						ImGui::PushStyleColor(ImGuiCol_Text, { 1.0f, 0.7f, 0.0f, 1.0f });
+
+					bool needCheck = ImGui::InputText("##rename_comp_name", &mTmpCompName);
+
+					if (!mCanRenameOrAddComp)
+						ImGui::PopStyleColor();
+
+					if (!mCanRenameOrAddComp)
+						ImGui::BeginDisabled();
+
+					if (ImGui::Button("Rename##rename_comp_btn"))
+					{
+						mLiveActor->__internal_Editor_RenameEditorComponent(mPendingRename, mTmpCompName);
+						mPendingRename = nullptr;
+						FlagPendingSave();
+						ImGui::CloseCurrentPopup();
+					}
+
+					if (!mCanRenameOrAddComp)
+						ImGui::EndDisabled();
+
+					if (needCheck)
+					{
+						mCanRenameOrAddComp =
+							!mTmpCompName.empty() &&
+							std::count(mTmpCompName.begin(), mTmpCompName.end(), ' ') < mTmpCompName.length() &&
+							!mLiveActor->GetComponent(mTmpCompName);
+					}
+
+					if (ImGui::IsKeyPressed(ImGuiKey_Escape))
+					{
+						mPendingRename = nullptr;
+						ImGui::CloseCurrentPopup();
+					}
+
+					ImGui::EndPopup();
+				}
+				else if (mPendingRemove)
+				{
+					mLiveActor->__internal_Editor_RemoveEditorComponent(mPendingRemove);
+					if (mSelected == mPendingRemove)
+						mSelected = mLiveActor;
+					mPendingRemove = nullptr;
+					FlagPendingSave();
+				}
+			}
 		}
+
+		ImGui::EndChild();
+		ImGui::NextColumn();
+		ImGui::BeginChild("Viewport");
+		ImGui::Text("VIEWPORT");
+		ImGui::Spacing();
+		ImGui::Spacing();
+		ImGui::Spacing();
+
+
+		ImGui::EndChild();
+		ImGui::NextColumn();
+		ImGui::BeginChild("Properties");
+		ImGui::Text("PROPERTIES");
+		ImGui::Spacing();
+		ImGui::Spacing();
+		ImGui::Spacing();
+
+		if (editorGui::PropertiesAllClasses(mSelected))
+		{
+			FlagPendingSave();
+		}
+
+		ImGui::EndChild();
+		ImGui::Columns();
 	}
 
-	ImGui::EndChild();
 
-	ImGui::NextColumn();
-	
-	ImGui::BeginChild("Viewport");
-	ImGui::Text("VIEWPORT");
-	ImGui::Spacing();
-	ImGui::Spacing();
-	ImGui::Spacing();
-
-
-	ImGui::EndChild();
-	
-	ImGui::NextColumn();
-
-	ImGui::BeginChild("Properties");
-	ImGui::Text("PROPERTIES");
-	ImGui::Spacing();
-	ImGui::Spacing();
-	ImGui::Spacing();
-
-	if (editorGui::PropertiesAllClasses(mSelected))
+	if (click)
 	{
-		SetPendingSave(true);
+		Save();
 	}
-	
-	ImGui::EndChild();
-	
-	ImGui::Columns();
 }
 
-ProjectSettingsWindow::ProjectSettingsWindow()
-	: EditorWindow("Project settings"), mProjName(gProj.GetName()),
-		mStartupScene(gProj.GetStartupScene())
+void ActorBlueprintEditorWindow::Save()
 {
+	mBlueprint->RebuildPack(mLiveActor);
+	mBlueprint->Save();
+	AssetEditorWindow::Save();
+}
+
+extern GroovyProject gProj;
+
+ProjectSettingsWindow::ProjectSettingsWindow()
+	: EditorWindow()
+{
+	mProjName = gProj.GetName();
+	mStartupScene = gProj.GetStartupScene();
 }
 
 void ProjectSettingsWindow::RenderContent()

@@ -3,6 +3,7 @@
 #include <map>
 
 class ActorComponent;
+class ActorBlueprint;
 
 GROOVY_CLASS_DECL(Actor)
 class Actor : public GroovyObject
@@ -56,8 +57,6 @@ protected:
 
 public:
 	inline const std::vector<ActorComponent*>& GetComponents() const { return mComponents; }
-	inline const std::vector<ActorComponent*>& GetNativeComponents() const { return mNativeComponents; }
-	inline const std::vector<ActorComponent*>& GetEditorComponents() const { return mEditorComponents; }
 
 	inline const Transform& GetTransform() const { return mTransform; }
 	inline Vec3 GetLocation() const { return mTransform.location; }
@@ -65,48 +64,33 @@ public:
 	inline Vec3 GetScale() const { return mTransform.scale; }
 
 	inline const std::string& GetName() const { return mName; }
-
-	// internal stuff
-private:
-	ActorComponent* __internal_AddComponent(GroovyClass* componentClass, const std::string& name);
+	inline ActorBlueprint* GetTemplate() const { return mTemplate; }
 
 protected:
 	ActorComponent* AddComponent(GroovyClass* componentClass, const std::string& name);
 
 public:
-	ActorComponent* __internal_AddEditorComponent(GroovyClass* componentClass, const std::string& name);
 
 #if WITH_EDITOR
+
+	ActorComponent* __internal_Editor_AddEditorcomponent_BP(GroovyClass* componentClass, const std::string& name);
+	ActorComponent* __internal_Editor_AddEditorcomponent_Scene(GroovyClass* componentClass, const std::string& name);
 	void __internal_Editor_RemoveEditorComponent(ActorComponent* component);
+	void __internal_Editor_RenameEditorComponent(ActorComponent* component, const std::string& newName);
+
+	Transform& Editor_Transform() { return mTransform; }
 #endif
 
 private:
 	Transform mTransform;
 	std::string mName;
+	bool mShouldTick;
+
+	ActorBlueprint* mTemplate;
 	
 	std::vector<ActorComponent*> mComponents;
 	std::map<std::string, ActorComponent*> mComponentsDB;
 
-	std::vector<ActorComponent*> mNativeComponents;
-	std::vector<ActorComponent*> mEditorComponents;
-
 	friend class ActorSerializer;
 	friend class Scene;
-};
-
-// used for serializing components
-struct ComponentPack
-{
-	std::string componentName;
-	GroovyClass* componentClass;
-	PropertyPack componentProperties;
-};
-
-// used for serializing actors
-struct ActorPack
-{
-	GroovyClass* actorClass;
-	PropertyPack actorProperties;
-	std::vector<ComponentPack> nativeComponents;
-	std::vector<ComponentPack> editorComponents;
 };

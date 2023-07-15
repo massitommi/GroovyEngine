@@ -2,12 +2,11 @@
 
 #include "assets/asset.h"
 #include "classes/object_serializer.h"
-#include "gameframework/actor.h"
+#include "gameframework/actor_serializer.h"
 
 class Blueprint : public AssetInstance
 {
 public:
-    virtual bool LazyLoadAndUnload() const override { return false; }
     virtual GroovyClass* GetClass() const = 0;
 };
 
@@ -20,7 +19,6 @@ public:
     virtual void __internal_SetUUID(AssetUUID uuid) override { mUUID = uuid; }
     virtual AssetUUID GetUUID() const override { return mUUID; }
     virtual bool IsLoaded() const override { return mLoaded; }
-
     virtual void Load() override;
     virtual void Save() override;
 
@@ -32,7 +30,7 @@ public:
     GroovyObject* GetDefaultObject() const { return mDefaultObject; }
 
     void SetupEmpty(GroovyClass* objClass);
-    void RebuildPack();
+    void RebuildPack(GroovyObject* basedOn);
 
 #if WITH_EDITOR
     virtual GroovyClass*& Editor_ClassRef() { return mGroovyClass; }
@@ -64,7 +62,6 @@ public:
     virtual void __internal_SetUUID(AssetUUID uuid) override { mUUID = uuid; }
     virtual AssetUUID GetUUID() const override { return mUUID; }
     virtual bool IsLoaded() const override { return mLoaded; }
-    
     virtual void Load() override;
     virtual void Save() override;
 
@@ -76,7 +73,7 @@ public:
     Actor* GetDefaultActor() const { return mDefaultActor; }
 
     void SetupEmpty(GroovyClass* actorClass);
-    void RebuildPack();
+    void RebuildPack(Actor* basedOn);
 
 #if WITH_EDITOR
     virtual GroovyClass*& Editor_ActorClassRef() { return mActorPack.actorClass; }

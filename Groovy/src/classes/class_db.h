@@ -18,12 +18,12 @@ public:
 	const std::vector<GroovyProperty>& operator[](GroovyClass* gClass);
 	GroovyClass* operator[](const std::string& className);
 
-	// slow
-	std::vector<GroovyClass*> GetClasses();
+	inline const std::vector<GroovyClass*>& GetClasses() { return mClasses; }
 
 	const GroovyProperty* FindProperty(GroovyClass* gClass, const std::string& propertyName);
 
 private:
+	std::vector<GroovyClass*> mClasses;
 	std::map<std::string, GroovyClass*> mClassDB;
 	std::map<GroovyClass*, std::vector<GroovyProperty>> mPropsDB;
 };

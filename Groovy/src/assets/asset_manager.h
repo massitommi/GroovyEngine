@@ -19,11 +19,16 @@ public:
 
 	static void SaveRegistry();
 
+	static const std::map<AssetUUID, AssetHandle>& GetRegistry();
+	static const std::vector<AssetHandle>& GetAssets();
+	static std::vector<AssetHandle> GetAssets(EAssetType filter);
+
+	static AssetHandle FindByPath(const std::string& filePath);
+
 #if WITH_EDITOR
 
-	static const std::map<AssetUUID, AssetHandle>& Editor_GetRegistry();
-	static std::vector<AssetHandle> Editor_GetAssets(EAssetType filter = ASSET_TYPE_NONE);
 	static AssetHandle Editor_OnImport(const std::string& fileName, EAssetType type);
+	static AssetHandle Editor_OnAdd(const std::string& fileName, EAssetType type, AssetInstance* instance);
 	static void Editor_Delete(AssetUUID uuid, std::vector<AssetHandle>& outDependencies);
 
 #endif

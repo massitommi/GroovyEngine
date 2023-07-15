@@ -14,10 +14,10 @@ class Texture : public AssetInstance
 {
 public:
 
-	virtual bool LazyLoadAndUnload() const override { return false; }
 	virtual bool IsLoaded() const override { return true; }
 	virtual void Load() override {}
 	virtual void Save() override {}
+	
 	virtual void Serialize(DynamicBuffer& fileData) const override {}
 	virtual void Deserialize(BufferView fileData) override {}
 #if WITH_EDITOR

@@ -40,13 +40,13 @@ void DisplayAssertError(const char* condition, const char* file, int line, const
 
 /* Asserts guide:
 * - checkslow : Evaluates and checks the condition ALL THE TIME IN EVERY BUILD CONFIGURATION
-* - verify : In debug mode evaluates and checks the condition, in release it only evaluates the condition
-* - check : In debug mode evaluates and checks the condition, in release the code is stripped out
+* - verify : In debug mode evaluates and checks the condition, in shipping it only evaluates the condition
+* - check : In debug mode evaluates and checks the condition, in shipping the code is stripped out
 */
 
 #define checkslowf(Condition, Msg, ...) CORE_ASSERT(Condition, Msg, __VA_ARGS__)
 
-#if BUILD_DEBUG
+#if !BUILD_SHIPPING
 	#define verifyf(Condition, Msg, ...) CORE_ASSERT(Condition, Msg, __VA_ARGS__)
 	#define checkf(Condition, Msg, ...) CORE_ASSERT(Condition, Msg, __VA_ARGS__)
 #else

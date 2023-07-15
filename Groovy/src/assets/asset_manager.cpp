@@ -12,6 +12,7 @@
 #include "gameframework/scene.h"
 
 static std::map<AssetUUID, AssetHandle> sAssetRegistry;
+static std::vector<AssetHandle> sAssets;
 
 // random stuff
 static std::random_device sRandomDevice;
@@ -101,6 +102,7 @@ void AssetManager::Init()
 		tmpHandle.instance = DEFAULT_TEXTURE;
 		tmpHandle.instance->__internal_SetUUID(1);
 
+		sAssets.push_back(tmpHandle);
 		sAssetRegistry[tmpHandle.uuid] = tmpHandle;
 
 		tmpHandle.name = "DEFAULT_SHADER";
@@ -109,6 +111,7 @@ void AssetManager::Init()
 		tmpHandle.instance = DEFAULT_SHADER;
 		tmpHandle.instance->__internal_SetUUID(2);
 
+		sAssets.push_back(tmpHandle);
 		sAssetRegistry[tmpHandle.uuid] = tmpHandle;
 
 		tmpHandle.name = "DEFAULT_MATERIAL";
@@ -117,6 +120,7 @@ void AssetManager::Init()
 		tmpHandle.instance = DEFAULT_MATERIAL;
 		tmpHandle.instance->__internal_SetUUID(3);
 
+		sAssets.push_back(tmpHandle);
 		sAssetRegistry[tmpHandle.uuid] = tmpHandle;
 	}
 
@@ -130,13 +134,12 @@ void AssetManager::Init()
 
 	uint32 assetsCount = registryView.read<uint32>();
 
-	std::vector<AssetHandle> fileAssets;
-	fileAssets.reserve(assetsCount);
+	sAssets.reserve(assetsCount);
 
 	// load registry
 	for (uint32 i = 0; i < assetsCount; i++)
 	{
-		AssetHandle& assetHandle = fileAssets.emplace_back();
+		AssetHandle assetHandle;
 		assetHandle.name = registryView.read<std::string>();
 		assetHandle.uuid = registryView.read<AssetUUID>();
 		assetHandle.type = registryView.read<EAssetType>();
@@ -144,27 +147,32 @@ void AssetManager::Init()
 
 		assetHandle.instance->__internal_SetUUID(assetHandle.uuid);
 
+		sAssets.push_back(assetHandle);
 		sAssetRegistry[assetHandle.uuid] = assetHandle;
 	}
 
 	// load assets
-	for (const AssetHandle& handle : fileAssets)
+	for (const AssetHandle& handle : sAssets)
 	{
-		if (!handle.instance->LazyLoadAndUnload() && !handle.instance->IsLoaded())
+		if (!handle.instance->IsLoaded())
 			handle.instance->Load();
 	}
 }
 
 void AssetManager::Shutdown()
 {
-	for (const auto [uuid, handle] : sAssetRegistry)
+	for (AssetHandle& handle : sAssets)
 		delete handle.instance;
 }
 
 AssetHandle AssetManager::Get(AssetUUID uuid)
 {
+	if (uuid == 0)
+		return {};
+
 	if(sAssetRegistry.find(uuid) != sAssetRegistry.end())
 		return sAssetRegistry[uuid];
+	
 	return {};
 }
 
@@ -172,58 +180,89 @@ void AssetManager::SaveRegistry()
 {
 	DynamicBuffer registryFile;
 
-	registryFile.push<uint32>(sAssetRegistry.size() - 3);
+	registryFile.push<uint32>(sAssets.size() - 3);
 
-	for (const auto& [uuid, handle] : sAssetRegistry)
+	for (uint32 i = 3; i < sAssets.size(); i++)
 	{
-		if (handle.instance == DEFAULT_TEXTURE || handle.instance == DEFAULT_SHADER || handle.instance == DEFAULT_MATERIAL)
-			continue;
-
-		registryFile.push(handle.name);
-		registryFile.push(handle.uuid);
-		registryFile.push(handle.type);
+		registryFile.push(sAssets[i].name);
+		registryFile.push(sAssets[i].uuid);
+		registryFile.push(sAssets[i].type);
 	}
 
 	FileSystem::WriteFileBinary(gProj.GetAssetRegistryPath().string(), registryFile);
 }
 
-#if WITH_EDITOR
-
-const std::map<AssetUUID, AssetHandle>& AssetManager::Editor_GetRegistry()
+const std::map<AssetUUID, AssetHandle>& AssetManager::GetRegistry()
 {
 	return sAssetRegistry;
 }
 
-std::vector<AssetHandle> AssetManager::Editor_GetAssets(EAssetType filter)
+const std::vector<AssetHandle>& AssetManager::GetAssets()
 {
-	std::vector<AssetHandle> res;
-
-	if (filter == ASSET_TYPE_NONE)
-	{
-		for (const auto& [uuid, handle] : sAssetRegistry)
-			res.push_back(handle);
-	}
-	else
-	{
-		for (const auto& [uuid, handle] : sAssetRegistry)
-			if (handle.type == filter)
-				res.push_back(handle);
-	}
-
-	return res;
+	return sAssets;
 }
+
+std::vector<AssetHandle> AssetManager::GetAssets(EAssetType filter)
+{
+	std::vector<AssetHandle> assets;
+	
+	for (AssetHandle& handle : sAssets)
+		if (handle.type == filter)
+			assets.push_back(handle);
+	
+	return assets;
+}
+
+AssetHandle AssetManager::FindByPath(const std::string& filePath)
+{
+	for (AssetHandle& handle : sAssets)
+	{
+		if (handle.name.length() == filePath.length())
+		{
+			for (uint32 i = 0; i < filePath.length(); i++)
+			{
+				if (tolower(handle.name[i]) == tolower(filePath[i]))
+					return handle;
+			}
+		}	
+	}
+	return {};
+}
+
+#if WITH_EDITOR
 
 AssetHandle AssetManager::Editor_OnImport(const std::string& fileName, EAssetType type)
 {
 	AssetUUID uuid = GenUUID();
 
-	AssetHandle& handle = sAssetRegistry[uuid];
+	AssetHandle handle;
 	handle.name = fileName;
 	handle.type = type;
 	handle.uuid = uuid;
 	handle.instance = InstantiateAsset(handle);
 	handle.instance->__internal_SetUUID(uuid);
+	
+	sAssets.push_back(handle);
+	sAssetRegistry[uuid] = handle;
+
 	handle.instance->Load();
+
+	return handle;
+}
+
+AssetHandle AssetManager::Editor_OnAdd(const std::string& fileName, EAssetType type, AssetInstance* instance)
+{
+	AssetUUID uuid = GenUUID();
+
+	AssetHandle handle;
+	handle.name = fileName;
+	handle.type = type;
+	handle.uuid = uuid;
+	handle.instance = instance;
+	handle.instance->__internal_SetUUID(uuid);
+
+	sAssets.push_back(handle);
+	sAssetRegistry[uuid] = handle;
 
 	return handle;
 }
@@ -231,18 +270,18 @@ AssetHandle AssetManager::Editor_OnImport(const std::string& fileName, EAssetTyp
 void AssetManager::Editor_Delete(AssetUUID uuid, std::vector<AssetHandle>& outDependencies)
 {
 	AssetHandle assetHandle = sAssetRegistry[uuid];
-	checkslowf(assetHandle.instance, "Trying to delete an asset with that does not exist in the registry! uuid: %i", uuid);
+	checkslowf(assetHandle.instance, "Asset with uuid: %i not found!", uuid);
 	
 	// remove from registry
 	sAssetRegistry.erase(uuid);
+	// remove from list
+	sAssets.erase(std::find_if(sAssets.begin(), sAssets.end(), [=](AssetHandle& handle) { return handle.uuid == uuid; }));
 	
 	// fix dependencies
-	for (auto& [uuid, handle] : sAssetRegistry)
+	for (AssetHandle& handle : sAssets)
 	{
 		if (handle.instance->Editor_FixDependencyDeletion(assetHandle))
-		{
 			outDependencies.push_back(handle);
-		}
 	}
 
 	// delete instance

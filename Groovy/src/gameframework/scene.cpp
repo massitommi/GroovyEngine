@@ -13,19 +13,18 @@ Scene::Scene()
 Scene::~Scene()
 {
 	for (Actor* actor : mActors)
-	{
-		actor->Destroy();
-	}
-	for (Actor* actor : mActors)
-	{
-		ObjectAllocator::Destroy(actor);
-	}
+		mActorKillQueue.push_back(actor);
+	FinishDestroyingActors();
 }
 
 void Scene::Load()
 {
 	AssetLoader::LoadGenericAsset(this);
 	mLoaded = true;
+}
+
+void Scene::Unload()
+{
 }
 
 void Scene::Save()
@@ -35,77 +34,36 @@ void Scene::Save()
 
 void Scene::Serialize(DynamicBuffer& fileData) const
 {
-	fileData.push<uint32>(mGenericActors.size());
-	for (Actor* actor : mGenericActors)
+	fileData.push<uint32>(mActors.size());
+	for (Actor* actor : mActors)
 	{
-		fileData.push(actor->GetTransform());
-		ActorPack pack;
-		ActorSerializer::CreateActorPack(actor, (Actor*)actor->GetCDO(), pack);
-		ActorSerializer::SerializeActorPack(pack, fileData);
-	}
+		fileData.push<AssetUUID>(actor->mTemplate ? actor->mTemplate->GetUUID() : 0);
+		fileData.push<Transform>(actor->GetTransform());
 
-	fileData.push<uint32>(mBPActors.size());
-	for (auto [actor, bp] : mBPActors)
-	{
-		fileData.push<AssetUUID>(bp->GetUUID());
-		fileData.push(actor->GetTransform());
 		ActorPack pack;
-		ActorSerializer::CreateActorPack(actor, bp->GetDefaultActor(), pack);
+		ActorSerializer::CreateActorPack(actor, pack);
 		ActorSerializer::SerializeActorPack(pack, fileData);
 	}
 }
 
 void Scene::Deserialize(BufferView fileData)
 {
-	uint32 genericActorsCount = fileData.read<uint32>();
-	for (uint32 i = 0; i < genericActorsCount; i++)
+	uint32 actorsCount = fileData.read<uint32>();
+	for (uint32 i = 0; i < actorsCount; i++)
 	{
+		AssetUUID bpUUID = fileData.read<AssetUUID>();
 		Transform transform = fileData.read<Transform>();
+
 		ActorPack pack;
 		ActorSerializer::DeserializeActorPack(fileData, pack);
 
 		if (pack.actorClass)
 		{
-			Actor* newActor = SpawnActor<Actor>(pack.actorClass);
+			ActorBlueprint* bp = AssetManager::Get<ActorBlueprint>(bpUUID);
+			Actor* newActor = SpawnActor(pack.actorClass, bp);
 			ActorSerializer::DeserializeActorPackData(pack, newActor);
-			mGenericActors.push_back(newActor);
-			newActor->mTransform = transform;
-		}
-		else
-		{
-			// Warning: this file is not up to date, this actor class does not exist anymore
 		}
 	}
-
-	uint32 bpActors = fileData.read<uint32>();
-	for (uint32 i = 0; i < bpActors; i++)
-	{
-		AssetUUID bpUUID = fileData.read<AssetUUID>();
-		Transform transform = fileData.read<Transform>();
-		ActorBlueprint* bpInstance = AssetManager::Get<ActorBlueprint>(bpUUID);
-
-		ActorPack pack;
-		ActorSerializer::DeserializeActorPack(fileData, pack);
-
-		if (pack.actorClass && pack.actorClass == bpInstance->GetActorClass())
-		{
-			ActorBP newActorBP;
-			newActorBP.instance = SpawnActor<Actor>(pack.actorClass);
-			newActorBP.bp = bpInstance;
-			ActorSerializer::DeserializeActorPackData(pack, newActorBP.instance);
-			mBPActors.push_back(newActorBP);
-			newActorBP.instance->mTransform = transform;
-		}
-		else
-		{
-			// Warning: this file is not up to date, this actor class does not exist anymore or does not match the blueprint class
-		}
-	}
-}
-
-bool Scene::Editor_FixDependencyDeletion(AssetHandle assetToBeDeleted)
-{
-	return false;
 }
 
 Actor* Scene::SpawnActor(GroovyClass* actorClass, ActorBlueprint* bp)
@@ -123,6 +81,7 @@ Actor* Scene::SpawnActor(GroovyClass* actorClass, ActorBlueprint* bp)
 	if (bp)
 	{
 		bp->CopyProperties(newActor);
+		newActor->mTemplate = bp;
 	}
 
 	mActors.push_back(newActor);
@@ -130,17 +89,100 @@ Actor* Scene::SpawnActor(GroovyClass* actorClass, ActorBlueprint* bp)
 	return newActor;
 }
 
+#if WITH_EDITOR
+
+bool Scene::Editor_FixDependencyDeletion(AssetHandle assetToBeDeleted)
+{
+	bool wasLoaded = mLoaded;
+
+	if (!wasLoaded)
+		Load();
+
+	std::vector<Actor*> removeList;
+
+	if (assetToBeDeleted.type == ASSET_TYPE_ACTOR_BLUEPRINT)
+	{
+		for (Actor* actor : mActors)
+		{
+			if (actor->mTemplate == assetToBeDeleted.instance)
+			{
+				removeList.push_back(actor);
+			}
+		}
+
+		for (Actor* actor : removeList)
+		{
+			Editor_DeleteActor(actor);
+		}
+
+	}
+
+	if (!wasLoaded)
+	{
+		Save();
+		// unload
+		for (Actor* actor : mActors)
+			ObjectAllocator::Destroy(actor);
+		mActors.clear();
+	}
+
+	return removeList.size();
+}
+
+void Scene::Editor_SpawnActor(GroovyClass* actorClass, ActorBlueprint* bp)
+{
+	Actor* newActor = SpawnActor(actorClass, bp);
+}
+
+void Scene::Editor_DeleteActor(Actor* actor)
+{
+	// free memory
+	ObjectAllocator::Destroy(actor);
+
+	// remove from actors list
+	auto it = std::find(mActors.begin(), mActors.end(), actor);
+	mActors.erase(it);
+}
+
+#endif
 
 void Scene::DestroyActor(Actor* actor)
 {
 	check(actor);
 
-	auto it = std::find(mActors.begin(), mActors.end(), actor);
+	// notify the actor
+	actor->Destroy();
 
-	if (it != mActors.end())
+	// remove from alive actors
+	auto it = std::find(mActorsPlaying.begin(), mActorsPlaying.end(), actor);
+	mActorsPlaying.erase(it);
+
+	// push into kill queue
+	mActorKillQueue.push_back(actor);
+}
+
+void Scene::Tick(float deltaTime)
+{
+	for (Actor* actor : mActors)
 	{
-		actor->Destroy();
+		actor->Tick(deltaTime);
+	}
+	
+	if (mActorKillQueue.size())
+		FinishDestroyingActors();
+}
+
+void Scene::FinishDestroyingActors()
+{
+	for (Actor* actor : mActorKillQueue)
+	{
+		// free memory
 		ObjectAllocator::Destroy(actor);
+
+		// remove from actors list
+		auto it = std::find(mActors.begin(), mActors.end(), actor);
 		mActors.erase(it);
 	}
+
+	mActorKillQueue.clear();
 }

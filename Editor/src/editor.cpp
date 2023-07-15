@@ -29,12 +29,14 @@
 #include "gameframework/scene.h"
 #include "editor.h"
 #include "classes/reflection.h"
+#include "classes/class_db.h"
 
 extern ClearColor gScreenClearColor;
 extern Window* gWindow;
 extern GroovyProject gProj;
 extern std::vector<GroovyClass*> ENGINE_CLASSES;
 extern std::vector<GroovyClass*> GAME_CLASSES;
+extern ClassDB gClassDB;
 
 static FrameBuffer* sGameViewportFrameBuffer = nullptr;
 
@@ -50,14 +52,26 @@ namespace res
 namespace windows
 {
 	static std::vector<EditorWindow*> sWindows;
-	static std::vector<EditorWindow*> sInsertQueue;
 	static std::vector<EditorWindow*> sRemoveQueue;
 
+	static std::map<std::string, EditorWindow*> mWndMap;
+
 	template<typename WndType, typename ...Args>
-	void AddWindow(Args... args)
+	void AddWindow(const std::string& title, Args... args)
 	{
-		WndType* wnd = new WndType(args...);
-		sInsertQueue.push_back(wnd);
+		// check if window already exists
+		EditorWindow*& wnd = mWndMap[title];
+		
+		if (!wnd)
+		{
+			wnd = new WndType(args...);
+			wnd->SetTitle(title);
+			sWindows.push_back(wnd);
+		}
+		else
+		{
+			ImGui::SetWindowFocus(title.c_str());
+		}
 	}
 
 	void RemoveWindow(EditorWindow* wnd)
@@ -68,6 +82,14 @@ namespace windows
 
 	void UpdateWindows()
 	{
+		// remove pending destoy windows
+		for (EditorWindow* wnd : sRemoveQueue)
+		{
+			delete wnd;
+			sWindows.erase(std::find(sWindows.begin(), sWindows.end(), wnd));
+		}
+		sRemoveQueue.clear();
+
 		// update the windows
 		for (EditorWindow* wnd : sWindows)
 		{
@@ -77,21 +99,12 @@ namespace windows
 				sRemoveQueue.push_back(wnd);
 			}
 		}
+	}
 
-		// delete windows that should be deleted
-		for (EditorWindow* wnd : sRemoveQueue)
-		{
+	void Shutdown()
+	{
+		for (EditorWindow* wnd : sWindows)
 			delete wnd;
-			sWindows.erase(std::find(sWindows.begin(), sWindows.end(), wnd));
-		}
-		sRemoveQueue.clear();
-
-		// add the windows that should be added
-		for (EditorWindow* wnd : sInsertQueue)
-		{
-			sWindows.push_back(wnd);
-		}
-		sInsertQueue.clear();
 	}
 }
 
@@ -162,6 +175,7 @@ namespace panels
 	static ImVec2 sGameViewportSize = { 100, 100 };
 
 	static Actor* sCurrentlySelectedActor = nullptr;
+	static GroovyObject* sCurrentlySelectedObject = nullptr;
 
 	static float sIconSize = 140.0f;
 	static const float ICON_SIZE_MAX = 256.0f;
@@ -195,7 +209,7 @@ namespace panels
 			uint32 flags;
 		};
 
-		std::vector<AssetHandle> assets = AssetManager::Editor_GetAssets();
+		const std::vector<AssetHandle>& assets = AssetManager::GetAssets();
 		std::vector<PanelAsset> panelAssets;
 		panelAssets.resize(assets.size());
 		for (uint32 i = 0; i < assets.size(); i++)
@@ -253,7 +267,7 @@ namespace panels
 
 		for (uint32 i = 0; i < assets.size(); ++i)
 		{
-			AssetHandle& asset = assets[i];
+			const AssetHandle& asset = assets[i];
 			PanelAsset panelAsset = panelAssets[i];
 
 			ImGui::PushID(i);
@@ -269,26 +283,26 @@ namespace panels
 				switch (asset.type)
 				{
 				case ASSET_TYPE_TEXTURE:
-					windows::AddWindow<TexturePreviewWindow>((Texture*)asset.instance);
+					windows::AddWindow<TexturePreviewWindow>(asset.name, asset);
 					break;
 
 				case ASSET_TYPE_SHADER:
 					break;
 
 				case ASSET_TYPE_MATERIAL:
-					windows::AddWindow<EditMaterialWindow>((Material*)asset.instance);
+					windows::AddWindow<EditMaterialWindow>(asset.name, asset);
 					break;
 
 				case ASSET_TYPE_MESH:
-					windows::AddWindow<MeshPreviewWindow>((Mesh*)asset.instance);
+					windows::AddWindow<MeshPreviewWindow>(asset.name, asset);
 					break;
 
 				case ASSET_TYPE_BLUEPRINT:
-					windows::AddWindow<ObjectBlueprintEditorWindow>((ObjectBlueprint*)asset.instance);
+					windows::AddWindow<ObjectBlueprintEditorWindow>(asset.name, asset);
 					break;
 
 				case ASSET_TYPE_ACTOR_BLUEPRINT:
-					windows::AddWindow<ActorBlueprintEditorWindow>((ActorBlueprint*)asset.instance);
+					windows::AddWindow<ActorBlueprintEditorWindow>(asset.name, asset);
 					break;
 				}
 			}
@@ -303,7 +317,7 @@ namespace panels
 				{
 					if (ImGui::Selectable("Delete"))
 					{
-						auto res = SysMessageBox::Show
+						/*auto res = SysMessageBox::Show
 						(
 							"Asset deletion",
 							"Deleting an asset is dangerous, it could break dependencies with other assets, do you want to continue?",
@@ -313,18 +327,20 @@ namespace panels
 						{
 							AssetManager::Editor_Delete(asset.uuid, sPendingSaveAssets);
 							sPendingSaveRegistry = true;
-						}
+						}*/
 					}
 				}
 
 				switch (asset.type)
 				{
-				case ASSET_TYPE_SHADER:
-				{
-					if (ImGui::Selectable("Create material"))
-						windows::AddWindow<EditMaterialWindow>((Shader*)asset.instance);
-				}
-				break;
+					case ASSET_TYPE_SHADER:
+					{
+						if (ImGui::Selectable("Create material"))
+						{
+							
+						}
+					}
+					break;
 				}
 
 				ImGui::EndPopup();
@@ -425,11 +441,11 @@ namespace panels
 				{
 					if (classUtils::IsA(gClass, Actor::StaticClass()))
 					{
-						windows::AddWindow<ActorBlueprintEditorWindow>(gClass);
+						/*windows::AddWindow<ActorBlueprintEditorWindow>(gClass);*/
 					}
 					else
 					{
-						windows::AddWindow<ObjectBlueprintEditorWindow>(gClass);
+						/*windows::AddWindow<ObjectBlueprintEditorWindow>(gClass);*/
 					}
 				}
 
@@ -458,12 +474,96 @@ namespace panels
 	{
 		ImGui::Begin("Entity list");
 
+		if (ImGui::Button("Add actor"))
+		{
+			ImGui::OpenPopup("add_actor_popup");
+		}
+
+		if (ImGui::BeginPopupModal("add_actor_popup", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+		{
+			for (AssetHandle bpHandle : AssetManager::GetAssets(ASSET_TYPE_ACTOR_BLUEPRINT))
+			{
+				ActorBlueprint* bp = (ActorBlueprint*)bpHandle.instance;
+				if (bp->GetActorClass())
+				{
+					if (ImGui::Selectable(bpHandle.name.c_str()))
+					{
+						World::GetScene()->SpawnActor(bp->GetActorClass(), bp);
+						ImGui::CloseCurrentPopup();
+						break;
+					}
+				}
+			}
+			ImGui::Separator();
+			for (const GroovyClass* groovyClass : gClassDB.GetClasses())
+			{
+				if (classUtils::IsA(groovyClass, Actor::StaticClass()))
+				{
+					if (ImGui::Selectable(groovyClass->name.c_str()))
+					{
+						World::GetScene()->SpawnActor((GroovyClass*)groovyClass);
+						ImGui::CloseCurrentPopup();
+						break;
+					}
+				}
+			}
+
+			ImGui::Separator();
+
+			if (ImGui::Button("Cancel"))
+				ImGui::CloseCurrentPopup();
+
+			ImGui::EndPopup();
+		}
+
+		Actor* actorToDelete = nullptr;
 		for (Actor* actor : World::GetScene()->GetActors())
 		{
-			if (ImGui::Selectable(actor->GetName().c_str(), sCurrentlySelectedActor == actor))
+			std::string actorName = actor->GetName() + "##" + std::to_string((uint64)actor);
+			ImGui::Columns(2);
+			if (ImGui::Selectable(actorName.c_str(), sCurrentlySelectedActor == actor))
 			{
 				sCurrentlySelectedActor = actor;
+				sCurrentlySelectedObject = actor;
 			}
+			if (ImGui::BeginPopupContextItem(actorName.c_str(), ImGuiPopupFlags_MouseButtonRight))
+			{
+				if (ImGui::Selectable("Remove"))
+				{
+					actorToDelete = actor;
+				}
+				ImGui::EndPopup();
+			}
+			ImGui::NextColumn();
+			ActorBlueprint* bp = actor->GetTemplate();
+			if (bp)
+			{
+				ImGui::Text(AssetManager::Get(bp->GetUUID()).name.c_str());
+			}
+			else
+			{
+				ImGui::Text(actor->GetClass()->name.c_str());
+			}
+			ImGui::Columns();
+		}
+		if (actorToDelete)
+		{
+			if (sCurrentlySelectedActor == actorToDelete)
+				sCurrentlySelectedActor = nullptr;
+
+			if (sCurrentlySelectedObject)
+			{
+				if (sCurrentlySelectedObject == actorToDelete)
+					sCurrentlySelectedObject = nullptr;
+
+				else if (ActorComponent* comp = Cast<ActorComponent>(sCurrentlySelectedObject))
+					if (comp->GetOwner() == actorToDelete)
+						sCurrentlySelectedObject = nullptr;
+			}
+
+			World::GetScene()->Editor_DeleteActor(actorToDelete);
+			
+			actorToDelete = nullptr;
 		}
 
 		ImGui::End();
@@ -472,10 +572,183 @@ namespace panels
 	void Properties()
 	{
 		ImGui::Begin("Properties");
+
 		if (sCurrentlySelectedActor)
 		{
+			// add component
+			{
+				static std::string sNewCompName = "";
+				static bool sCanAddNewComp = false;
 
+				if (ImGui::Button("Add component"))
+				{
+					sNewCompName = "My new component";
+					sCanAddNewComp = !sNewCompName.empty() && !sCurrentlySelectedActor->GetComponent(sNewCompName);
+					ImGui::OpenPopup("Add component");
+				}
+
+				if (ImGui::BeginPopupModal("Add component"))
+				{
+					if (!sCanAddNewComp)
+						ImGui::PushStyleColor(ImGuiCol_Text, { 1.0f, 0.7f, 0.0f, 1.0f });
+
+					bool needCheck = ImGui::InputText("##add_comp_name", &sNewCompName);
+
+					if (!sCanAddNewComp)
+						ImGui::PopStyleColor();
+
+					ImGui::Spacing();
+					ImGui::Spacing();
+					ImGui::Spacing();
+
+					if (!sCanAddNewComp)
+						ImGui::BeginDisabled();
+					for (const GroovyClass* gClass : gClassDB.GetClasses())
+					{
+						if (classUtils::IsA(gClass, ActorComponent::StaticClass()))
+						{
+							if (ImGui::Selectable(gClass->name.c_str()))
+							{
+								sCurrentlySelectedActor->__internal_Editor_AddEditorcomponent_Scene((GroovyClass*)gClass, sNewCompName);
+								break;
+							}
+						}
+					}
+
+					if (!sCanAddNewComp)
+						ImGui::EndDisabled();
+
+					if (needCheck)
+						sCanAddNewComp = !sNewCompName.empty() && !sCurrentlySelectedActor->GetComponent(sNewCompName);
+
+					if (ImGui::IsKeyPressed(ImGuiKey_Escape))
+						ImGui::CloseCurrentPopup();
+
+					ImGui::EndPopup();
+				}
+			}
+
+			ImGui::Spacing();
+			ImGui::Spacing();
+			ImGui::Spacing();
+
+			// actor components
+			{
+				if (ImGui::Selectable(sCurrentlySelectedActor->GetClass()->name.c_str(), sCurrentlySelectedObject == sCurrentlySelectedActor))
+					sCurrentlySelectedObject = sCurrentlySelectedActor;
+
+				ImGui::Indent(20.0f);
+
+				static ActorComponent* sPendingRename = nullptr;
+				static ActorComponent* sPendingRemove = nullptr;
+				static bool sOpenRenamePopup = false;
+
+				for (ActorComponent* component : sCurrentlySelectedActor->GetComponents())
+				{
+					std::string name = component->GetName();
+					bool isInherited = component->GetType() != ACTOR_COMPONENT_TYPE_EDITOR_SCENE;
+
+					if (isInherited)
+						name += " (inherited)";
+
+					if (ImGui::Selectable(name.c_str(), sCurrentlySelectedObject == component))
+						sCurrentlySelectedObject = component;
+
+					if (!isInherited && ImGui::BeginPopupContextItem(name.c_str(), ImGuiPopupFlags_MouseButtonRight))
+					{
+						if (ImGui::Selectable("Rename"))
+						{
+							sOpenRenamePopup = true;
+							sPendingRename = component;
+						}
+						else if (ImGui::Selectable("Remove"))
+						{
+							sPendingRemove = component;
+						}
+
+						ImGui::EndPopup();
+					}
+				}
+
+				ImGui::Unindent(20.0f);
+
+				// rename / remove
+				{
+					static std::string sCompRename = "";
+					static bool sCanRename = false;
+
+					if (sOpenRenamePopup)
+					{
+						ImGui::OpenPopup("Rename component");
+						sCompRename = sPendingRename->GetName();
+						sCanRename = !sCompRename.empty() && !sCurrentlySelectedActor->GetComponent(sCompRename);
+						sOpenRenamePopup = false;
+					}
+
+					if (ImGui::BeginPopupModal("Rename component", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+					{
+						if (!sCanRename)
+							ImGui::PushStyleColor(ImGuiCol_Text, { 1.0f, 0.7f, 0.0f, 1.0f });
+
+						bool needCheck = ImGui::InputText("##rename_comp_name", &sCompRename);
+
+						if (!sCanRename)
+							ImGui::PopStyleColor();
+
+						if (!sCanRename)
+							ImGui::BeginDisabled();
+
+						if (ImGui::Button("Rename##rename_comp_btn"))
+						{
+							sCurrentlySelectedActor->__internal_Editor_RenameEditorComponent(sPendingRename, sCompRename);
+							sPendingRename = nullptr;
+							ImGui::CloseCurrentPopup();
+						}
+
+						if (!sCanRename)
+							ImGui::EndDisabled();
+
+						if (needCheck)
+							sCanRename = !sCompRename.empty() && !sCurrentlySelectedActor->GetComponent(sCompRename);
+
+						if (ImGui::IsKeyPressed(ImGuiKey_Escape))
+						{
+							sPendingRename = nullptr;
+							ImGui::CloseCurrentPopup();
+						}
+
+						ImGui::EndPopup();
+					}
+					else if (sPendingRemove)
+					{
+						sCurrentlySelectedActor->__internal_Editor_RemoveEditorComponent(sPendingRemove);
+						if (sCurrentlySelectedObject == sPendingRemove)
+							sCurrentlySelectedObject = sCurrentlySelectedActor;
+						sPendingRemove = nullptr;
+					}
+				}
+			}
 		}
+
+		ImGui::End();
+	}
+	
+	void Subproperties()
+	{
+		ImGui::Begin("Subproperties");
+
+		if (sCurrentlySelectedObject)
+		{
+			if (sCurrentlySelectedObject == sCurrentlySelectedActor)
+			{
+				ImGui::Text("Transform");
+				bool transformChanged = editorGui::Transform("##actor_transform", &sCurrentlySelectedActor->Editor_Transform());
+				ImGui::Spacing();
+				ImGui::Spacing();
+			}
+			editorGui::PropertiesAllClasses(sCurrentlySelectedObject);
+		}
+
 		ImGui::End();
 	}
 
@@ -568,18 +841,10 @@ void editor::internal::Render()
 			ImGui::EndMenu();
 		}
 
-		if (ImGui::BeginMenu("View"))
-		{
-			if (ImGui::MenuItem("Asset registry"))
-				windows::AddWindow<AssetRegistryWindow>();
-
-			ImGui::EndMenu();
-		}
-
 		if (ImGui::BeginMenu("Settings"))
 		{
 			if(ImGui::MenuItem("Project settings"))
-				windows::AddWindow<ProjectSettingsWindow>();
+				windows::AddWindow<ProjectSettingsWindow>("Project settings");
 			
 			ImGui::EndMenu();
 		}
@@ -592,6 +857,7 @@ void editor::internal::Render()
 	panels::GameViewport();
 	panels::EntityList();
 	panels::Properties();
+	panels::Subproperties();
 	windows::UpdateWindows();
 
 	ImGui::End();
@@ -601,6 +867,7 @@ void editor::internal::Render()
 
 void editor::internal::Shutdown()
 {
+	windows::Shutdown();
 	delete res::sBlueprintAssetIcon;
 	delete res::sClassAssetIcon;
 	delete res::sShaderAssetIcon;

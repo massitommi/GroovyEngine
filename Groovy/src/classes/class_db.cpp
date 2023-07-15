@@ -11,25 +11,22 @@ void ClassDB::Register(GroovyClass* gClass)
 	std::vector<GroovyProperty> props;
 	classUtils::GetClassPropertiesRecursiveSorted(gClass, props);
 	
+	mClasses.push_back(gClass);
 	mClassDB[gClass->name] = gClass;
 	mPropsDB[gClass] = props;
 }
 
 void ClassDB::BuildCDOs()
 {
-	for (auto [name, gClass] : mClassDB)
-	{
+	for(GroovyClass* gClass : mClasses)
 		gClass->cdo = ObjectAllocator::Instantiate(gClass);
-	}
 }
 
 void ClassDB::DestroyCDOs()
 {
-	for (auto [name, gClass] : mClassDB)
-	{
+	for(GroovyClass* gClass : mClasses)
 		if(gClass)
 			ObjectAllocator::Destroy(gClass->cdo);
-	}
 }
 
 const std::vector<GroovyProperty>& ClassDB::operator[](GroovyClass* gClass)
@@ -40,16 +37,6 @@ const std::vector<GroovyProperty>& ClassDB::operator[](GroovyClass* gClass)
 GroovyClass* ClassDB::operator[](const std::string& className)
 {
 	return mClassDB[className];
-}
-
-std::vector<GroovyClass*> ClassDB::GetClasses()
-{
-	std::vector<GroovyClass*> res;
-	for (const auto& [n, c] : mClassDB)
-	{
-		res.push_back(c);
-	}
-	return res;
 }
 
 const GroovyProperty* ClassDB::FindProperty(GroovyClass* gClass, const std::string& propertyName)

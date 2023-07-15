@@ -3,70 +3,70 @@
 #include "assets/asset.h"
 #include "renderer/api/shader.h"
 #include "classes/class.h"
+#include "renderer/material.h"
 
 class EditorWindow
 {
 public:
-	EditorWindow(const std::string& title)
-		: mTitle(title), mFlags(0), mOpen(true), mPendingSave(false)
+	EditorWindow() 
+		: mOpen(true), mShouldClose(false), mFlags(0) 
 	{}
-
 	virtual ~EditorWindow() {}
 
 	void RenderWindow();
-	
+
 	virtual void RenderContent() {}
+	virtual void OnCloseRequested() { Close(); }
 
-	virtual bool OnClose();
+	// used by the editor
+	inline bool ShouldClose() const { return mShouldClose; }
+	inline void Close() { mShouldClose = true; }
 
-	inline bool ShouldClose() const { return !mOpen; }
-	inline bool PendingSave() const { return mPendingSave; }
-
-protected:
-	void SetPendingSave(bool pendingSave);
+	inline void SetTitle(const std::string& newTitle) { mTitle = newTitle; }
 
 private:
 	std::string mTitle;
-	uint64 mFlags;
+	bool mShouldClose;
+
+protected:
 	bool mOpen;
+	uint64 mFlags;
+};
+
+class AssetEditorWindow : public EditorWindow
+{
+public:
+	AssetEditorWindow(const AssetHandle& asset);
+
+	virtual void OnCloseRequested() override;
+
+	virtual void Save();
+	inline void FlagPendingSave();
+
+	inline bool IsPendingSave() const { return mPendingSave; }
+	
+private:
+	AssetHandle mAsset;
 	bool mPendingSave;
 };
 
-class AssetRegistryWindow : public EditorWindow
+class EditMaterialWindow : public AssetEditorWindow
 {
 public:
-	AssetRegistryWindow() : EditorWindow("Asset registry") {}
-
-	const char* AssetTypeStr(EAssetType type);
-
-	virtual void RenderContent() override;
-
-private:
-	std::string mDebugAssetName = "";
-	EAssetType mDebugAssetType = ASSET_TYPE_TEXTURE;
-};
-
-class EditMaterialWindow : public EditorWindow
-{
-public:
-	EditMaterialWindow(class Material* mat);
-	EditMaterialWindow(class Shader* shader);
-	virtual ~EditMaterialWindow();
+	EditMaterialWindow(const AssetHandle& asset);
 	
 	virtual void RenderContent() override;
+	virtual void Save() override;
 
 private:
 	class Material* mMaterial;
-	bool mExistsOnDisk;
-	std::string mFileName;
+	std::vector<MaterialResource> mMatResources;
 };
 
 class TexturePreviewWindow : public EditorWindow
 {
 public:
-	TexturePreviewWindow(class Texture* texture)
-		: EditorWindow("Texture viewer"), mTexture(texture)
-	{}
+	TexturePreviewWindow(const AssetHandle& asset);
 
 	virtual void RenderContent() override;
 
@@ -74,48 +74,52 @@ private:
 	class Texture* mTexture;
 };
 
-class MeshPreviewWindow : public EditorWindow
+class MeshPreviewWindow : public AssetEditorWindow
 {
 public:
-	MeshPreviewWindow(Mesh* mesh);
+	MeshPreviewWindow(const AssetHandle& asset);
 
 	virtual void RenderContent() override;
+	virtual void Save() override;
 
 private:
 	class Mesh* mMesh;
-	std::string mFileName;
+	std::vector<Material*> mMeshMats;
 };
 
-class ObjectBlueprintEditorWindow : public EditorWindow
+class ObjectBlueprintEditorWindow : public AssetEditorWindow
 {
 public:
-	ObjectBlueprintEditorWindow(class ObjectBlueprint* blueprint);
-	ObjectBlueprintEditorWindow(class GroovyClass* inClass);
+	ObjectBlueprintEditorWindow(const AssetHandle& asset);
 	~ObjectBlueprintEditorWindow();
 
 	virtual void RenderContent() override;
+	virtual void Save() override;
 
 private:
 	class ObjectBlueprint* mBlueprint;
-
-	std::string mFileName;
-	bool mExistsOnDisk;
+	class GroovyObject* mLiveObject;
 };
 
-class ActorBlueprintEditorWindow : public EditorWindow
+class ActorBlueprintEditorWindow : public AssetEditorWindow
 {
 public:
-	ActorBlueprintEditorWindow(class ActorBlueprint* blueprint);
-	ActorBlueprintEditorWindow(class GroovyClass* inClass);
+	ActorBlueprintEditorWindow(const AssetHandle& asset);
 	~ActorBlueprintEditorWindow();
 
 	virtual void RenderContent() override;
+	virtual void Save() override;
 
 private:
 	class ActorBlueprint* mBlueprint;
+	class Actor* mLiveActor;
 
-	std::string mFileName;
-	bool mExistsOnDisk;
+	std::string mTmpCompName;
+	bool mCanRenameOrAddComp;
+
+	class ActorComponent* mPendingRemove;
+	class ActorComponent* mPendingRename;
+	bool mShowRenamePopup;
 
 	class GroovyObject* mSelected;
 };

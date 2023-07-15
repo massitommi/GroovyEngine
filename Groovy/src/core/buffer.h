@@ -290,6 +290,10 @@ private:
 	byte* mCurrentPtr;
 };
 
+// Warning: push a size_t before tracking
+#define DYNAMIC_BUFFER_TRACK(TrackerName, BufferVar) size_t TrackerName = BufferVar.used()
+#define DYNAMIC_BUFFER_TRACK_WRITE_RESULT(TrackerName, BufferVar) *(size_t*)(BufferVar.current() - (BufferVar.used() - TrackerName) - sizeof(size_t)) = BufferVar.used() - TrackerName
+
 class BufferView
 {
 public:
@@ -348,7 +352,8 @@ public:
 		mBytesLeft -= bytes;
 	}
 
-	size_t remaining() { return mBytesLeft; }
+	inline size_t remaining() { return mBytesLeft; }
+	inline bool empty() { return mBytesLeft == 0; }
 
 private:
 	byte* mCurrentPtr;

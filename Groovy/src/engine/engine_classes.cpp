@@ -18,6 +18,7 @@ CLASS_LIST_BEGIN(ENGINE_CLASSES)
 	CLASS_LIST_ADD(MeshAssetFile),
 
 	CLASS_LIST_ADD(Actor),
-	CLASS_LIST_ADD(ActorComponent)
+	CLASS_LIST_ADD(ActorComponent),
+	CLASS_LIST_ADD(SceneComponent)
 }
 CLASS_LIST_END()
