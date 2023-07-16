@@ -31,6 +31,8 @@
 #include "classes/reflection.h"
 #include "classes/class_db.h"
 
+#include "utils/string/string_utils.h"
+
 extern ClearColor gScreenClearColor;
 extern Window* gWindow;
 extern GroovyProject gProj;
@@ -171,6 +173,188 @@ bool OnCloseRequested()
 	return true;
 }
 
+namespace newAsset
+{
+	static EAssetType sNewAssetType = ASSET_TYPE_NONE;
+	static std::string sNewAssetName = "New_Asset";
+
+	bool IsValidAssetName()
+	{
+		return
+			!sNewAssetName.empty() &&													// path is not empty
+			sNewAssetName.find(' ') == std::string::npos &&								// path does not contain whitespaces
+			!AssetManager::FindByPath(sNewAssetName + GROOVY_ASSET_EXT).instance &&		// there is no asset with the same path
+			!stringUtils::EqualsCaseInsensitive(sNewAssetName, "DEFAULT_SHADER") &&		// not like default
+			!stringUtils::EqualsCaseInsensitive(sNewAssetName, "DEFAULT_TEXTURE") &&	// not like default
+			!stringUtils::EqualsCaseInsensitive(sNewAssetName, "DEFAULT_MATERIAL");		// not like default
+	}
+
+	void CreateNewAsset()
+	{
+		auto FilePathInput = [&]()
+		{
+			ImGui::Text("Filename");
+
+			bool validPath = IsValidAssetName();
+
+			if (!validPath)
+				ImGui::PushStyleColor(ImGuiCol_Text, { 1.0f, 0.7f, 0.0f, 1.0f });
+
+			ImGui::InputText("##new_asset_name", &sNewAssetName);
+			ImGui::SameLine();
+			ImGui::Text(GROOVY_ASSET_EXT);
+			ImGui::SameLine();
+			ImGui::TextDisabled("(?)");
+			if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayShort) && ImGui::BeginTooltip())
+			{
+				ImGui::PushTextWrapPos(ImGui::GetFontSize() * 35.0f);
+				ImGui::TextUnformatted("Filenames can't contain whitespaces, filenames are case-insensitive");
+				ImGui::PopTextWrapPos();
+				ImGui::EndTooltip();
+			}
+
+			if (!validPath)
+				ImGui::PopStyleColor();
+
+			ImGui::Spacing();
+			ImGui::Spacing();
+			ImGui::Spacing();
+			ImGui::Spacing();
+
+			return validPath;
+		};
+
+		if (ImGui::BeginPopupModal("New material"))
+		{
+			bool validPath = FilePathInput();
+
+			ImGui::Text("Select shader:");
+			ImGui::Spacing();
+
+			if (!validPath)
+				ImGui::BeginDisabled();
+
+			for (AssetHandle& asset : AssetManager::GetAssets(ASSET_TYPE_SHADER))
+			{
+				if (ImGui::Selectable(asset.name.c_str()))
+				{
+					// create asset
+					Material* newMat = new Material();
+					newMat->SetShader((Shader*)asset.instance);
+					// pending save stuff
+					AssetHandle handle = AssetManager::Editor_OnAdd(sNewAssetName + GROOVY_ASSET_EXT, ASSET_TYPE_MATERIAL, newMat);
+					editor::FlagAssetPendingSave(handle);
+					editor::FlagRegistryPendingSave();
+					// close popup
+					ImGui::CloseCurrentPopup();
+				}
+			}
+
+			if (!validPath)
+				ImGui::EndDisabled();
+
+			if (ImGui::IsKeyPressed(ImGuiKey_Escape))
+				ImGui::CloseCurrentPopup();
+
+			ImGui::EndPopup();
+		}
+
+		if (ImGui::BeginPopupModal("New blueprint"))
+		{
+			bool validPath = FilePathInput();
+
+			ImGui::Text("Select class:");
+			ImGui::Spacing();
+
+			if (!validPath)
+				ImGui::BeginDisabled();
+
+			for (const GroovyClass* gClass : gClassDB.GetClasses())
+			{
+				if (ImGui::Selectable(gClass->name.c_str()))
+				{
+					// create asset
+					ObjectBlueprint* bp = new ObjectBlueprint();
+					bp->SetupEmpty((GroovyClass*)gClass);
+					// pending save stuff
+					AssetHandle handle = AssetManager::Editor_OnAdd(sNewAssetName + GROOVY_ASSET_EXT, ASSET_TYPE_BLUEPRINT, bp);
+					editor::FlagAssetPendingSave(handle);
+					editor::FlagRegistryPendingSave();
+					// close popup
+					ImGui::CloseCurrentPopup();
+				}
+			}
+
+			if (!validPath)
+				ImGui::EndDisabled();
+
+			if (ImGui::IsKeyPressed(ImGuiKey_Escape))
+				ImGui::CloseCurrentPopup();
+
+			ImGui::EndPopup();
+		}
+
+		if (ImGui::BeginPopupModal("New actor blueprint"))
+		{
+			bool validPath = FilePathInput();
+
+			ImGui::Text("Select class:");
+			ImGui::Spacing();
+
+			if (!validPath)
+				ImGui::BeginDisabled();
+
+			for (const GroovyClass* gClass : gClassDB.GetClasses())
+			{
+				if (classUtils::IsA(gClass, Actor::StaticClass()) && ImGui::Selectable(gClass->name.c_str()))
+				{
+					// create asset
+					ActorBlueprint* bp = new ActorBlueprint();
+					bp->SetupEmpty((GroovyClass*)gClass);
+					// pending save stuff
+					AssetHandle handle = AssetManager::Editor_OnAdd(sNewAssetName + GROOVY_ASSET_EXT, ASSET_TYPE_ACTOR_BLUEPRINT, bp);
+					editor::FlagAssetPendingSave(handle);
+					editor::FlagRegistryPendingSave();
+					// close popup
+					ImGui::CloseCurrentPopup();
+				}
+			}
+
+			if (!validPath)
+				ImGui::EndDisabled();
+
+			if (ImGui::IsKeyPressed(ImGuiKey_Escape))
+				ImGui::CloseCurrentPopup();
+
+			ImGui::EndPopup();
+		}
+	}
+
+	void NewAssetPopup()
+	{
+		if (sNewAssetType != ASSET_TYPE_NONE)
+		{
+			switch (sNewAssetType)
+			{
+				case ASSET_TYPE_MATERIAL:
+					ImGui::OpenPopup("New material");
+					sNewAssetName = "My_New_Material";
+					break;
+				case ASSET_TYPE_BLUEPRINT:
+					ImGui::OpenPopup("New blueprint");
+					sNewAssetName = "My_New_Blueprint";
+					break;
+				case ASSET_TYPE_ACTOR_BLUEPRINT:
+					ImGui::OpenPopup("New actor blueprint");
+					sNewAssetName = "My_New_Actor_Blueprint";
+					break;
+			}
+
+			sNewAssetType = ASSET_TYPE_NONE;
+		}
+	}
+}
+
 namespace panels
 {
 	static ImVec2 sGameViewportSize = { 100, 100 };
@@ -264,6 +448,23 @@ namespace panels
 		ImGui::Spacing();
 		ImGui::Spacing();
 
+		if (ImGui::BeginPopupContextWindow("Asset manager", ImGuiPopupFlags_MouseButtonRight))
+		{
+			if (ImGui::BeginMenu("Create"))
+			{
+				if (ImGui::MenuItem("Material"))
+					newAsset::sNewAssetType = ASSET_TYPE_MATERIAL;
+				if (ImGui::MenuItem("Blueprint"))
+					newAsset::sNewAssetType = ASSET_TYPE_BLUEPRINT;
+				if (ImGui::MenuItem("Actor blueprint"))
+					newAsset::sNewAssetType = ASSET_TYPE_ACTOR_BLUEPRINT;
+
+				ImGui::EndMenu();
+			}
+
+			ImGui::EndPopup();
+		}
+
 		ImGui::Columns(columns, nullptr, false);
 
 		for (uint32 i = 0; i < assets.size(); ++i)
@@ -312,13 +513,12 @@ namespace panels
 
 			if (ImGui::BeginPopupContextItem(fileNameNoExt.c_str(), ImGuiPopupFlags_MouseButtonRight))
 			{
-				ImGui::SeparatorText("Actions");
 				// delete asset
 				if (!(panelAsset.flags & PANEL_ASSET_FLAG_IS_DEFAULT))
 				{
 					if (ImGui::Selectable("Delete"))
 					{
-						/*auto res = SysMessageBox::Show
+						auto res = SysMessageBox::Show
 						(
 							"Asset deletion",
 							"Deleting an asset is dangerous, it could break dependencies with other assets, do you want to continue?",
@@ -327,21 +527,9 @@ namespace panels
 						if (res == MESSAGE_BOX_RESPONSE_YES)
 						{
 							AssetManager::Editor_Delete(asset.uuid, sPendingSaveAssets);
-							sPendingSaveRegistry = true;
-						}*/
-					}
-				}
-
-				switch (asset.type)
-				{
-					case ASSET_TYPE_SHADER:
-					{
-						if (ImGui::Selectable("Create material"))
-						{
-							
+							editor::FlagRegistryPendingSave();
 						}
 					}
-					break;
 				}
 
 				ImGui::EndPopup();
@@ -435,24 +623,7 @@ namespace panels
 
 			ImGui::PopStyleVar();
 
-			if (ImGui::BeginPopupContextItem(gClass->name.c_str(), ImGuiPopupFlags_MouseButtonRight))
-			{
-				// delete asset
-				if (ImGui::Selectable("Create blueprint"))
-				{
-					if (classUtils::IsA(gClass, Actor::StaticClass()))
-					{
-						/*windows::AddWindow<ActorBlueprintEditorWindow>(gClass);*/
-					}
-					else
-					{
-						/*windows::AddWindow<ObjectBlueprintEditorWindow>(gClass);*/
-					}
-				}
-
-				ImGui::EndPopup();
-			}
-			else if (ImGui::IsItemHovered())
+			if (ImGui::IsItemHovered())
 			{
 				ImGui::SetTooltip
 				(
@@ -850,6 +1021,19 @@ void editor::internal::Render()
 			ImGui::EndMenu();
 		}
 
+
+		if (ImGui::BeginMenu("Create"))
+		{
+			if (ImGui::MenuItem("Material"))
+				newAsset::sNewAssetType = ASSET_TYPE_MATERIAL;
+			if (ImGui::MenuItem("Blueprint"))
+				newAsset::sNewAssetType = ASSET_TYPE_BLUEPRINT;
+			if (ImGui::MenuItem("Actor blueprint"))
+				newAsset::sNewAssetType = ASSET_TYPE_ACTOR_BLUEPRINT;
+
+			ImGui::EndMenu();
+		}
+
 		ImGui::EndMenuBar();
 	}
 
@@ -859,6 +1043,10 @@ void editor::internal::Render()
 	panels::EntityList();
 	panels::Properties();
 	panels::Subproperties();
+
+	newAsset::NewAssetPopup();
+	newAsset::CreateNewAsset();
+	
 	windows::UpdateWindows();
 
 	ImGui::End();

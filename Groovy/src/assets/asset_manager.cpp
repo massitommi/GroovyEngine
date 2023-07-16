@@ -10,6 +10,7 @@
 #include "renderer/mesh.h"
 #include "gameframework/blueprint.h"
 #include "gameframework/scene.h"
+#include "utils/string/string_utils.h"
 
 static std::map<AssetUUID, AssetHandle> sAssetRegistry;
 static std::vector<AssetHandle> sAssets;
@@ -217,14 +218,8 @@ AssetHandle AssetManager::FindByPath(const std::string& filePath)
 {
 	for (AssetHandle& handle : sAssets)
 	{
-		if (handle.name.length() == filePath.length())
-		{
-			for (uint32 i = 0; i < filePath.length(); i++)
-			{
-				if (tolower(handle.name[i]) == tolower(filePath[i]))
-					return handle;
-			}
-		}	
+		if (stringUtils::EqualsCaseInsensitive(filePath, handle.name))
+			return handle;
 	}
 	return {};
 }
