@@ -22,6 +22,7 @@ public:
 	inline bool ShouldClose() const { return mShouldClose; }
 	inline void Close() { mShouldClose = true; }
 
+	inline const std::string& GetTitle() const { return mTitle; }
 	inline void SetTitle(const std::string& newTitle) { mTitle = newTitle; }
 
 private:

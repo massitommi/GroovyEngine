@@ -54,13 +54,13 @@ namespace windows
 	static std::vector<EditorWindow*> sWindows;
 	static std::vector<EditorWindow*> sRemoveQueue;
 
-	static std::map<std::string, EditorWindow*> mWndMap;
+	static std::map<std::string, EditorWindow*> sWndMap;
 
 	template<typename WndType, typename ...Args>
 	void AddWindow(const std::string& title, Args... args)
 	{
 		// check if window already exists
-		EditorWindow*& wnd = mWndMap[title];
+		EditorWindow*& wnd = sWndMap[title];
 		
 		if (!wnd)
 		{
@@ -85,8 +85,9 @@ namespace windows
 		// remove pending destoy windows
 		for (EditorWindow* wnd : sRemoveQueue)
 		{
-			delete wnd;
+			sWndMap.erase(wnd->GetTitle());
 			sWindows.erase(std::find(sWindows.begin(), sWindows.end(), wnd));
+			delete wnd;
 		}
 		sRemoveQueue.clear();
 
