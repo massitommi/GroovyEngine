@@ -155,7 +155,7 @@ void AssetManager::Init()
 	// load assets
 	for (const AssetHandle& handle : sAssets)
 	{
-		if (!handle.instance->IsLoaded())
+		if (handle.type != ASSET_TYPE_SCENE && !handle.instance->IsLoaded())
 			handle.instance->Load();
 	}
 }
@@ -242,6 +242,8 @@ AssetHandle AssetManager::Editor_OnImport(const std::string& fileName, EAssetTyp
 
 	handle.instance->Load();
 
+	SaveRegistry();
+
 	return handle;
 }
 
@@ -259,10 +261,12 @@ AssetHandle AssetManager::Editor_OnAdd(const std::string& fileName, EAssetType t
 	sAssets.push_back(handle);
 	sAssetRegistry[uuid] = handle;
 
+	SaveRegistry();
+
 	return handle;
 }
 
-void AssetManager::Editor_Delete(AssetUUID uuid, std::vector<AssetHandle>& outDependencies)
+void AssetManager::Editor_Delete(AssetUUID uuid)
 {
 	AssetHandle assetHandle = sAssetRegistry[uuid];
 	checkslowf(assetHandle.instance, "Asset with uuid: %i not found!", uuid);
@@ -275,12 +279,13 @@ void AssetManager::Editor_Delete(AssetUUID uuid, std::vector<AssetHandle>& outDe
 	// fix dependencies
 	for (AssetHandle& handle : sAssets)
 	{
-		if (handle.instance->Editor_FixDependencyDeletion(assetHandle))
-			outDependencies.push_back(handle);
+		handle.instance->Editor_FixDependencyDeletion(assetHandle);
 	}
 
 	// delete instance
 	delete assetHandle.instance;
+
+	SaveRegistry();
 }
 
 #endif

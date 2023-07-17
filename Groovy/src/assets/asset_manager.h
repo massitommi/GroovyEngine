@@ -29,7 +29,7 @@ public:
 
 	static AssetHandle Editor_OnImport(const std::string& fileName, EAssetType type);
 	static AssetHandle Editor_OnAdd(const std::string& fileName, EAssetType type, AssetInstance* instance);
-	static void Editor_Delete(AssetUUID uuid, std::vector<AssetHandle>& outDependencies);
+	static void Editor_Delete(AssetUUID uuid);
 
 #endif
 };

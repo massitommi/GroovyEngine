@@ -92,8 +92,6 @@ int32 GroovyEntryPoint(const char* args)
 	gScreenFrameBuffer->Bind();
 	Renderer::Init();
 
-	World::Travel(gProj.GetStartupScene());
-
 	while (gEngineShouldRun)
 	{
 		wnd.ProcessEvents();
@@ -112,7 +110,6 @@ int32 GroovyEntryPoint(const char* args)
 		RendererAPI::Get().Present(0);
 	}
 
-	World::End();
 	Renderer::Shutdown();
 
 	GameModule::Shutdown();

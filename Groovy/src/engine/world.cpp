@@ -1,7 +1,7 @@
 #include "world.h"
 #include "assets/asset_manager.h"
 
-static Scene* sCurrentScene;
+static Scene* sCurrentScene = nullptr;
 
 void World::Travel(Scene* scene)
 {

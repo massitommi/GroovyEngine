@@ -42,6 +42,15 @@ extern ClassDB gClassDB;
 
 static FrameBuffer* sGameViewportFrameBuffer = nullptr;
 
+struct EditorScene
+{
+	Scene* scene;
+	std::string name;
+	bool pendingSave;
+};
+
+static EditorScene sEditorScene = { nullptr, "Unsaved_Scene", false };
+
 namespace res
 {
 	static Texture* sShaderAssetIcon = nullptr;
@@ -49,6 +58,25 @@ namespace res
 	static Texture* sMeshAssetIcon = nullptr;
 	static Texture* sClassAssetIcon = nullptr;
 	static Texture* sBlueprintAssetIcon = nullptr;
+	static Texture* sSceneAssetIcon = nullptr;
+
+	Texture* LoadEditorIcon(const std::string& path)
+	{
+		Buffer data;
+		TextureSpec spec;
+		AssetImporter::GetRawTexture(path, data, spec);
+		return Texture::Create(spec, data.data(), data.size());
+	}
+
+	void Load()
+	{
+		sShaderAssetIcon = LoadEditorIcon("res/shader_asset_icon.png");
+		sMaterialAssetIcon = LoadEditorIcon("res/material_asset_icon.png");
+		sMeshAssetIcon = LoadEditorIcon("res/mesh_asset_icon.png");
+		sClassAssetIcon = LoadEditorIcon("res/class_asset_icon.png");
+		sBlueprintAssetIcon = LoadEditorIcon("res/blueprint_asset_icon.png");
+		sSceneAssetIcon = LoadEditorIcon("res/scene_asset_icon.png");
+	}
 }
 
 namespace windows
@@ -111,19 +139,20 @@ namespace windows
 	}
 }
 
-namespace utils
+void TravelToScene(Scene* scene)
 {
-	Texture* LoadEditorIcon(const std::string& path)
+	if (sEditorScene.scene)
 	{
-		Buffer data;
-		TextureSpec spec;
-		AssetImporter::GetRawTexture(path, data, spec);
-		return Texture::Create(spec, data.data(), data.size());
+		sEditorScene.scene->Unload();
 	}
-}
 
-static std::vector<AssetHandle> sPendingSaveAssets;
-static bool sPendingSaveRegistry = false;
+	sEditorScene.scene = scene;
+
+	if (scene)
+		sEditorScene.name = AssetManager::Get(scene->GetUUID()).name;
+
+	sEditorScene.pendingSave = false;
+}
 
 void OnFilesDropped(const std::vector<std::string>& files)
 {
@@ -136,12 +165,10 @@ void OnFilesDropped(const std::vector<std::string>& files)
 		{
 		case ASSET_TYPE_TEXTURE:
 			AssetImporter::ImportTexture(file, newFileName);
-			editor::FlagRegistryPendingSave();
 			break;
 
 		case ASSET_TYPE_MESH:
 			AssetImporter::ImportMesh(file, newFileName);
-			editor::FlagRegistryPendingSave();
 			break;
 		}
 	}
@@ -149,27 +176,6 @@ void OnFilesDropped(const std::vector<std::string>& files)
 
 bool OnCloseRequested()
 {
-	if (editor::IsRegistryPendingSave() || editor::IsAnyAssetPendingSave())
-	{
-		auto response = SysMessageBox::Show
-		(
-			"Exit & Save",
-			"You are exiting without saving, do you want to save and exit?",
-			MESSAGE_BOX_TYPE_WARNING,
-			MESSAGE_BOX_OPTIONS_YESNOCANCEL
-		);
-
-		if (response == MESSAGE_BOX_RESPONSE_YES)
-		{
-			editor::SaveWork();
-			return true;
-		}
-		else if (response == MESSAGE_BOX_RESPONSE_NO)
-		{
-			return true;
-		}
-		return false;
-	}
 	return true;
 }
 
@@ -184,9 +190,10 @@ namespace newAsset
 			!sNewAssetName.empty() &&													// path is not empty
 			sNewAssetName.find(' ') == std::string::npos &&								// path does not contain whitespaces
 			!AssetManager::FindByPath(sNewAssetName + GROOVY_ASSET_EXT).instance &&		// there is no asset with the same path
-			!stringUtils::EqualsCaseInsensitive(sNewAssetName, "DEFAULT_SHADER") &&		// not like default
-			!stringUtils::EqualsCaseInsensitive(sNewAssetName, "DEFAULT_TEXTURE") &&	// not like default
-			!stringUtils::EqualsCaseInsensitive(sNewAssetName, "DEFAULT_MATERIAL");		// not like default
+			!stringUtils::EqualsCaseInsensitive(sNewAssetName, "DEFAULT_SHADER") &&		// blacklisted filename
+			!stringUtils::EqualsCaseInsensitive(sNewAssetName, "DEFAULT_TEXTURE") &&	// blacklisted filename
+			!stringUtils::EqualsCaseInsensitive(sNewAssetName, "DEFAULT_MATERIAL") &&	// blacklisted filename
+			!stringUtils::EqualsCaseInsensitive(sNewAssetName, "Empty_Scene");			// blacklisted filename
 	}
 
 	void CreateNewAsset()
@@ -242,9 +249,8 @@ namespace newAsset
 					Material* newMat = new Material();
 					newMat->SetShader((Shader*)asset.instance);
 					// pending save stuff
-					AssetHandle handle = AssetManager::Editor_OnAdd(sNewAssetName + GROOVY_ASSET_EXT, ASSET_TYPE_MATERIAL, newMat);
-					editor::FlagAssetPendingSave(handle);
-					editor::FlagRegistryPendingSave();
+					AssetManager::Editor_OnAdd(sNewAssetName + GROOVY_ASSET_EXT, ASSET_TYPE_MATERIAL, newMat);
+					newMat->Save();
 					// close popup
 					ImGui::CloseCurrentPopup();
 				}
@@ -277,9 +283,8 @@ namespace newAsset
 					ObjectBlueprint* bp = new ObjectBlueprint();
 					bp->SetupEmpty((GroovyClass*)gClass);
 					// pending save stuff
-					AssetHandle handle = AssetManager::Editor_OnAdd(sNewAssetName + GROOVY_ASSET_EXT, ASSET_TYPE_BLUEPRINT, bp);
-					editor::FlagAssetPendingSave(handle);
-					editor::FlagRegistryPendingSave();
+					AssetManager::Editor_OnAdd(sNewAssetName + GROOVY_ASSET_EXT, ASSET_TYPE_BLUEPRINT, bp);
+					bp->Save();
 					// close popup
 					ImGui::CloseCurrentPopup();
 				}
@@ -312,12 +317,37 @@ namespace newAsset
 					ActorBlueprint* bp = new ActorBlueprint();
 					bp->SetupEmpty((GroovyClass*)gClass);
 					// pending save stuff
-					AssetHandle handle = AssetManager::Editor_OnAdd(sNewAssetName + GROOVY_ASSET_EXT, ASSET_TYPE_ACTOR_BLUEPRINT, bp);
-					editor::FlagAssetPendingSave(handle);
-					editor::FlagRegistryPendingSave();
+					AssetManager::Editor_OnAdd(sNewAssetName + GROOVY_ASSET_EXT, ASSET_TYPE_ACTOR_BLUEPRINT, bp);
+					bp->Save();
 					// close popup
 					ImGui::CloseCurrentPopup();
 				}
+			}
+
+			if (!validPath)
+				ImGui::EndDisabled();
+
+			if (ImGui::IsKeyPressed(ImGuiKey_Escape))
+				ImGui::CloseCurrentPopup();
+
+			ImGui::EndPopup();
+		}
+
+		if (ImGui::BeginPopupModal("New scene"))
+		{
+			bool validPath = FilePathInput();
+			
+			ImGui::Spacing();
+
+			if (!validPath)
+				ImGui::BeginDisabled();
+
+			if (ImGui::Button("Save"))
+			{
+				Scene* newScene = new Scene();
+				AssetManager::Editor_OnAdd(sNewAssetName + GROOVY_ASSET_EXT, ASSET_TYPE_SCENE, newScene);
+				newScene->Save();
+				ImGui::CloseCurrentPopup();
 			}
 
 			if (!validPath)
@@ -347,6 +377,10 @@ namespace newAsset
 				case ASSET_TYPE_ACTOR_BLUEPRINT:
 					ImGui::OpenPopup("New actor blueprint");
 					sNewAssetName = "My_New_Actor_Blueprint";
+					break;
+				case ASSET_TYPE_SCENE:
+					ImGui::OpenPopup("New scene");
+					sNewAssetName = "My_New_Scene";
 					break;
 			}
 
@@ -425,6 +459,11 @@ namespace panels
 				panelAssets[i].thumbnail = res::sBlueprintAssetIcon->GetRendererID();
 				panelAssets[i].typeNameIndex = 5;
 				break;
+
+			case ASSET_TYPE_SCENE:
+				panelAssets[i].thumbnail = res::sSceneAssetIcon->GetRendererID();
+				panelAssets[i].typeNameIndex = 6;
+				break;
 			}
 
 			if (assets[i].uuid <= 3)
@@ -458,6 +497,8 @@ namespace panels
 					newAsset::sNewAssetType = ASSET_TYPE_BLUEPRINT;
 				if (ImGui::MenuItem("Actor blueprint"))
 					newAsset::sNewAssetType = ASSET_TYPE_ACTOR_BLUEPRINT;
+				if (ImGui::MenuItem("Scene"))
+					newAsset::sNewAssetType = ASSET_TYPE_SCENE;
 
 				ImGui::EndMenu();
 			}
@@ -506,6 +547,13 @@ namespace panels
 				case ASSET_TYPE_ACTOR_BLUEPRINT:
 					windows::AddWindow<ActorBlueprintEditorWindow>(asset.name, asset);
 					break;
+
+				case ASSET_TYPE_SCENE:
+					if (sEditorScene.scene != asset.instance)
+					{
+						TravelToScene((Scene*)asset.instance);
+					}
+					break;
 				}
 			}
 
@@ -526,8 +574,15 @@ namespace panels
 						);
 						if (res == MESSAGE_BOX_RESPONSE_YES)
 						{
-							AssetManager::Editor_Delete(asset.uuid, sPendingSaveAssets);
-							editor::FlagRegistryPendingSave();
+							FileSystem::DeleteFile((gProj.GetAssetsPath() / asset.name).string());
+
+							if (asset.instance == sEditorScene.scene)
+								TravelToScene(nullptr);
+
+							sCurrentlySelectedActor = nullptr;
+							sCurrentlySelectedObject = nullptr;
+
+							AssetManager::Editor_Delete(asset.uuid);
 						}
 					}
 				}
@@ -646,6 +701,13 @@ namespace panels
 	{
 		ImGui::Begin("Entity list");
 
+		if (!sEditorScene.scene)
+		{
+			ImGui::Text("No scene loaded");
+			ImGui::End();
+			return;
+		}
+
 		if (ImGui::Button("Add actor"))
 		{
 			ImGui::OpenPopup("add_actor_popup");
@@ -660,7 +722,8 @@ namespace panels
 				{
 					if (ImGui::Selectable(bpHandle.name.c_str()))
 					{
-						World::GetScene()->SpawnActor(bp->GetActorClass(), bp);
+						sEditorScene.scene->SpawnActor(bp->GetActorClass(), bp);
+						sEditorScene.pendingSave = true;
 						ImGui::CloseCurrentPopup();
 						break;
 					}
@@ -673,7 +736,8 @@ namespace panels
 				{
 					if (ImGui::Selectable(groovyClass->name.c_str()))
 					{
-						World::GetScene()->SpawnActor((GroovyClass*)groovyClass);
+						sEditorScene.scene->SpawnActor((GroovyClass*)groovyClass);
+						sEditorScene.pendingSave = true;
 						ImGui::CloseCurrentPopup();
 						break;
 					}
@@ -689,7 +753,7 @@ namespace panels
 		}
 
 		Actor* actorToDelete = nullptr;
-		for (Actor* actor : World::GetScene()->GetActors())
+		for (Actor* actor : sEditorScene.scene->GetActors())
 		{
 			std::string actorName = actor->GetName() + "##" + std::to_string((uint64)actor);
 			ImGui::Columns(2);
@@ -733,7 +797,8 @@ namespace panels
 						sCurrentlySelectedObject = nullptr;
 			}
 
-			World::GetScene()->Editor_DeleteActor(actorToDelete);
+			sEditorScene.scene->Editor_DeleteActor(actorToDelete);
+			sEditorScene.pendingSave = true;
 			
 			actorToDelete = nullptr;
 		}
@@ -782,6 +847,7 @@ namespace panels
 							if (ImGui::Selectable(gClass->name.c_str()))
 							{
 								sCurrentlySelectedActor->__internal_Editor_AddEditorcomponent_Scene((GroovyClass*)gClass, sNewCompName);
+								sEditorScene.pendingSave = true;
 								break;
 							}
 						}
@@ -874,6 +940,7 @@ namespace panels
 						{
 							sCurrentlySelectedActor->__internal_Editor_RenameEditorComponent(sPendingRename, sCompRename);
 							sPendingRename = nullptr;
+							sEditorScene.pendingSave = true;
 							ImGui::CloseCurrentPopup();
 						}
 
@@ -894,6 +961,7 @@ namespace panels
 					else if (sPendingRemove)
 					{
 						sCurrentlySelectedActor->__internal_Editor_RemoveEditorComponent(sPendingRemove);
+						sEditorScene.pendingSave = true;
 						if (sCurrentlySelectedObject == sPendingRemove)
 							sCurrentlySelectedObject = sCurrentlySelectedActor;
 						sPendingRemove = nullptr;
@@ -911,14 +979,19 @@ namespace panels
 
 		if (sCurrentlySelectedObject)
 		{
+			bool transformChanged = false;
+			bool propsChanged = false;
 			if (sCurrentlySelectedObject == sCurrentlySelectedActor)
 			{
 				ImGui::Text("Transform");
-				bool transformChanged = editorGui::Transform("##actor_transform", &sCurrentlySelectedActor->Editor_Transform());
+				transformChanged = editorGui::Transform("##actor_transform", &sCurrentlySelectedActor->Editor_Transform());
 				ImGui::Spacing();
 				ImGui::Spacing();
 			}
-			editorGui::PropertiesAllClasses(sCurrentlySelectedObject);
+			propsChanged = editorGui::PropertiesAllClasses(sCurrentlySelectedObject);
+
+			if (transformChanged || propsChanged)
+				sEditorScene.pendingSave = true;
 		}
 
 		ImGui::End();
@@ -927,28 +1000,37 @@ namespace panels
 	void GameViewport()
 	{
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, { 0,0 });
-		ImGui::Begin("Game viewport");
-		// resize framebuffer if needed
-		ImVec2 wndSize = ImGui::GetContentRegionAvail();
-		bool differentSize = wndSize.x != sGameViewportFrameBuffer->GetSpecs().width || wndSize.y != sGameViewportFrameBuffer->GetSpecs().height;
-		bool okSize = wndSize.x > 0 && wndSize.y > 0;
-		if (differentSize && okSize)
+		ImGui::Begin("Game viewport", nullptr, sEditorScene.pendingSave ? ImGuiWindowFlags_UnsavedDocument : 0);
+
+		if (sEditorScene.scene)
 		{
-			sGameViewportFrameBuffer->Resize(wndSize.x, wndSize.y);
+			// resize framebuffer if needed
+			ImVec2 wndSize = ImGui::GetContentRegionAvail();
+			bool differentSize = wndSize.x != sGameViewportFrameBuffer->GetSpecs().width || wndSize.y != sGameViewportFrameBuffer->GetSpecs().height;
+			bool okSize = wndSize.x > 0 && wndSize.y > 0;
+			if (differentSize && okSize)
+			{
+				sGameViewportFrameBuffer->Resize(wndSize.x, wndSize.y);
+			}
+			// clear frame buffer
+			sGameViewportFrameBuffer->ClearDepthAttachment();
+			sGameViewportFrameBuffer->ClearColorAttachment(0, gScreenClearColor);
+
+			sGameViewportFrameBuffer->Bind();
+
+			// draw framebuffer
+			ImGui::Image(sGameViewportFrameBuffer->GetRendererID(0), wndSize);
+
+			// on screen text
+			ImGui::SetCursorPosY(ImGui::GetWindowSize().y - wndSize.y + 8);
+			ImGui::SetCursorPosX(8);
+			ImGui::Text("Framebuffer %ix%i", sGameViewportFrameBuffer->GetSpecs().width, sGameViewportFrameBuffer->GetSpecs().height);
 		}
-		// clear frame buffer
-		sGameViewportFrameBuffer->ClearDepthAttachment();
-		sGameViewportFrameBuffer->ClearColorAttachment(0, gScreenClearColor);
-
-		sGameViewportFrameBuffer->Bind();
-
-		// draw framebuffer
-		ImGui::Image(sGameViewportFrameBuffer->GetRendererID(0), wndSize);
-
-		// on screen text
-		ImGui::SetCursorPosY(ImGui::GetWindowSize().y - wndSize.y + 8);
-		ImGui::SetCursorPosX(8);
-		ImGui::Text("Framebuffer %ix%i", sGameViewportFrameBuffer->GetSpecs().width, sGameViewportFrameBuffer->GetSpecs().height);
+		else
+		{
+			ImGui::NewLine();
+			ImGui::Text("No scene loaded");
+		}
 
 		ImGui::End();
 		ImGui::PopStyleVar();
@@ -960,12 +1042,6 @@ void editor::internal::Init()
 	gWindow->SubmitToWndCloseCallback(OnCloseRequested);
 	gWindow->SubmitToWndFilesDropCallbacks(OnFilesDropped);
 
-	res::sShaderAssetIcon = ::utils::LoadEditorIcon("res/shader_asset_icon.png");
-	res::sMaterialAssetIcon = ::utils::LoadEditorIcon("res/material_asset_icon.png");
-	res::sMeshAssetIcon = ::utils::LoadEditorIcon("res/mesh_asset_icon.png");
-	res::sClassAssetIcon = ::utils::LoadEditorIcon("res/class_asset_icon.png");
-	res::sBlueprintAssetIcon = ::utils::LoadEditorIcon("res/blueprint_asset_icon.png");
-
 	FrameBufferSpec gameViewportSpec;
 	gameViewportSpec.colorAttachments = { COLOR_FORMAT_R8G8B8A8_UNORM };
 	gameViewportSpec.hasDepthAttachment = true;
@@ -974,6 +1050,28 @@ void editor::internal::Init()
 	gameViewportSpec.height = panels::sGameViewportSize.y = 100;
 
 	sGameViewportFrameBuffer = FrameBuffer::Create(gameViewportSpec);
+
+	res::Load();
+
+	if (gProj.GetStartupScene())
+	{
+		TravelToScene(gProj.GetStartupScene());
+	}
+	else
+	{
+		std::vector<AssetHandle> scenes = AssetManager::GetAssets(ASSET_TYPE_SCENE);
+		if (scenes.size())
+		{
+			TravelToScene((Scene*)scenes[0].instance);
+		}
+		else
+		{
+			Scene* newEmptyScene = new Scene();
+			AssetManager::Editor_OnAdd("Empty_Scene" GROOVY_ASSET_EXT, ASSET_TYPE_SCENE, newEmptyScene);
+			newEmptyScene->Save();
+			TravelToScene(newEmptyScene);
+		}
+	}
 }
 
 void editor::internal::Update(float deltaTime)
@@ -1008,7 +1106,7 @@ void editor::internal::Render()
 		if (ImGui::BeginMenu("File"))
 		{
 			if (ImGui::MenuItem("Save"))
-				SaveWork();
+				__debugbreak();
 
 			ImGui::EndMenu();
 		}
@@ -1030,6 +1128,8 @@ void editor::internal::Render()
 				newAsset::sNewAssetType = ASSET_TYPE_BLUEPRINT;
 			if (ImGui::MenuItem("Actor blueprint"))
 				newAsset::sNewAssetType = ASSET_TYPE_ACTOR_BLUEPRINT;
+			if (ImGui::MenuItem("Scene"))
+				newAsset::sNewAssetType = ASSET_TYPE_SCENE;
 
 			ImGui::EndMenu();
 		}
@@ -1063,49 +1163,6 @@ void editor::internal::Shutdown()
 	delete res::sMaterialAssetIcon;
 	delete res::sMeshAssetIcon;
 	delete sGameViewportFrameBuffer;
-}
-
-bool editor::IsRegistryPendingSave()
-{
-	return sPendingSaveRegistry;
-}
-
-bool editor::IsAnyAssetPendingSave()
-{
-	return sPendingSaveAssets.size();
-}
-
-void editor::FlagRegistryPendingSave()
-{
-	sPendingSaveRegistry = true;
-}
-
-void editor::FlagAssetPendingSave(const AssetHandle& handle)
-{
-	if (std::find_if(sPendingSaveAssets.begin(), sPendingSaveAssets.end(), [=](AssetHandle& h) { return h.uuid == handle.uuid; }) == sPendingSaveAssets.end())
-		sPendingSaveAssets.push_back(handle);
-}
-
-void editor::SaveAssets()
-{
-	for (AssetHandle& handle : sPendingSaveAssets)
-		handle.instance->Save();
-	sPendingSaveAssets.clear();
-}
-
-void editor::SaveRegistry()
-{
-	AssetManager::SaveRegistry();
-	sPendingSaveRegistry = false;
-}
-
-void editor::SaveWork()
-{
-	if (IsAnyAssetPendingSave())
-		SaveAssets();
-
-	if (IsRegistryPendingSave)
-		SaveRegistry();
 }
 
 const char* editor::utils::AssetTypeToStr(EAssetType type)

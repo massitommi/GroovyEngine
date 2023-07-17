@@ -27,14 +27,4 @@ namespace editor
 	{
 		const char* AssetTypeToStr(EAssetType type);
 	}
-
-	bool IsRegistryPendingSave();
-	bool IsAnyAssetPendingSave();
-
-	void FlagRegistryPendingSave();
-	void FlagAssetPendingSave(const AssetHandle& handle);
-
-	void SaveAssets();
-	void SaveRegistry();
-	void SaveWork();
 }

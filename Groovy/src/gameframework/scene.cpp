@@ -93,6 +93,7 @@ Actor* Scene::SpawnActor(GroovyClass* actorClass, ActorBlueprint* bp)
 
 bool Scene::Editor_FixDependencyDeletion(AssetHandle assetToBeDeleted)
 {
+	return false;
 	bool wasLoaded = mLoaded;
 
 	if (!wasLoaded)
