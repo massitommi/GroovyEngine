@@ -61,7 +61,14 @@ void Scene::Deserialize(BufferView fileData)
 
 		if (pack.actorClass)
 		{
-			ActorBlueprint* bp = AssetManager::Get<ActorBlueprint>(bpUUID);
+			ActorBlueprint* bp = nullptr;
+			if (bpUUID)
+			{
+				bp = AssetManager::Get<ActorBlueprint>(bpUUID);
+				if (!bp)
+					continue;
+			}
+			
 			Actor* newActor = SpawnActor(pack.actorClass, bp);
 			newActor->mTransform = transform;
 			newActor->mName = name;

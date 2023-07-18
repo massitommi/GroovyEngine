@@ -143,4 +143,9 @@ EFileOpenResult FileSystem::DeleteFile(const std::string& path)
 	return FILE_OPEN_RESULT_UNKNOWN_ERROR;
 }
 
+bool FileSystem::FileExists(const std::string& path)
+{
+	return GetFileAttributesA(path.c_str()) != INVALID_FILE_ATTRIBUTES;
+}
+
 #endif

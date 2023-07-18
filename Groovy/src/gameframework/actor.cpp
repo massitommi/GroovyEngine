@@ -126,7 +126,6 @@ void Actor::__internal_Editor_RemoveEditorComponent(ActorComponent* component)
 	check(component->mType != ACTOR_COMPONENT_TYPE_NATIVE);
 	
 	auto it = std::find(mComponents.begin(), mComponents.end(), component);
-
 	checkf(it != mComponents.end(), "Editor bug, trying to remove a component that doesn't belong to this actor");
 
 	mComponents.erase(it);

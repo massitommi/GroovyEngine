@@ -135,21 +135,31 @@ void AssetManager::Init()
 
 	uint32 assetsCount = registryView.read<uint32>();
 
-	sAssets.reserve(assetsCount);
-
+	std::vector<AssetHandle> registry;
 	// load registry
 	for (uint32 i = 0; i < assetsCount; i++)
 	{
-		AssetHandle assetHandle;
-		assetHandle.name = registryView.read<std::string>();
-		assetHandle.uuid = registryView.read<AssetUUID>();
-		assetHandle.type = registryView.read<EAssetType>();
-		assetHandle.instance = InstantiateAsset(assetHandle);
+		AssetHandle& asset = registry.emplace_back();
+		asset.name = registryView.read<std::string>();
+		asset.uuid = registryView.read<AssetUUID>();
+		asset.type = registryView.read<EAssetType>();
+	}
+	// validate registry
+	for (uint32 i = 0; i < registry.size(); i++)
+	{
+		if (!FileSystem::FileExists((gProj.GetAssetsPath() / registry[i].name).string()))
+		{
+			registry.erase(registry.begin() + i);
+			i--;
+		}
+		else
+		{
+			AssetHandle& asset = sAssets.emplace_back(registry[i]);
+			asset.instance = InstantiateAsset(asset);
+			asset.instance->__internal_SetUUID(asset.uuid);
 
-		assetHandle.instance->__internal_SetUUID(assetHandle.uuid);
-
-		sAssets.push_back(assetHandle);
-		sAssetRegistry[assetHandle.uuid] = assetHandle;
+			sAssetRegistry[asset.uuid] = asset;
+		}
 	}
 
 	// load assets

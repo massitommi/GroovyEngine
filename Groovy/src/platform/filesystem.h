@@ -21,6 +21,7 @@ public:
 	static EFileOpenResult WriteFileBinary(const std::string& path, const void* data, size_t sizeBytes);
 	static EFileOpenResult OverwriteFileBinary(const std::string& path, const void* data, size_t sizeBytes, size_t offset);
 	static EFileOpenResult DeleteFile(const std::string& path);
+	static bool FileExists(const std::string& path);
 
 	inline static EFileOpenResult WriteFileBinary(const std::string& path, const Buffer& data)
 	{

@@ -137,21 +137,37 @@ void ActorSerializer::DeserializeActorPackData(const ActorPack& pack, Actor* act
 	{
 		ActorComponent* comp = nullptr;
 
-		if (compPack.componentType == ACTOR_COMPONENT_TYPE_NATIVE)
+		switch (compPack.componentType)
 		{
-			comp = actor->GetComponent(compPack.componentName);
-		}
-		else
-		{
-			comp = actor->GetComponent(compPack.componentName);
-			if (!comp)
+			case ACTOR_COMPONENT_TYPE_NATIVE:
+			{
+				comp = actor->GetComponent(compPack.componentName);
+			}
+			break;
+
+			case ACTOR_COMPONENT_TYPE_EDITOR_BP:
+			{
+				if (actor->mTemplate)
+				{
+					comp = actor->GetComponent(compPack.componentName);
+				}
+				else
+				{
+					comp = actor->AddComponent(compPack.componentClass, compPack.componentName);
+					comp->mType = ACTOR_COMPONENT_TYPE_EDITOR_BP;
+				}
+			}	
+			break;
+
+			case ACTOR_COMPONENT_TYPE_EDITOR_SCENE:
 			{
 				comp = actor->AddComponent(compPack.componentClass, compPack.componentName);
-				comp->mType = compPack.componentType;
+				comp->mType = ACTOR_COMPONENT_TYPE_EDITOR_SCENE;
 			}
+			break;
 		}
 
-		if (comp && comp->GetClass() == compPack.componentClass)
+		if (comp && comp->mType == compPack.componentType && comp->GetClass() == compPack.componentClass)
 			ObjectSerializer::DeserializePropertyPackData(compPack.componentProperties, comp);
 	}
 }
