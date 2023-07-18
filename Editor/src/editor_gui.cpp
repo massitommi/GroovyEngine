@@ -283,10 +283,15 @@ bool editorGui::PropertiesSingleClass(GroovyObject* obj, GroovyClass* gClass, co
 
 	for (const GroovyProperty& prop : props)
 	{
+		if (prop.flags & PROPERTY_FLAG_EDITOR_HIDDEN)
+			continue;
+
 		ImGui::Spacing();
 		ImGui::Spacing();
+		
 		if (Property(prop, (byte*)obj + prop.offset))
 			changed = true;
+		
 		ImGui::Spacing();
 		ImGui::Spacing();
 	}
@@ -304,6 +309,15 @@ bool editorGui::PropertiesAllClasses(GroovyObject* obj)
 	{
 		std::vector<GroovyProperty> props;
 		superClass->propertiesGetter(props);
+
+		for (uint32 i = 0; i < props.size(); i++)
+		{
+			if (props[i].flags & PROPERTY_FLAG_EDITOR_HIDDEN)
+			{
+				props.erase(props.begin() + i);
+				i--;
+			}
+		}
 
 		if (props.size())
 		{

@@ -149,7 +149,10 @@ void TravelToScene(Scene* scene)
 	sEditorScene.scene = scene;
 
 	if (scene)
+	{
 		sEditorScene.name = AssetManager::Get(scene->GetUUID()).name;
+		sEditorScene.scene->Load();
+	}
 
 	sEditorScene.pendingSave = false;
 }
@@ -395,6 +398,9 @@ namespace panels
 
 	static Actor* sCurrentlySelectedActor = nullptr;
 	static GroovyObject* sCurrentlySelectedObject = nullptr;
+	static Actor* sActorToRename = nullptr;
+	static bool sShowActorRename = false;
+	static std::string sActorRename;
 
 	static float sIconSize = 140.0f;
 	static const float ICON_SIZE_MAX = 256.0f;
@@ -710,11 +716,13 @@ namespace panels
 
 		if (ImGui::Button("Add actor"))
 		{
-			ImGui::OpenPopup("add_actor_popup");
+			ImGui::OpenPopup("Select actor template / class to add");
 		}
 
-		if (ImGui::BeginPopupModal("add_actor_popup", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+		if (ImGui::BeginPopupModal("Select actor template / class to add"))
 		{
+			ImGui::Text("Templates:");
+			ImGui::Spacing();
 			for (AssetHandle bpHandle : AssetManager::GetAssets(ASSET_TYPE_ACTOR_BLUEPRINT))
 			{
 				ActorBlueprint* bp = (ActorBlueprint*)bpHandle.instance;
@@ -729,7 +737,10 @@ namespace panels
 					}
 				}
 			}
+			ImGui::Spacing();
 			ImGui::Separator();
+			ImGui::Text("Classes:");
+			ImGui::Spacing();
 			for (const GroovyClass* groovyClass : gClassDB.GetClasses())
 			{
 				if (classUtils::IsA(groovyClass, Actor::StaticClass()))
@@ -744,9 +755,7 @@ namespace panels
 				}
 			}
 
-			ImGui::Separator();
-
-			if (ImGui::Button("Cancel"))
+			if (ImGui::IsKeyPressed(ImGuiKey_Escape))
 				ImGui::CloseCurrentPopup();
 
 			ImGui::EndPopup();
@@ -756,6 +765,7 @@ namespace panels
 		for (Actor* actor : sEditorScene.scene->GetActors())
 		{
 			std::string actorName = actor->GetName() + "##" + std::to_string((uint64)actor);
+			ActorBlueprint* bp = actor->GetTemplate();
 			ImGui::Columns(2);
 			if (ImGui::Selectable(actorName.c_str(), sCurrentlySelectedActor == actor))
 			{
@@ -764,14 +774,23 @@ namespace panels
 			}
 			if (ImGui::BeginPopupContextItem(actorName.c_str(), ImGuiPopupFlags_MouseButtonRight))
 			{
-				if (ImGui::Selectable("Remove"))
+				if (ImGui::Selectable("Rename"))
+				{
+					sActorToRename = actor;
+					sShowActorRename = true;
+				}
+				else if (ImGui::Selectable("Remove"))
 				{
 					actorToDelete = actor;
+				}
+				else if (bp && ImGui::Selectable("Open blueprint"))
+				{
+					AssetHandle bpAsset = AssetManager::Get(bp->GetUUID());
+					windows::AddWindow<ActorBlueprintEditorWindow>(bpAsset.name, bpAsset);
 				}
 				ImGui::EndPopup();
 			}
 			ImGui::NextColumn();
-			ActorBlueprint* bp = actor->GetTemplate();
 			if (bp)
 			{
 				ImGui::Text(AssetManager::Get(bp->GetUUID()).name.c_str());
@@ -801,6 +820,43 @@ namespace panels
 			sEditorScene.pendingSave = true;
 			
 			actorToDelete = nullptr;
+		}
+		if (sShowActorRename)
+		{
+			ImGui::OpenPopup("Rename actor");
+			sActorRename = sActorToRename->GetName();
+			sShowActorRename = false;
+		}
+		if (ImGui::BeginPopupModal("Rename actor"))
+		{
+			bool invalidName = sActorRename.empty() || std::count(sActorRename.begin(), sActorRename.end(), ' ') == sActorRename.length();
+
+			if (invalidName)
+				ImGui::PushStyleColor(ImGuiCol_Text, { 1.0f, 0.7f, 0.0f, 1.0f });
+
+			ImGui::InputText("##actor_rename", &sActorRename);
+
+			if (invalidName)
+				ImGui::PopStyleColor();
+
+			if (invalidName)
+				ImGui::BeginDisabled();
+
+			if (ImGui::Button("Rename"))
+			{
+				sActorToRename->Editor_NameRef() = sActorRename;
+				ImGui::CloseCurrentPopup();
+			}
+
+			if (invalidName)
+				ImGui::EndDisabled();
+
+			if (ImGui::IsKeyPressed(ImGuiKey_Escape))
+			{
+				ImGui::CloseCurrentPopup();
+			}
+
+			ImGui::EndPopup();
 		}
 
 		ImGui::End();
@@ -984,7 +1040,14 @@ namespace panels
 			if (sCurrentlySelectedObject == sCurrentlySelectedActor)
 			{
 				ImGui::Text("Transform");
-				transformChanged = editorGui::Transform("##actor_transform", &sCurrentlySelectedActor->Editor_Transform());
+				transformChanged = editorGui::Transform("##actor_transform", &sCurrentlySelectedActor->Editor_TransformRef());
+				ImGui::Spacing();
+				ImGui::Spacing();
+			}
+			else if (SceneComponent* sceneComp = Cast<SceneComponent>(sCurrentlySelectedObject))
+			{
+				ImGui::Text("Transform (relative)");
+				transformChanged = editorGui::Transform("##scene_comp_transform", &sceneComp->Editor_TransformRef());
 				ImGui::Spacing();
 				ImGui::Spacing();
 			}
@@ -1106,7 +1169,13 @@ void editor::internal::Render()
 		if (ImGui::BeginMenu("File"))
 		{
 			if (ImGui::MenuItem("Save"))
-				__debugbreak();
+			{
+				if (sEditorScene.scene)
+				{
+					sEditorScene.scene->Save();
+					sEditorScene.pendingSave = false;
+				}
+			}
 
 			ImGui::EndMenu();
 		}

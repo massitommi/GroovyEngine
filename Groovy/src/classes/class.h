@@ -30,7 +30,8 @@ enum EPropertyFlags : uint32
 	PROPERTY_FLAG_IS_DYNAMIC_ARRAY = BITFLAG(2),
 	PROPERTY_FLAG_IS_COMPLEX = BITFLAG(3),
 	PROPERTY_FLAG_NO_SERIALIZE = BITFLAG(4),
-	PROPERTY_FLAG_EDITOR_READONLY = BITFLAG(5)
+	PROPERTY_FLAG_EDITOR_READONLY = BITFLAG(5),
+	PROPERTY_FLAG_EDITOR_HIDDEN = BITFLAG(6)
 };
 
 struct GroovyProperty
@@ -238,6 +239,30 @@ struct PropertyDesc
 
 struct PropertyPack
 {
+	PropertyPack() {}
+
+	PropertyPack(const PropertyPack& copyPack)
+		: desc(copyPack.desc), data(copyPack.data)
+	{}
+
+	PropertyPack(PropertyPack&& movePack)
+		: desc(std::move(movePack.desc)), data(std::move(movePack.data))
+	{}
+
+	PropertyPack& operator=(const PropertyPack& copyPack)
+	{
+		desc = copyPack.desc;
+		data = copyPack.data;
+		return *this;
+	}
+
+	PropertyPack& operator=(PropertyPack&& movePack)
+	{
+		desc = std::move(movePack.desc);
+		data = std::move(movePack.data);
+		return *this;
+	}
+
 	std::vector<PropertyDesc> desc;
 	DynamicBuffer data;
 };

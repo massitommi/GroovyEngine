@@ -42,7 +42,17 @@ class SceneComponent : public ActorComponent
 {
 	GROOVY_CLASS_BODY(SceneComponent, ActorComponent)
 
+public:
+
+#if WITH_EDITOR
+	Transform& Editor_TransformRef() { return mTransform; }
+#endif
+
 private:
 	// Relative to parent component / actor
 	Transform mTransform;
+
+	friend class Actor;
+	friend class ActorSerializer;
+	friend class Scene;
 };

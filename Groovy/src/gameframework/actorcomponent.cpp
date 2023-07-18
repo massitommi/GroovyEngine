@@ -13,4 +13,5 @@ ActorComponent::~ActorComponent()
 }
 
 GROOVY_CLASS_IMPL(SceneComponent)
+	GROOVY_REFLECT_EX(mTransform, PROPERTY_FLAG_EDITOR_HIDDEN) // for UI purposes
 GROOVY_CLASS_END()

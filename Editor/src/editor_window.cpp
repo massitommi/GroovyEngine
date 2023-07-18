@@ -462,7 +462,16 @@ void ActorBlueprintEditorWindow::RenderContent()
 		ImGui::Spacing();
 		ImGui::Spacing();
 
-		if (editorGui::PropertiesAllClasses(mSelected))
+		bool transformChanged = false;
+		if (SceneComponent* sceneComp = Cast<SceneComponent>(mSelected))
+		{
+			ImGui::Text("Transform (relative)");
+			transformChanged = editorGui::Transform("##scene_comp_transform", &sceneComp->Editor_TransformRef());
+			ImGui::Spacing();
+			ImGui::Spacing();
+		}
+		bool propsChanged = editorGui::PropertiesAllClasses(mSelected);
+		if (transformChanged || propsChanged)
 		{
 			FlagPendingSave();
 		}
@@ -470,7 +479,6 @@ void ActorBlueprintEditorWindow::RenderContent()
 		ImGui::EndChild();
 		ImGui::Columns();
 	}
-
 
 	if (click)
 	{

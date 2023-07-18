@@ -37,6 +37,7 @@ void Scene::Serialize(DynamicBuffer& fileData) const
 	fileData.push<uint32>(mActors.size());
 	for (Actor* actor : mActors)
 	{
+		fileData.push<std::string>(actor->mName);
 		fileData.push<AssetUUID>(actor->mTemplate ? actor->mTemplate->GetUUID() : 0);
 		fileData.push<Transform>(actor->GetTransform());
 
@@ -51,6 +52,7 @@ void Scene::Deserialize(BufferView fileData)
 	uint32 actorsCount = fileData.read<uint32>();
 	for (uint32 i = 0; i < actorsCount; i++)
 	{
+		std::string name = fileData.read<std::string>();
 		AssetUUID bpUUID = fileData.read<AssetUUID>();
 		Transform transform = fileData.read<Transform>();
 
@@ -61,6 +63,8 @@ void Scene::Deserialize(BufferView fileData)
 		{
 			ActorBlueprint* bp = AssetManager::Get<ActorBlueprint>(bpUUID);
 			Actor* newActor = SpawnActor(pack.actorClass, bp);
+			newActor->mTransform = transform;
+			newActor->mName = name;
 			ActorSerializer::DeserializeActorPackData(pack, newActor);
 		}
 	}

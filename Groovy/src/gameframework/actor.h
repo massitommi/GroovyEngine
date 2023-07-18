@@ -78,7 +78,9 @@ public:
 	void __internal_Editor_RemoveEditorComponent(ActorComponent* component);
 	void __internal_Editor_RenameEditorComponent(ActorComponent* component, const std::string& newName);
 
-	Transform& Editor_Transform() { return mTransform; }
+	Transform& Editor_TransformRef() { return mTransform; }
+	std::string& Editor_NameRef() { return mName; }
+
 #endif
 
 private:

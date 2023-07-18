@@ -21,37 +21,33 @@ void ActorSerializer::CreateActorPack(Actor* actor, ActorPack& outPack)
 	ObjectSerializer::CreatePropertyPack(actor, actorCDO, outPack.actorProperties);
 
 	// components
+	for (ActorComponent* component : actor->mComponents)
+	{
+		GroovyObject* componentCDO = nullptr;
 
-	if (!actorTemplate) // we don't have a template, we are either creating a blueprint or serializing a generic actor in a scene
-	{
-		for (ActorComponent* component : actor->mComponents)
+		if (actorTemplate && component->mType != ACTOR_COMPONENT_TYPE_EDITOR_SCENE)
+			componentCDO = actorTemplate->GetDefaultActor()->GetComponent(component->mName);
+		else
+			componentCDO = component->GetCDO();
+
+		PropertyPack componentProperties;
+		ObjectSerializer::CreatePropertyPack(component, componentCDO, componentProperties);
+
+		// avoid saving useless components data
+		if (!componentProperties.desc.size())
 		{
-			ComponentPack& pack = outPack.actorComponents.emplace_back();
-			pack.componentName = component->mName;
-			pack.componentType = component->mType;
-			pack.componentClass = component->GetClass();
-			ObjectSerializer::CreatePropertyPack(component, component->GetCDO(), pack.componentProperties);
+			if (component->mType == ACTOR_COMPONENT_TYPE_NATIVE)
+				continue;
+			else if (component->mType == ACTOR_COMPONENT_TYPE_EDITOR_BP && actorTemplate)
+				continue;
 		}
-	}
-	else // we are serializing an actor in a scene that was spawned with a blueprint
-	{
-		for (ActorComponent* component : actor->mComponents)
-		{
-			GroovyObject* componentCDO = nullptr;
-			if (component->mType != ACTOR_COMPONENT_TYPE_EDITOR_SCENE) // we have inherited this component
-			{
-				componentCDO = actorTemplate->GetDefaultActor()->GetComponent(component->mName);
-			}
-			else
-			{
-				componentCDO = component->GetCDO();
-			}
-			ComponentPack pack;
-			pack.componentName = component->mName;
-			pack.componentType = component->mType;
-			pack.componentClass = component->GetClass();
-			ObjectSerializer::CreatePropertyPack(component, componentCDO, pack.componentProperties);
-		}
+
+		// ok we need to save the groovy stuff
+		ComponentPack& pack = outPack.actorComponents.emplace_back();
+		pack.componentName = component->mName;
+		pack.componentType = component->mType;
+		pack.componentClass = component->GetClass();
+		pack.componentProperties = std::move(componentProperties);
 	}
 }
 
