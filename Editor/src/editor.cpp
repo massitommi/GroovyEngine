@@ -33,6 +33,8 @@
 
 #include "utils/string/string_utils.h"
 
+#include "project/project.h"
+
 extern ClearColor gScreenClearColor;
 extern Window* gWindow;
 extern GroovyProject gProj;
@@ -793,7 +795,8 @@ namespace panels
 			ImGui::NextColumn();
 			if (bp)
 			{
-				ImGui::Text(AssetManager::Get(bp->GetUUID()).name.c_str());
+				std::filesystem::path bpFilename(AssetManager::Get(bp->GetUUID()).name);
+				ImGui::Text(bpFilename.replace_extension().string().c_str());
 			}
 			else
 			{
