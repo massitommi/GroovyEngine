@@ -8,7 +8,8 @@ GROOVY_CLASS_IMPL(Actor)
 GROOVY_CLASS_END()
 
 Actor::Actor()
-	: mTransform{{ 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 0.0f }, { 1.0f, 1.0f, 1.0f }}, mShouldTick(true), mTemplate(nullptr), mName("Actor")
+	: mTransform{{ 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 0.0f }, { 1.0f, 1.0f, 1.0f }},
+	mName("Actor"), mShouldTick(true), mScene(nullptr), mTemplate(nullptr)
 {
 }
 
@@ -72,6 +73,18 @@ uint32 Actor::GetComponentsExact(GroovyClass* componentClass, std::vector<ActorC
 	return found;
 }
 
+void Actor::InitializeComponents()
+{
+	for (ActorComponent* comp : mComponents)
+		comp->Initialize();
+}
+
+void Actor::UninitializeComponents()
+{
+	for (ActorComponent* comp : mComponents)
+		comp->Uninitialize();
+}
+
 void Actor::BeginPlay()
 {
 }
@@ -95,11 +108,11 @@ ActorComponent* Actor::AddComponent(GroovyClass* componentClass, const std::stri
 
 	ActorComponent* newComponent = ObjectAllocator::Instantiate<ActorComponent>(componentClass);
 
-	dbRecord = newComponent;
-	mComponents.push_back(newComponent);
-
 	newComponent->mName = name;
 	newComponent->mOwner = this;
+
+	dbRecord = newComponent;
+	mComponents.push_back(newComponent);
 
 	return newComponent;
 }
@@ -110,6 +123,7 @@ ActorComponent* Actor::__internal_Editor_AddEditorcomponent_BP(GroovyClass* comp
 {
 	ActorComponent* newComponent = AddComponent(componentClass, name);
 	newComponent->mType = ACTOR_COMPONENT_TYPE_EDITOR_BP;
+	newComponent->Initialize();
 	return newComponent;
 }
 
@@ -117,6 +131,7 @@ ActorComponent* Actor::__internal_Editor_AddEditorcomponent_Scene(GroovyClass* c
 {
 	ActorComponent* newComponent = AddComponent(componentClass, name);
 	newComponent->mType = ACTOR_COMPONENT_TYPE_EDITOR_SCENE;
+	newComponent->Initialize();
 	return newComponent;
 }
 
@@ -127,6 +142,8 @@ void Actor::__internal_Editor_RemoveEditorComponent(ActorComponent* component)
 	
 	auto it = std::find(mComponents.begin(), mComponents.end(), component);
 	checkf(it != mComponents.end(), "Editor bug, trying to remove a component that doesn't belong to this actor");
+
+	component->Uninitialize();
 
 	mComponents.erase(it);
 	mComponentsDB.erase(component->GetName());

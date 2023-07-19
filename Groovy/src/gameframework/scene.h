@@ -23,6 +23,9 @@ public:
 	virtual void Serialize(DynamicBuffer& fileData) const override;
 	virtual void Deserialize(BufferView fileData) override;
 
+	void Initialize();
+	void Uninitialize();
+
 	Actor* SpawnActor(GroovyClass* actorClass, ActorBlueprint* bp = nullptr);
 
 	template<typename TActor>

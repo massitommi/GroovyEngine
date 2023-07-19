@@ -22,8 +22,6 @@
 #include "editor_window.h"
 #include "gameframework/blueprint.h"
 
-#include "engine/world.h"
-
 #include "gameframework/actor.h"
 #include "gameframework/actorcomponent.h"
 #include "gameframework/scene.h"
@@ -34,6 +32,8 @@
 #include "utils/string/string_utils.h"
 
 #include "project/project.h"
+
+#include "renderer/scene_renderer.h"
 
 extern ClearColor gScreenClearColor;
 extern Window* gWindow;
@@ -78,6 +78,16 @@ namespace res
 		sClassAssetIcon = LoadEditorIcon("res/class_asset_icon.png");
 		sBlueprintAssetIcon = LoadEditorIcon("res/blueprint_asset_icon.png");
 		sSceneAssetIcon = LoadEditorIcon("res/scene_asset_icon.png");
+	}
+
+	void Unload()
+	{
+		delete sShaderAssetIcon;
+		delete sMaterialAssetIcon;
+		delete sMeshAssetIcon;
+		delete sClassAssetIcon;
+		delete sBlueprintAssetIcon;
+		delete sSceneAssetIcon;
 	}
 }
 
@@ -145,6 +155,7 @@ void TravelToScene(Scene* scene)
 {
 	if (sEditorScene.scene)
 	{
+		sEditorScene.scene->Uninitialize();
 		sEditorScene.scene->Unload();
 	}
 
@@ -154,6 +165,7 @@ void TravelToScene(Scene* scene)
 	{
 		sEditorScene.name = AssetManager::Get(scene->GetUUID()).name;
 		sEditorScene.scene->Load();
+		sEditorScene.scene->Initialize();
 	}
 
 	sEditorScene.pendingSave = false;
@@ -732,7 +744,7 @@ namespace panels
 				{
 					if (ImGui::Selectable(bpHandle.name.c_str()))
 					{
-						sEditorScene.scene->SpawnActor(bp->GetActorClass(), bp);
+						sEditorScene.scene->Editor_SpawnActor(bp->GetActorClass(), bp);
 						sEditorScene.pendingSave = true;
 						ImGui::CloseCurrentPopup();
 						break;
@@ -749,7 +761,7 @@ namespace panels
 				{
 					if (ImGui::Selectable(groovyClass->name.c_str()))
 					{
-						sEditorScene.scene->SpawnActor((GroovyClass*)groovyClass);
+						sEditorScene.scene->Editor_SpawnActor((GroovyClass*)groovyClass, nullptr);
 						sEditorScene.pendingSave = true;
 						ImGui::CloseCurrentPopup();
 						break;
@@ -1084,6 +1096,12 @@ namespace panels
 
 			sGameViewportFrameBuffer->Bind();
 
+			if (sEditorScene.scene)
+			{
+				SceneRenderer::BeginScene({ 0.0f, 0.0f, -5.0f }, { 0,0,0 }, 60);
+				SceneRenderer::RenderScene();
+			}
+
 			// draw framebuffer
 			ImGui::Image(sGameViewportFrameBuffer->GetRendererID(0), wndSize);
 
@@ -1116,6 +1134,8 @@ void editor::internal::Init()
 	gameViewportSpec.height = panels::sGameViewportSize.y = 100;
 
 	sGameViewportFrameBuffer = FrameBuffer::Create(gameViewportSpec);
+
+	SceneRenderer::SetFrameBuffer(sGameViewportFrameBuffer);
 
 	res::Load();
 
@@ -1229,11 +1249,7 @@ void editor::internal::Render()
 void editor::internal::Shutdown()
 {
 	windows::Shutdown();
-	delete res::sBlueprintAssetIcon;
-	delete res::sClassAssetIcon;
-	delete res::sShaderAssetIcon;
-	delete res::sMaterialAssetIcon;
-	delete res::sMeshAssetIcon;
+	res::Unload();
 	delete sGameViewportFrameBuffer;
 }
 

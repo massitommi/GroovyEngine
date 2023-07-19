@@ -1,26 +1,36 @@
 #include "renderer.h"
 #include "api/renderer_api.h"
 
-// register 0 mvp buffer
-static ConstBuffer* sMVPBuffer;
+// register 0 = view projection
+static ConstBuffer* sCameraVPBuffer;
+// register 1 = model
+static ConstBuffer* sModelBuffer;
 
 static Shader* sCurrentlyBoundShader;
 
 void Renderer::Init()
 {
-	sMVPBuffer = ConstBuffer::Create(sizeof(Mat4), nullptr);
-	sMVPBuffer->BindForVertexShader(0);
+	sCameraVPBuffer = ConstBuffer::Create(sizeof(Mat4), nullptr);
+	sCameraVPBuffer->BindForVertexShader(VIEW_PROJECTION_BUFFER_INDEX);
+	sModelBuffer = ConstBuffer::Create(sizeof(Mat4), nullptr);
+	sModelBuffer->BindForVertexShader(MODEL_BUFFER_INDEX);
 	sCurrentlyBoundShader = nullptr;
 }
 
 void Renderer::Shutdown()
 {
-	delete sMVPBuffer;
+	delete sCameraVPBuffer;
+	delete sModelBuffer;
 }
 
-void Renderer::BeginScene(Mat4& mvp)
+void Renderer::SetCamera(Mat4& vpMatrix)
 {
-	sMVPBuffer->Overwrite(&mvp, sizeof(mvp));
+	sCameraVPBuffer->Overwrite(&vpMatrix, sizeof(Mat4));
+}
+
+void Renderer::SetModel(Mat4& modelMatrix)
+{
+	sModelBuffer->Overwrite(&modelMatrix, sizeof(Mat4));
 }
 
 void Renderer::RenderMesh(Mesh* mesh)
@@ -36,8 +46,11 @@ void Renderer::RenderMesh(Mesh* mesh)
 	{
 		Material* mat = mesh->GetMaterials()[i];
 		
-		if(mat->mShader != sCurrentlyBoundShader)
+		if (mat->mShader != sCurrentlyBoundShader)
+		{
 			mat->mShader->Bind();
+			sCurrentlyBoundShader = mat->mShader;
+		}
 
 		for (MaterialResource& res : mat->mResources)
 			res.res->Bind(res.slot);

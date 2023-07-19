@@ -77,6 +77,18 @@ void Scene::Deserialize(BufferView fileData)
 	}
 }
 
+void Scene::Initialize()
+{
+	for (Actor* actor : mActors)
+		actor->InitializeComponents();
+}
+
+void Scene::Uninitialize()
+{
+	for (Actor* actor : mActors)
+		actor->UninitializeComponents();
+}
+
 Actor* Scene::SpawnActor(GroovyClass* actorClass, ActorBlueprint* bp)
 {
 	check(actorClass);
@@ -88,6 +100,7 @@ Actor* Scene::SpawnActor(GroovyClass* actorClass, ActorBlueprint* bp)
 	}
 
 	Actor* newActor = ObjectAllocator::Instantiate<Actor>(actorClass);
+	newActor->mScene = this;
 
 	if (bp)
 	{
@@ -144,6 +157,7 @@ bool Scene::Editor_FixDependencyDeletion(AssetHandle assetToBeDeleted)
 void Scene::Editor_SpawnActor(GroovyClass* actorClass, ActorBlueprint* bp)
 {
 	Actor* newActor = SpawnActor(actorClass, bp);
+	newActor->InitializeComponents();
 }
 
 void Scene::Editor_DeleteActor(Actor* actor)

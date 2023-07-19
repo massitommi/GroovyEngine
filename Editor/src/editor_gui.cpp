@@ -81,13 +81,13 @@ bool editorGui::AssetRef(const char* label, EAssetType type, void* data, GroovyC
 	return click;
 }
 
-bool editorGui::Transform(const char* label, void* data, float v_speed, float v_min, float v_max)
+bool editorGui::Transform(const char* label, void* data)
 {
 	struct Transform* t = (struct Transform*)data;
 	ImGui::NewLine();
-	bool loc = ImGui::DragFloat3("Location", &t->location.x, v_speed, v_min, v_max);
-	bool rot = ImGui::DragFloat3("Rotation", &t->rotation.x, v_speed, v_min, v_max);
-	bool scale = ImGui::DragFloat3("Scale", &t->scale.x, v_speed, v_min, v_max);
+	bool loc = ImGui::DragFloat3("Location", &t->location.x, 0.05f);
+	bool rot = ImGui::DragFloat3("Rotation", &t->rotation.x, 0.5f);
+	bool scale = ImGui::DragFloat3("Scale", &t->scale.x, 0.05f);
 	return loc || rot || scale;
 }
 
@@ -139,7 +139,7 @@ bool editorGui::PropertyInput(const std::string& label, EPropertyType type, void
 			click = ImGui::DragFloat4(lblVal.c_str(), (float*)data, 0.01f, 0.0f, 0.0f);
 			break;
 		case PROPERTY_TYPE_TRANSFORM:
-			click = Transform(lblVal.c_str(), data, 0.01f, 0.0f, 0.0f);
+			click = Transform(lblVal.c_str(), data);
 			break;
 		case PROPERTY_TYPE_STRING:
 			click = ImGui::InputText(lblVal.c_str(), (std::string*)data);

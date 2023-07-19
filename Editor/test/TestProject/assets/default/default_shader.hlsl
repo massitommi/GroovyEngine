@@ -7,16 +7,21 @@ struct VertexOutput
 	float2 textCoords : TEXTCOORDS;
 };
 
-cbuffer mvpBuffer : register(b0)
+cbuffer ViewProjBuffer : register(b0)
 {
-	float4x4 mvp;
+	float4x4 vp;
+};
+
+cbuffer ModelBuffer : register(b1)
+{
+	float4x4 m;
 };
 
 VertexOutput main(float4 position : POSITION, float4 color : COLOR, float2 textCoords : TEXTCOORDS)
 {
 	VertexOutput output;
 
-	output.position = mul(position, mvp);
+	output.position = mul(position, mul(m, vp));
 	output.color = color;
 	output.textCoords = textCoords;
 

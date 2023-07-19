@@ -4,6 +4,7 @@
 
 class ActorComponent;
 class ActorBlueprint;
+class Scene;
 
 GROOVY_CLASS_DECL(Actor)
 class Actor : public GroovyObject
@@ -51,6 +52,9 @@ protected:
 		return (TComponent*)AddComponent(TComponent::StaticClass(), name);
 	}
 
+	void InitializeComponents();
+	void UninitializeComponents();
+	
 	virtual void BeginPlay();
 	virtual void Tick(float deltaTime);
 	virtual void Destroy();
@@ -65,6 +69,7 @@ public:
 
 	inline const std::string& GetName() const { return mName; }
 	inline ActorBlueprint* GetTemplate() const { return mTemplate; }
+	inline Scene* GetScene() const { return mScene; }
 
 protected:
 	ActorComponent* AddComponent(GroovyClass* componentClass, const std::string& name);
@@ -87,6 +92,7 @@ private:
 	Transform mTransform;
 	std::string mName;
 	bool mShouldTick;
+	Scene* mScene;
 
 	ActorBlueprint* mTemplate;
 	
@@ -96,3 +102,5 @@ private:
 	friend class ActorSerializer;
 	friend class Scene;
 };
+
+class World* GetWorld();

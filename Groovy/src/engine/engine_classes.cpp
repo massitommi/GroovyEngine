@@ -7,6 +7,9 @@
 
 #include "gameframework/actor.h"
 #include "gameframework/actorcomponent.h"
+#include "gameframework/components/meshcomponent.h"
+#include "gameframework/components/cameracomponent.h"
+#include "gameframework/meshactor.h"
 
 CLASS_LIST_BEGIN(ENGINE_CLASSES)
 {
@@ -19,6 +22,9 @@ CLASS_LIST_BEGIN(ENGINE_CLASSES)
 
 	CLASS_LIST_ADD(Actor),
 	CLASS_LIST_ADD(ActorComponent),
-	CLASS_LIST_ADD(SceneComponent)
+	CLASS_LIST_ADD(SceneComponent),
+	CLASS_LIST_ADD(MeshComponent),
+	CLASS_LIST_ADD(CameraComponent),
+	CLASS_LIST_ADD(MeshActor)
 }
 CLASS_LIST_END()

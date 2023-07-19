@@ -8,8 +8,6 @@
 #include "classes/class_db.h"
 #include "renderer/renderer.h"
 #include "gameframework/scene.h"
-#include "gameframework/game_module.h"
-#include "world.h"
 #include "runtime/object_allocator.h"
 
 bool gEngineShouldRun = true;
@@ -87,7 +85,6 @@ int32 GroovyEntryPoint(const char* args)
 	gProj.Load();
 
 	Application::Init();
-	GameModule::Startup();
 
 	gScreenFrameBuffer->Bind();
 	Renderer::Init();
@@ -112,7 +109,6 @@ int32 GroovyEntryPoint(const char* args)
 
 	Renderer::Shutdown();
 
-	GameModule::Shutdown();
 	Application::Shutdown();
 
 	gProj.Save();
