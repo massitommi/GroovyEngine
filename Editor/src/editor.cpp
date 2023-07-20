@@ -1287,6 +1287,7 @@ void editor::Render()
 				{
 					sEditorScene.scene->Save();
 					sEditorScene.pendingSave = false;
+					AssetManager::SaveRegistry();
 				}
 			}
 
