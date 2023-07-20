@@ -1,7 +1,7 @@
 #pragma once
 
 #include "core/core.h"
-#include "classes/class.h"
+#include "classes/object.h"
 
 namespace editorGui
 {
@@ -15,16 +15,28 @@ namespace editorGui
 
 namespace editor
 {
-	namespace internal
-	{
-		void Init();
-		void Update(float deltaTime);
-		void Render();
-		void Shutdown();
-	}
+	void Init();
+	void Update(float deltaTime);
+	void Render();
+	void Shutdown();
 
 	namespace utils
 	{
 		const char* AssetTypeToStr(EAssetType type);
 	}
 }
+
+#define EDITOR_SETTINGS_FILE "settings/settings"
+
+GROOVY_CLASS_DECL(EditorSettings)
+class EditorSettings : public GroovyObject
+{
+	GROOVY_CLASS_BODY(EditorSettings, GroovyObject)
+public:
+	float mEditorCameraFOV = 60.0f;
+	float mEditorCameraMoveSpeed = 1.0f;
+	float mEditorCameraRotationSpeed = 0.3f;
+
+	void Load();
+	void Save();
+};

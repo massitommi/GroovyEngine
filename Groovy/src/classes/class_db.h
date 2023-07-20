@@ -15,6 +15,8 @@ public:
 	// called at engine shutdown
 	void DestroyCDOs();
 
+	void BuildCDO(GroovyClass* gClass);
+
 	const std::vector<GroovyProperty>& operator[](GroovyClass* gClass);
 	GroovyClass* operator[](const std::string& className);
 

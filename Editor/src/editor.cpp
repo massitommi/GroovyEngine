@@ -1,9 +1,27 @@
 #include "engine/application.h"
+
+#include "vendor/imgui/imgui.h"
+#include "vendor/imgui/backends/imgui_impl_win32.h"
+#include "vendor/imgui/backends/imgui_impl_dx11.h"
+#include "vendor/imgui/misc/cpp/imgui_stdlib.h"
+
+#include "editor.h"
+#include "editor_window.h"
+
+#include "imgui_renderer/imgui_renderer.h"
+
 #include "platform/platform.h"
 #include "project/project.h"
-
 #include "assets/assets.h"
 #include "asset_importer.h"
+
+#include "gameframework/actor.h"
+#include "gameframework/actorcomponent.h"
+#include "gameframework/blueprint.h"
+#include "gameframework/scene.h"
+
+#include "classes/reflection.h"
+#include "classes/class_db.h"
 
 #include "renderer/api/renderer_api.h"
 #include "renderer/api/framebuffer.h"
@@ -11,29 +29,11 @@
 #include "renderer/api/shader.h"
 #include "renderer/renderer.h"
 #include "renderer/material.h"
+#include "renderer/scene_renderer.h"
 
-#include "math/matrix.h"
-
-#include "vendor/imgui/imgui.h"
-#include "vendor/imgui/backends/imgui_impl_win32.h"
-#include "vendor/imgui/backends/imgui_impl_dx11.h"
-#include "vendor/imgui/misc/cpp/imgui_stdlib.h"
-#include "imgui_renderer/imgui_renderer.h"
-#include "editor_window.h"
-#include "gameframework/blueprint.h"
-
-#include "gameframework/actor.h"
-#include "gameframework/actorcomponent.h"
-#include "gameframework/scene.h"
-#include "editor.h"
-#include "classes/reflection.h"
-#include "classes/class_db.h"
+#include "math/math.h"
 
 #include "utils/string/string_utils.h"
-
-#include "project/project.h"
-
-#include "renderer/scene_renderer.h"
 
 extern ClearColor gScreenClearColor;
 extern Window* gWindow;
@@ -46,12 +46,50 @@ static FrameBuffer* sGameViewportFrameBuffer = nullptr;
 
 struct EditorScene
 {
-	Scene* scene;
-	std::string name;
-	bool pendingSave;
+	class Scene* scene = nullptr;
+	std::string name = "Unsaved_Scene";
+	bool pendingSave = false;
 };
 
-static EditorScene sEditorScene = { nullptr, "Unsaved_Scene", false };
+struct EditorCamera
+{
+	Vec3 location = { 0.0f, 0.0f, -3.0f };
+	Vec3 rotation = { 0.0f, 0.0f, 0.0f };
+};
+
+void EditorSettings::Load()
+{
+	Buffer settingsFile;
+	FileSystem::ReadFileBinary(EDITOR_SETTINGS_FILE, settingsFile);
+	if (settingsFile.size())
+	{
+		PropertyPack pack;
+		BufferView settingsFileView(settingsFile);
+		ObjectSerializer::DeserializePropertyPack(EditorSettings::StaticClass(), settingsFileView, pack);
+		ObjectSerializer::DeserializePropertyPackData(pack, this);
+	}
+}
+
+void EditorSettings::Save()
+{
+	PropertyPack pack;
+	ObjectSerializer::CreatePropertyPack(this, EditorSettings::StaticCDO(), pack);
+	DynamicBuffer settingsFile;
+	ObjectSerializer::SerializePropertyPack(pack, settingsFile);
+	FileSystem::WriteFileBinary(EDITOR_SETTINGS_FILE, settingsFile);
+}
+
+GROOVY_CLASS_IMPL(EditorSettings)
+	GROOVY_REFLECT(mEditorCameraFOV)
+	GROOVY_REFLECT(mEditorCameraMoveSpeed)
+	GROOVY_REFLECT(mEditorCameraRotationSpeed)
+GROOVY_CLASS_END()
+
+static bool sGameViewportFocused = false;
+static ImVec2 sMousePos = { 0.0f, 0.0f };
+static EditorScene sEditorScene;
+static EditorCamera sEditorCamera;
+EditorSettings gEditorSettings;
 
 namespace res
 {
@@ -1079,6 +1117,7 @@ namespace panels
 	{
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, { 0,0 });
 		ImGui::Begin("Game viewport", nullptr, sEditorScene.pendingSave ? ImGuiWindowFlags_UnsavedDocument : 0);
+		sGameViewportFocused = ImGui::IsWindowFocused();
 
 		if (sEditorScene.scene)
 		{
@@ -1098,7 +1137,7 @@ namespace panels
 
 			if (sEditorScene.scene)
 			{
-				SceneRenderer::BeginScene({ 0.0f, 0.0f, -5.0f }, { 0,0,0 }, 60);
+				SceneRenderer::BeginScene(sEditorCamera.location, sEditorCamera.rotation, gEditorSettings.mEditorCameraFOV);
 				SceneRenderer::RenderScene();
 			}
 
@@ -1121,8 +1160,11 @@ namespace panels
 	}
 }
 
-void editor::internal::Init()
+void editor::Init()
 {
+	gClassDB.Register(EditorSettings::StaticClass());
+	gClassDB.BuildCDO(EditorSettings::StaticClass());
+
 	gWindow->SubmitToWndCloseCallback(OnCloseRequested);
 	gWindow->SubmitToWndFilesDropCallbacks(OnFilesDropped);
 
@@ -1136,6 +1178,8 @@ void editor::internal::Init()
 	sGameViewportFrameBuffer = FrameBuffer::Create(gameViewportSpec);
 
 	SceneRenderer::SetFrameBuffer(sGameViewportFrameBuffer);
+
+	gEditorSettings.Load();
 
 	res::Load();
 
@@ -1160,12 +1204,58 @@ void editor::internal::Init()
 	}
 }
 
-void editor::internal::Update(float deltaTime)
+void editor::Update(float deltaTime)
 {
+	ImVec2 currentMousePos = ImGui::GetMousePos();
+	// update editor camera
+	if (sEditorScene.scene && sGameViewportFocused)
+	{
+		// update camera location
+		{
+			if (ImGui::IsKeyDown(ImGuiKey_D))
+			{
+				sEditorCamera.location += math::GetRightVector(sEditorCamera.rotation) * (gEditorSettings.mEditorCameraMoveSpeed * deltaTime * 1.0f);
+			}
+			if (ImGui::IsKeyDown(ImGuiKey_A))
+			{
+				sEditorCamera.location += math::GetRightVector(sEditorCamera.rotation) * (gEditorSettings.mEditorCameraMoveSpeed * deltaTime * -1.0f);
+			}
+			if (ImGui::IsKeyDown(ImGuiKey_W))
+			{
+				sEditorCamera.location += math::GetForwardVector(sEditorCamera.rotation) * (gEditorSettings.mEditorCameraMoveSpeed * deltaTime * 1.0f);
+			}
+			if (ImGui::IsKeyDown(ImGuiKey_S))
+			{
+				sEditorCamera.location += math::GetForwardVector(sEditorCamera.rotation) * (gEditorSettings.mEditorCameraMoveSpeed * deltaTime * -1.0f);
+			}
+			if (ImGui::IsKeyDown(ImGuiKey_Q))
+			{
+				sEditorCamera.location += math::GetUpVector(sEditorCamera.rotation) * (gEditorSettings.mEditorCameraMoveSpeed * deltaTime * 1.0f);
+			}
+			if (ImGui::IsKeyDown(ImGuiKey_E))
+			{
+				sEditorCamera.location += math::GetUpVector(sEditorCamera.rotation) * (gEditorSettings.mEditorCameraMoveSpeed * deltaTime * -1.0f);
+			}
+		}
+		// update camera rotation
+		{
+			if (ImGui::IsKeyDown(ImGuiKey_MouseRight))
+			{
+				float deltaX = sMousePos.x - currentMousePos.x;
+				float deltaY = sMousePos.y - currentMousePos.y;
 
+				if (deltaX != 0.0f)
+					sEditorCamera.rotation.y += -deltaX * gEditorSettings.mEditorCameraRotationSpeed;
+
+				if(deltaY)
+					sEditorCamera.rotation.x += -deltaY * gEditorSettings.mEditorCameraRotationSpeed;
+			}
+		}
+	}
+	sMousePos = currentMousePos;
 }
 
-void editor::internal::Render()
+void editor::Render()
 {
 	static bool p_open = true;
 	static ImGuiDockNodeFlags dockspace_flags = ImGuiDockNodeFlags_None;
@@ -1207,6 +1297,8 @@ void editor::internal::Render()
 		{
 			if(ImGui::MenuItem("Project settings"))
 				windows::AddWindow<ProjectSettingsWindow>("Project settings");
+			if (ImGui::MenuItem("Editor settings"))
+				windows::AddWindow<EditorSettingsWindow>("Editor settings");
 			
 			ImGui::EndMenu();
 		}
@@ -1246,8 +1338,9 @@ void editor::internal::Render()
 	ImGui::Render();
 }
 
-void editor::internal::Shutdown()
+void editor::Shutdown()
 {
+	gEditorSettings.Save();
 	windows::Shutdown();
 	res::Unload();
 	delete sGameViewportFrameBuffer;

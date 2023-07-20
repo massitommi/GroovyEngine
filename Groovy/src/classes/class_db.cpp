@@ -29,6 +29,11 @@ void ClassDB::DestroyCDOs()
 			ObjectAllocator::Destroy(gClass->cdo);
 }
 
+void ClassDB::BuildCDO(GroovyClass* gClass)
+{
+	gClass->cdo = ObjectAllocator::Instantiate(gClass);
+}
+
 const std::vector<GroovyProperty>& ClassDB::operator[](GroovyClass* gClass)
 {
 	return mPropsDB[gClass];

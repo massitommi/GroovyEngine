@@ -136,3 +136,9 @@ private:
 	std::string mProjName;
 	Scene* mStartupScene;
 };
+
+class EditorSettingsWindow : public EditorWindow
+{
+public:
+	virtual void RenderContent() override;
+};

@@ -24,12 +24,12 @@ void Application::Init()
 	sRenderer = ImGuiRenderer::Create();
 	sRenderer->Init();
 
-	editor::internal::Init();
+	editor::Init();
 }
 
 void Application::Update(float deltaTime)
 {
-	editor::internal::Update(deltaTime);
+	editor::Update(deltaTime);
 }
 
 void Application::Render()
@@ -37,7 +37,7 @@ void Application::Render()
 	sRenderer->NewFrame();
 	ImGui::NewFrame();
 
-	editor::internal::Render();
+	editor::Render();
 }
 
 void Application::Render2EditorOnly()
@@ -47,7 +47,7 @@ void Application::Render2EditorOnly()
 
 void Application::Shutdown()
 {
-	editor::internal::Shutdown();
+	editor::Shutdown();
 
 	delete sRenderer;
 

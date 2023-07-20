@@ -353,3 +353,4 @@ MigrationBackup/
 *.sln
 *.filters
 *.vcxproj
+Editor/settings/settings

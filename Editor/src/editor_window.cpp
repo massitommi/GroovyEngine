@@ -524,3 +524,75 @@ void ProjectSettingsWindow::RenderContent()
 	if (invalidName)
 		ImGui::EndDisabled();
 }
+
+void EditorSettingsWindow::RenderContent()
+{
+	extern EditorSettings gEditorSettings;
+
+	float colWidth = ImGui::GetContentRegionAvail().x / 100 * 30;
+	ImGui::Columns(2);
+
+	ImGui::Text("Editor camera FOV");
+	
+	ImGui::NextColumn();
+	
+	ImGui::DragFloat("##editor_camera_fov", &gEditorSettings.mEditorCameraFOV, 0.1f, 0.1f, 360.f);
+	ImGui::SameLine();
+	ImGui::TextDisabled("(?)");
+	if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayShort) && ImGui::BeginTooltip())
+	{
+		ImGui::PushTextWrapPos(ImGui::GetFontSize() * 35.0f);
+		ImGui::TextUnformatted("Field of view of the editor camera, expressed in degrees");
+		ImGui::PopTextWrapPos();
+		ImGui::EndTooltip();
+	}
+
+	ImGui::NextColumn();
+
+	ImGui::Text("Editor camera move speed");
+
+	ImGui::NextColumn();
+	
+	ImGui::DragFloat("##editor_camera_move_speed", &gEditorSettings.mEditorCameraMoveSpeed, 0.1f, 0.001f, 1000.0f);
+	ImGui::SameLine();
+	ImGui::TextDisabled("(?)");
+	if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayShort) && ImGui::BeginTooltip())
+	{
+		ImGui::PushTextWrapPos(ImGui::GetFontSize() * 35.0f);
+		ImGui::TextUnformatted("Move speed of the editor camera");
+		ImGui::PopTextWrapPos();
+		ImGui::EndTooltip();
+	}
+
+	ImGui::NextColumn();
+
+	ImGui::Text("Editor camera rotation speed");
+	
+	ImGui::NextColumn();
+
+	ImGui::DragFloat("##editor_camera_rot_speed", &gEditorSettings.mEditorCameraRotationSpeed, 0.1f, 0.001f, 1000.0f);
+	ImGui::SameLine();
+	ImGui::TextDisabled("(?)");
+	if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayShort) && ImGui::BeginTooltip())
+	{
+		ImGui::PushTextWrapPos(ImGui::GetFontSize() * 35.0f);
+		ImGui::TextUnformatted("Rotation speed of the editor camera");
+		ImGui::PopTextWrapPos();
+		ImGui::EndTooltip();
+	}
+
+	ImGui::Columns();
+
+	ImGui::Spacing();
+	ImGui::Spacing();
+	ImGui::Spacing();
+	ImGui::Spacing();
+
+	if (ImGui::Button("Reset to defaults"))
+	{
+		EditorSettings* editorSettingsCDO = (EditorSettings*)EditorSettings::StaticCDO();
+		gEditorSettings.mEditorCameraFOV = editorSettingsCDO->mEditorCameraFOV;
+		gEditorSettings.mEditorCameraMoveSpeed = editorSettingsCDO->mEditorCameraMoveSpeed;
+		gEditorSettings.mEditorCameraRotationSpeed = editorSettingsCDO->mEditorCameraRotationSpeed;
+	}
+}
