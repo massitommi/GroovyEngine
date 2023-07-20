@@ -163,11 +163,9 @@ void AssetManager::Init()
 	}
 
 	// load assets
-	for (const AssetHandle& handle : sAssets)
-	{
-		if (handle.type != ASSET_TYPE_SCENE && !handle.instance->IsLoaded())
-			handle.instance->Load();
-	}
+	for(uint32 i = 3; i < sAssets.size(); i++)
+		if (sAssets[i].type != ASSET_TYPE_SCENE && !sAssets[i].instance->IsLoaded())
+			sAssets[i].instance->Load();
 }
 
 void AssetManager::Shutdown()
