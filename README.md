@@ -1,8 +1,8 @@
 # GroovyEngine
-Game engine with editor
+Game engine with editor, currently in development, important stuff missing like physics.
 
 # How to build
-Even though this engine was built with cross platform support in mind, it currently runs only on Windows.
+The engine was built from the ground up with cross platform support in mind, but it currently runs only on Windows.
 To build the Visual Studio 2022 solution just run "GenWinProjects.bat", then launch!
 
 # Cool stuff
