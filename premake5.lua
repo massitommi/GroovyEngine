@@ -16,6 +16,8 @@ workspace "GroovyEngine"
 
     defines "PLATFORM_WIN32"
 
+    rtti "Off"
+
     filter "configurations:Debug_Editor or Development_Editor"
         defines "WITH_EDITOR"
     filter {}
