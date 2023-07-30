@@ -15,3 +15,4 @@ Important note: if you change your build configuration from Editor to Shipping/D
 # Libs used
 - Dear ImGui
 - stbi
+- tinyobj
