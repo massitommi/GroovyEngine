@@ -16,6 +16,7 @@
 #include "asset_importer.h"
 
 #include "gameframework/actor.h"
+#include "gameframework/meshactor.h"
 #include "gameframework/actorcomponent.h"
 #include "gameframework/blueprint.h"
 #include "gameframework/scene.h"
@@ -34,29 +35,6 @@
 #include "math/math.h"
 
 #include "utils/string/string_utils.h"
-
-
-extern ClearColor gScreenClearColor;
-extern Window* gWindow;
-extern GroovyProject gProj;
-extern std::vector<GroovyClass*> ENGINE_CLASSES;
-extern std::vector<GroovyClass*> GAME_CLASSES;
-extern ClassDB gClassDB;
-
-static FrameBuffer* sGameViewportFrameBuffer = nullptr;
-
-struct EditorScene
-{
-	class Scene* scene = nullptr;
-	std::string name = "Unsaved_Scene";
-	bool pendingSave = false;
-};
-
-struct EditorCamera
-{
-	Vec3 location = { 0.0f, 0.0f, -3.0f };
-	Vec3 rotation = { 0.0f, 0.0f, 0.0f };
-};
 
 void EditorSettings::Load()
 {
@@ -81,15 +59,51 @@ void EditorSettings::Save()
 }
 
 GROOVY_CLASS_IMPL(EditorSettings)
-	GROOVY_REFLECT(mEditorCameraFOV)
-	GROOVY_REFLECT(mEditorCameraMoveSpeed)
-	GROOVY_REFLECT(mEditorCameraRotationSpeed)
+	GROOVY_REFLECT(mCameraFOV)
+	GROOVY_REFLECT(mCameraMoveSpeed)
+	GROOVY_REFLECT(mCameraRotationSpeed)
+	GROOVY_REFLECT(mContentBrowserIconSize)
+	GROOVY_REFLECT(mClassBrowserShowEngineClasses)
+	GROOVY_REFLECT(mClassBrowserShowGameClasses)
 GROOVY_CLASS_END()
 
+struct EditorScene
+{
+	Scene* scene = nullptr;
+	Actor* selectedActor = nullptr;
+	GroovyObject* selectedSubobject = nullptr;
+};
+
+enum EEditorSceneState
+{
+	EDITOR_SCENE_STATE_EDIT,
+	EDITOR_SCENE_STATE_PLAY
+};
+
+struct EditorCamera
+{
+	Vec3 location = { 0.0f, 0.0f, -3.0f };
+	Vec3 rotation = { 0.0f, 0.0f, 0.0f };
+};
+
+extern ClearColor gScreenClearColor;
+extern Window* gWindow;
+extern GroovyProject gProj;
+extern std::vector<GroovyClass*> ENGINE_CLASSES;
+extern std::vector<GroovyClass*> GAME_CLASSES;
+extern ClassDB gClassDB;
+
+static FrameBuffer* sGameViewportFrameBuffer = nullptr;
 static bool sGameViewportFocused = false;
 static ImVec2 sMousePos = { 0.0f, 0.0f };
-static EditorScene sEditorScene;
+static std::string sEditSceneName;
+static bool sEditScenePendingSave = false;
 static EditorCamera sEditorCamera;
+static EditorScene sEditScene;
+static EditorScene sPlayScene;
+static EEditorSceneState sEditorSceneState = EDITOR_SCENE_STATE_EDIT;
+static EditorScene* sCurrentScene = nullptr;
+
 EditorSettings gEditorSettings;
 
 namespace res
@@ -192,20 +206,23 @@ namespace windows
 
 void TravelToScene(Scene* scene)
 {
-	if (sEditorScene.scene)
+	if (sEditScene.scene)
 	{
-		sEditorScene.scene->Unload();
+		sEditScene.scene->Unload();
 	}
 
-	sEditorScene.scene = scene;
+	sEditScene.scene = scene;
 
 	if (scene)
 	{
-		sEditorScene.name = AssetManager::Get(scene->GetUUID()).name;
-		sEditorScene.scene->Load();
+		sEditSceneName = AssetManager::Get(scene->GetUUID()).name;
+		sEditScene.scene->Load();
 	}
 
-	sEditorScene.pendingSave = false;
+	sEditScenePendingSave = false;
+	sEditScene.selectedActor = nullptr;
+	sEditScene.selectedSubobject = nullptr;
+	sCurrentScene = &sEditScene;
 }
 
 void OnFilesDropped(const std::vector<std::string>& files)
@@ -230,7 +247,25 @@ void OnFilesDropped(const std::vector<std::string>& files)
 
 bool OnCloseRequested()
 {
-	return true;
+	if (!sEditScenePendingSave)
+		return true;
+
+	auto res = SysMessageBox::Show
+	(
+		"Quitting without saving", "Do you want to save and quit?",
+		MESSAGE_BOX_TYPE_WARNING, MESSAGE_BOX_OPTIONS_YESNOCANCEL
+	);
+
+	if (res == MESSAGE_BOX_RESPONSE_YES)
+	{
+		sEditScene.scene->Save();
+		return true;
+	}
+	else if (res == MESSAGE_BOX_RESPONSE_NO)
+	{
+		return true;
+	}
+	return false;
 }
 
 namespace newAsset
@@ -447,18 +482,12 @@ namespace panels
 {
 	static ImVec2 sGameViewportSize = { 100, 100 };
 
-	static Actor* sCurrentlySelectedActor = nullptr;
-	static GroovyObject* sCurrentlySelectedObject = nullptr;
 	static Actor* sActorToRename = nullptr;
 	static bool sShowActorRename = false;
 	static std::string sActorRename;
 
-	static float sIconSize = 140.0f;
 	static const float ICON_SIZE_MAX = 256.0f;
 	static const float ICON_SIZE_MIN = 100.0f;
-
-	static bool sShowEngineClasses = true;
-	static bool sShowGameClasses = true;
 
 	static const const char* TYPES_STR[] =
 	{
@@ -533,14 +562,14 @@ namespace panels
 
 		float contentWidth = ImGui::GetContentRegionAvail().x;
 		float contentHeight = ImGui::GetContentRegionAvail().y;
-		int columns = contentWidth / sIconSize;
+		int columns = contentWidth / gEditorSettings.mContentBrowserIconSize;
 		columns = columns < 1 ? 1 : columns;
 
 		// end stolen ui code
 
 		ImGui::Spacing();
 		ImGui::SetNextItemWidth(200);
-		ImGui::SliderFloat("Item size", &sIconSize, ICON_SIZE_MIN, ICON_SIZE_MAX);
+		ImGui::SliderFloat("Item size", &gEditorSettings.mContentBrowserIconSize, ICON_SIZE_MIN, ICON_SIZE_MAX);
 		ImGui::Spacing();
 		ImGui::Spacing();
 
@@ -578,7 +607,7 @@ namespace panels
 
 			ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, { 3,3 });
 
-			if (ImGui::ImageButton(fileNameNoExt.c_str(), panelAsset.thumbnail, { sIconSize - 10, sIconSize - 5 }, { 0,0 }, { 1,1 }, { 1,1,1,1 }))
+			if (ImGui::ImageButton(fileNameNoExt.c_str(), panelAsset.thumbnail, { gEditorSettings.mContentBrowserIconSize - 10, gEditorSettings.mContentBrowserIconSize - 5 }, { 0,0 }, { 1,1 }, { 1,1,1,1 }))
 			{
 				switch (asset.type)
 				{
@@ -606,7 +635,7 @@ namespace panels
 					break;
 
 				case ASSET_TYPE_SCENE:
-					if (sEditorScene.scene != asset.instance)
+					if (sEditorSceneState == EDITOR_SCENE_STATE_EDIT && sEditScene.scene != asset.instance)
 					{
 						TravelToScene((Scene*)asset.instance);
 					}
@@ -618,9 +647,13 @@ namespace panels
 
 			if (ImGui::BeginPopupContextItem(fileNameNoExt.c_str(), ImGuiPopupFlags_MouseButtonRight))
 			{
-				// delete asset
-				if (!(panelAsset.flags & PANEL_ASSET_FLAG_IS_DEFAULT))
+				// delete
 				{
+					bool cantDelete = sEditorSceneState != EDITOR_SCENE_STATE_EDIT || panelAsset.flags & PANEL_ASSET_FLAG_IS_DEFAULT;
+
+					if (cantDelete)
+						ImGui::BeginDisabled();
+
 					if (ImGui::Selectable("Delete"))
 					{
 						auto res = SysMessageBox::Show
@@ -633,15 +666,15 @@ namespace panels
 						{
 							FileSystem::DeleteFile((gProj.GetAssetsPath() / asset.name).string());
 
-							if (asset.instance == sEditorScene.scene)
+							if (asset.instance == sEditScene.scene)
 								TravelToScene(nullptr);
-
-							sCurrentlySelectedActor = nullptr;
-							sCurrentlySelectedObject = nullptr;
 
 							AssetManager::Editor_Delete(asset.uuid);
 						}
 					}
+
+					if (cantDelete)
+						ImGui::EndDisabled();
 				}
 
 				ImGui::EndPopup();
@@ -693,11 +726,11 @@ namespace panels
 
 		std::vector<GroovyClass*> classes;
 
-		if (sShowEngineClasses)
+		if (gEditorSettings.mClassBrowserShowEngineClasses)
 			for (GroovyClass* c : ENGINE_CLASSES)
 				classes.push_back(c);
 
-		if (sShowGameClasses)
+		if (gEditorSettings.mClassBrowserShowGameClasses)
 			for (GroovyClass* c : GAME_CLASSES)
 				classes.push_back(c);
 
@@ -705,17 +738,17 @@ namespace panels
 
 		float contentWidth = ImGui::GetContentRegionAvail().x;
 		float contentHeight = ImGui::GetContentRegionAvail().y;
-		int columns = contentWidth / sIconSize;
+		int columns = contentWidth / gEditorSettings.mContentBrowserIconSize;
 		columns = columns < 1 ? 1 : columns;
 
 		// end stolen ui code
 
 		ImGui::Spacing();
 		ImGui::SetNextItemWidth(200);
-		ImGui::SliderFloat("Item size", &sIconSize, ICON_SIZE_MIN, ICON_SIZE_MAX);
-		ImGui::Checkbox("Show engine classes", &sShowEngineClasses);
+		ImGui::SliderFloat("Item size", &gEditorSettings.mContentBrowserIconSize, ICON_SIZE_MIN, ICON_SIZE_MAX);
+		ImGui::Checkbox("Show engine classes", &gEditorSettings.mClassBrowserShowEngineClasses);
 		ImGui::SameLine();
-		ImGui::Checkbox("Show game classes", &sShowGameClasses);
+		ImGui::Checkbox("Show game classes", &gEditorSettings.mClassBrowserShowGameClasses);
 		ImGui::Spacing();
 		ImGui::Spacing();
 
@@ -731,7 +764,7 @@ namespace panels
 
 			ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, { 3,3 });
 
-			ImGui::ImageButton(gClass->name.c_str(), res::sClassAssetIcon->GetRendererID(), { sIconSize - 10, sIconSize - 5 }, { 0,0 }, { 1,1 }, { 1,1,1,1 });
+			ImGui::ImageButton(gClass->name.c_str(), res::sClassAssetIcon->GetRendererID(), { gEditorSettings.mContentBrowserIconSize - 10, gEditorSettings.mContentBrowserIconSize - 5 }, { 0,0 }, { 1,1 }, { 1,1,1,1 });
 
 			ImGui::PopStyleVar();
 
@@ -758,52 +791,97 @@ namespace panels
 	{
 		ImGui::Begin("Entity list");
 
-		if (!sEditorScene.scene)
+		if (!sCurrentScene->scene)
 		{
 			ImGui::Text("No scene loaded");
 			ImGui::End();
 			return;
 		}
 
+		if (sEditorSceneState != EDITOR_SCENE_STATE_EDIT)
+			ImGui::BeginDisabled();
+
 		if (ImGui::Button("Add actor"))
 		{
 			ImGui::OpenPopup("Select actor template / class to add");
 		}
 
+		if (sEditorSceneState != EDITOR_SCENE_STATE_EDIT)
+			ImGui::EndDisabled();
+
 		if (ImGui::BeginPopupModal("Select actor template / class to add"))
 		{
-			ImGui::Text("Templates:");
-			ImGui::Spacing();
-			for (AssetHandle bpHandle : AssetManager::GetAssets(ASSET_TYPE_ACTOR_BLUEPRINT))
+			if (ImGui::BeginTabBar("add_actor_popup"))
 			{
-				ActorBlueprint* bp = (ActorBlueprint*)bpHandle.instance;
-				if (bp->GetActorClass())
+				if (ImGui::BeginTabItem("Generic"))
 				{
-					if (ImGui::Selectable(bpHandle.name.c_str()))
+					ImGui::Spacing();
+					ImGui::Spacing();
+
+					if (ImGui::Selectable("Empty actor"))
 					{
-						sEditorScene.scene->Editor_AddActor(bp->GetActorClass(), bp);
-						sEditorScene.pendingSave = true;
+						sCurrentScene->scene->Editor_AddActor(Actor::StaticClass(), nullptr);
+						sEditScenePendingSave = true;
 						ImGui::CloseCurrentPopup();
-						break;
 					}
+					if (ImGui::Selectable("Mesh actor"))
+					{
+						sCurrentScene->scene->Editor_AddActor(MeshActor::StaticClass(), nullptr);
+						sEditScenePendingSave = true;
+						ImGui::CloseCurrentPopup();
+					}
+
+					ImGui::EndTabItem();
 				}
-			}
-			ImGui::Spacing();
-			ImGui::Separator();
-			ImGui::Text("Classes:");
-			ImGui::Spacing();
-			for (const GroovyClass* groovyClass : gClassDB.GetClasses())
-			{
-				if (classUtils::IsA(groovyClass, Actor::StaticClass()))
+				if (ImGui::BeginTabItem("Blueprints"))
 				{
-					if (ImGui::Selectable(groovyClass->name.c_str()))
+					ImGui::Spacing();
+					ImGui::Spacing();
+
+					for (AssetHandle& bpHandle : AssetManager::GetAssets(ASSET_TYPE_ACTOR_BLUEPRINT))
 					{
-						sEditorScene.scene->Editor_AddActor((GroovyClass*)groovyClass, nullptr);
-						sEditorScene.pendingSave = true;
-						ImGui::CloseCurrentPopup();
-						break;
+						ActorBlueprint* bp = (ActorBlueprint*)bpHandle.instance;
+						if (ImGui::Selectable(bpHandle.name.c_str()))
+						{
+							if (bp->GetActorClass())
+							{
+								sCurrentScene->scene->Editor_AddActor(bp->GetActorClass(), bp);
+								sEditScenePendingSave = true;
+							}
+							else
+							{
+								SysMessageBox::Show_Warning("Corrupted blueprint", "This blueprint is corrupted, please delete it");
+							}
+							ImGui::CloseCurrentPopup();
+							break;
+						}
 					}
+
+					ImGui::EndTabItem();
 				}
+				if (ImGui::BeginTabItem("All classes"))
+				{
+					ImGui::Spacing();
+					ImGui::Spacing();
+
+					for (const GroovyClass* groovyClass : gClassDB.GetClasses())
+					{
+						if (classUtils::IsA(groovyClass, Actor::StaticClass()))
+						{
+							if (ImGui::Selectable(groovyClass->name.c_str()))
+							{
+								sCurrentScene->scene->Editor_AddActor((GroovyClass*)groovyClass, nullptr);
+								sEditScenePendingSave = true;
+								ImGui::CloseCurrentPopup();
+								break;
+							}
+						}
+					}
+
+					ImGui::EndTabItem();
+				}
+
+				ImGui::EndTabBar();
 			}
 
 			if (ImGui::IsKeyPressed(ImGuiKey_Escape))
@@ -813,28 +891,35 @@ namespace panels
 		}
 
 		Actor* actorToDelete = nullptr;
-		for (Actor* actor : sEditorScene.scene->GetActors())
+		for (Actor* actor : sCurrentScene->scene->GetActors())
 		{
 			std::string actorName = actor->GetName() + "##" + std::to_string((uint64)actor);
 			ActorBlueprint* bp = actor->GetTemplate();
 			ImGui::Columns(2);
-			if (ImGui::Selectable(actorName.c_str(), sCurrentlySelectedActor == actor))
+			if (ImGui::Selectable(actorName.c_str(), sCurrentScene->selectedActor == actor))
 			{
-				sCurrentlySelectedActor = actor;
-				sCurrentlySelectedObject = actor;
+				sCurrentScene->selectedActor = actor;
+				sCurrentScene->selectedSubobject = actor;
 			}
 			if (ImGui::BeginPopupContextItem(actorName.c_str(), ImGuiPopupFlags_MouseButtonRight))
 			{
+				if (sEditorSceneState != EDITOR_SCENE_STATE_EDIT)
+					ImGui::BeginDisabled();
+
 				if (ImGui::Selectable("Rename"))
 				{
 					sActorToRename = actor;
 					sShowActorRename = true;
 				}
-				else if (ImGui::Selectable("Remove"))
+				if (ImGui::Selectable("Remove"))
 				{
 					actorToDelete = actor;
 				}
-				else if (bp && ImGui::Selectable("Open blueprint"))
+
+				if (sEditorSceneState != EDITOR_SCENE_STATE_EDIT)
+					ImGui::EndDisabled();
+
+				if (bp && ImGui::Selectable("Open blueprint"))
 				{
 					AssetHandle bpAsset = AssetManager::Get(bp->GetUUID());
 					windows::AddWindow<ActorBlueprintEditorWindow>(bpAsset.name, bpAsset);
@@ -855,21 +940,21 @@ namespace panels
 		}
 		if (actorToDelete)
 		{
-			if (sCurrentlySelectedActor == actorToDelete)
-				sCurrentlySelectedActor = nullptr;
+			if (sCurrentScene->selectedActor == actorToDelete)
+				sCurrentScene->selectedActor = nullptr;
 
-			if (sCurrentlySelectedObject)
+			if (sCurrentScene->selectedSubobject)
 			{
-				if (sCurrentlySelectedObject == actorToDelete)
-					sCurrentlySelectedObject = nullptr;
+				if (sCurrentScene->selectedSubobject == actorToDelete)
+					sCurrentScene->selectedSubobject = nullptr;
 
-				else if (ActorComponent* comp = Cast<ActorComponent>(sCurrentlySelectedObject))
+				else if (ActorComponent* comp = Cast<ActorComponent>(sCurrentScene->selectedSubobject))
 					if (comp->GetOwner() == actorToDelete)
-						sCurrentlySelectedObject = nullptr;
+						sCurrentScene->selectedSubobject = nullptr;
 			}
 
-			sEditorScene.scene->Editor_DeleteActor(actorToDelete);
-			sEditorScene.pendingSave = true;
+			sCurrentScene->scene->Editor_DeleteActor(actorToDelete);
+			sEditScenePendingSave = true;
 			
 			actorToDelete = nullptr;
 		}
@@ -918,19 +1003,25 @@ namespace panels
 	{
 		ImGui::Begin("Properties");
 
-		if (sCurrentlySelectedActor)
+		if (sCurrentScene->selectedActor)
 		{
 			// add component
 			{
 				static std::string sNewCompName = "";
 				static bool sCanAddNewComp = false;
 
+				if (sEditorSceneState != EDITOR_SCENE_STATE_EDIT)
+					ImGui::BeginDisabled();
+				
 				if (ImGui::Button("Add component"))
 				{
 					sNewCompName = "My new component";
-					sCanAddNewComp = !sNewCompName.empty() && !sCurrentlySelectedActor->GetComponent(sNewCompName);
+					sCanAddNewComp = !sNewCompName.empty() && !sCurrentScene->selectedActor->GetComponent(sNewCompName);
 					ImGui::OpenPopup("Add component");
 				}
+
+				if (sEditorSceneState != EDITOR_SCENE_STATE_EDIT)
+					ImGui::EndDisabled();
 
 				if (ImGui::BeginPopupModal("Add component"))
 				{
@@ -948,14 +1039,15 @@ namespace panels
 
 					if (!sCanAddNewComp)
 						ImGui::BeginDisabled();
+
 					for (const GroovyClass* gClass : gClassDB.GetClasses())
 					{
 						if (classUtils::IsA(gClass, ActorComponent::StaticClass()))
 						{
 							if (ImGui::Selectable(gClass->name.c_str()))
 							{
-								sCurrentlySelectedActor->__internal_Editor_AddEditorcomponent_Scene((GroovyClass*)gClass, sNewCompName);
-								sEditorScene.pendingSave = true;
+								sCurrentScene->selectedSubobject = sCurrentScene->selectedActor->__internal_Editor_AddEditorcomponent_Scene((GroovyClass*)gClass, sNewCompName);
+								sEditScenePendingSave = true;
 								break;
 							}
 						}
@@ -965,7 +1057,7 @@ namespace panels
 						ImGui::EndDisabled();
 
 					if (needCheck)
-						sCanAddNewComp = !sNewCompName.empty() && !sCurrentlySelectedActor->GetComponent(sNewCompName);
+						sCanAddNewComp = !sNewCompName.empty() && !sCurrentScene->selectedActor->GetComponent(sNewCompName);
 
 					if (ImGui::IsKeyPressed(ImGuiKey_Escape))
 						ImGui::CloseCurrentPopup();
@@ -980,8 +1072,8 @@ namespace panels
 
 			// actor components
 			{
-				if (ImGui::Selectable(sCurrentlySelectedActor->GetClass()->name.c_str(), sCurrentlySelectedObject == sCurrentlySelectedActor))
-					sCurrentlySelectedObject = sCurrentlySelectedActor;
+				if (ImGui::Selectable(sCurrentScene->selectedActor->GetClass()->name.c_str(), sCurrentScene->selectedSubobject == sCurrentScene->selectedActor))
+					sCurrentScene->selectedSubobject = sCurrentScene->selectedActor;
 
 				ImGui::Indent(20.0f);
 
@@ -989,7 +1081,7 @@ namespace panels
 				static ActorComponent* sPendingRemove = nullptr;
 				static bool sOpenRenamePopup = false;
 
-				for (ActorComponent* component : sCurrentlySelectedActor->GetComponents())
+				for (ActorComponent* component : sCurrentScene->selectedActor->GetComponents())
 				{
 					std::string name = component->GetName();
 					bool isInherited = component->GetType() != ACTOR_COMPONENT_TYPE_EDITOR_SCENE;
@@ -997,11 +1089,14 @@ namespace panels
 					if (isInherited)
 						name += " (inherited)";
 
-					if (ImGui::Selectable(name.c_str(), sCurrentlySelectedObject == component))
-						sCurrentlySelectedObject = component;
+					if (ImGui::Selectable(name.c_str(), sCurrentScene->selectedSubobject == component))
+						sCurrentScene->selectedSubobject = component;
 
 					if (!isInherited && ImGui::BeginPopupContextItem(name.c_str(), ImGuiPopupFlags_MouseButtonRight))
 					{
+						if (sEditorSceneState != EDITOR_SCENE_STATE_EDIT)
+							ImGui::BeginDisabled();
+
 						if (ImGui::Selectable("Rename"))
 						{
 							sOpenRenamePopup = true;
@@ -1011,6 +1106,9 @@ namespace panels
 						{
 							sPendingRemove = component;
 						}
+
+						if (sEditorSceneState != EDITOR_SCENE_STATE_EDIT)
+							ImGui::EndDisabled();
 
 						ImGui::EndPopup();
 					}
@@ -1027,7 +1125,7 @@ namespace panels
 					{
 						ImGui::OpenPopup("Rename component");
 						sCompRename = sPendingRename->GetName();
-						sCanRename = !sCompRename.empty() && !sCurrentlySelectedActor->GetComponent(sCompRename);
+						sCanRename = !sCompRename.empty() && !sCurrentScene->selectedActor->GetComponent(sCompRename);
 						sOpenRenamePopup = false;
 					}
 
@@ -1046,9 +1144,9 @@ namespace panels
 
 						if (ImGui::Button("Rename##rename_comp_btn"))
 						{
-							sCurrentlySelectedActor->__internal_Editor_RenameEditorComponent(sPendingRename, sCompRename);
+							sCurrentScene->selectedActor->__internal_Editor_RenameEditorComponent(sPendingRename, sCompRename);
 							sPendingRename = nullptr;
-							sEditorScene.pendingSave = true;
+							sEditScenePendingSave = true;
 							ImGui::CloseCurrentPopup();
 						}
 
@@ -1056,7 +1154,7 @@ namespace panels
 							ImGui::EndDisabled();
 
 						if (needCheck)
-							sCanRename = !sCompRename.empty() && !sCurrentlySelectedActor->GetComponent(sCompRename);
+							sCanRename = !sCompRename.empty() && !sCurrentScene->selectedActor->GetComponent(sCompRename);
 
 						if (ImGui::IsKeyPressed(ImGuiKey_Escape))
 						{
@@ -1068,10 +1166,10 @@ namespace panels
 					}
 					else if (sPendingRemove)
 					{
-						sCurrentlySelectedActor->__internal_Editor_RemoveEditorComponent(sPendingRemove);
-						sEditorScene.pendingSave = true;
-						if (sCurrentlySelectedObject == sPendingRemove)
-							sCurrentlySelectedObject = sCurrentlySelectedActor;
+						sCurrentScene->selectedActor->__internal_Editor_RemoveEditorComponent(sPendingRemove);
+						sEditScenePendingSave = true;
+						if (sCurrentScene->selectedSubobject == sPendingRemove)
+							sCurrentScene->selectedSubobject = nullptr;
 						sPendingRemove = nullptr;
 					}
 				}
@@ -1085,28 +1183,29 @@ namespace panels
 	{
 		ImGui::Begin("Subproperties");
 
-		if (sCurrentlySelectedObject)
+		if (sCurrentScene->selectedSubobject)
 		{
 			bool transformChanged = false;
 			bool propsChanged = false;
-			if (sCurrentlySelectedObject == sCurrentlySelectedActor)
+			if (sCurrentScene->selectedSubobject == sCurrentScene->selectedActor)
 			{
 				ImGui::Text("Transform");
-				transformChanged = editorGui::Transform("##actor_transform", &sCurrentlySelectedActor->Editor_TransformRef());
+				transformChanged = editorGui::Transform("##actor_transform", &sCurrentScene->selectedActor->Editor_TransformRef());
 				ImGui::Spacing();
 				ImGui::Spacing();
 			}
-			else if (SceneComponent* sceneComp = Cast<SceneComponent>(sCurrentlySelectedObject))
+			else if (SceneComponent* sceneComp = Cast<SceneComponent>(sCurrentScene->selectedSubobject))
 			{
 				ImGui::Text("Transform (relative)");
 				transformChanged = editorGui::Transform("##scene_comp_transform", &sceneComp->Editor_TransformRef());
 				ImGui::Spacing();
 				ImGui::Spacing();
 			}
-			propsChanged = editorGui::PropertiesAllClasses(sCurrentlySelectedObject);
+			propsChanged = editorGui::PropertiesAllClasses(sCurrentScene->selectedSubobject);
 
-			if (transformChanged || propsChanged)
-				sEditorScene.pendingSave = true;
+			if(sEditorSceneState == EDITOR_SCENE_STATE_EDIT)
+				if (transformChanged || propsChanged)
+					sEditScenePendingSave = true;
 		}
 
 		ImGui::End();
@@ -1115,10 +1214,10 @@ namespace panels
 	void GameViewport()
 	{
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, { 0,0 });
-		ImGui::Begin("Game viewport", nullptr, sEditorScene.pendingSave ? ImGuiWindowFlags_UnsavedDocument : 0);
+		ImGui::Begin("Game viewport", nullptr, sEditScenePendingSave ? ImGuiWindowFlags_UnsavedDocument : 0);
 		sGameViewportFocused = ImGui::IsWindowFocused();
 
-		if (sEditorScene.scene)
+		if (sCurrentScene->scene)
 		{
 			// resize framebuffer if needed
 			ImVec2 wndSize = ImGui::GetContentRegionAvail();
@@ -1134,13 +1233,18 @@ namespace panels
 
 			sGameViewportFrameBuffer->Bind();
 
-			if (sEditorScene.scene)
-			{
-				float aspectRatio = (float)wndSize.x / (float)wndSize.y;
+			float aspectRatio = (float)wndSize.x / (float)wndSize.y;
 
-				SceneRenderer::BeginScene(sEditorCamera.location, sEditorCamera.rotation, gEditorSettings.mEditorCameraFOV, aspectRatio);
-				SceneRenderer::RenderScene(sEditorScene.scene);
+			if (sEditorSceneState == EDITOR_SCENE_STATE_EDIT)
+			{
+				SceneRenderer::BeginScene(sEditorCamera.location, sEditorCamera.rotation, gEditorSettings.mCameraFOV, aspectRatio);
 			}
+			else
+			{
+				__debugbreak(); // pick default camera in the scene
+			}
+
+			SceneRenderer::RenderScene(sCurrentScene->scene);
 
 			// draw framebuffer
 			ImGui::Image(sGameViewportFrameBuffer->GetRendererID(0), wndSize);
@@ -1182,6 +1286,16 @@ void editor::Init()
 
 	res::Load();
 
+	sEditScene.scene = nullptr;
+	sEditScene.selectedActor = nullptr;
+	sEditScene.selectedSubobject = nullptr;
+
+	sPlayScene.scene = new Scene();
+	sPlayScene.selectedActor = nullptr;
+	sPlayScene.selectedSubobject = nullptr;
+
+	sCurrentScene = &sEditScene;
+
 	if (gProj.GetStartupScene())
 	{
 		TravelToScene(gProj.GetStartupScene());
@@ -1207,33 +1321,33 @@ void editor::Update(float deltaTime)
 {
 	ImVec2 currentMousePos = ImGui::GetMousePos();
 	// update editor camera
-	if (sEditorScene.scene && sGameViewportFocused)
+	if (sEditorSceneState == EDITOR_SCENE_STATE_EDIT && sGameViewportFocused)
 	{
 		// update camera location
 		{
 			if (ImGui::IsKeyDown(ImGuiKey_D))
 			{
-				sEditorCamera.location += math::GetRightVector(sEditorCamera.rotation) * (gEditorSettings.mEditorCameraMoveSpeed * deltaTime * 1.0f);
+				sEditorCamera.location += math::GetRightVector(sEditorCamera.rotation) * (gEditorSettings.mCameraMoveSpeed * deltaTime * 1.0f);
 			}
 			if (ImGui::IsKeyDown(ImGuiKey_A))
 			{
-				sEditorCamera.location += math::GetRightVector(sEditorCamera.rotation) * (gEditorSettings.mEditorCameraMoveSpeed * deltaTime * -1.0f);
+				sEditorCamera.location += math::GetRightVector(sEditorCamera.rotation) * (gEditorSettings.mCameraMoveSpeed * deltaTime * -1.0f);
 			}
 			if (ImGui::IsKeyDown(ImGuiKey_W))
 			{
-				sEditorCamera.location += math::GetForwardVector(sEditorCamera.rotation) * (gEditorSettings.mEditorCameraMoveSpeed * deltaTime * 1.0f);
+				sEditorCamera.location += math::GetForwardVector(sEditorCamera.rotation) * (gEditorSettings.mCameraMoveSpeed * deltaTime * 1.0f);
 			}
 			if (ImGui::IsKeyDown(ImGuiKey_S))
 			{
-				sEditorCamera.location += math::GetForwardVector(sEditorCamera.rotation) * (gEditorSettings.mEditorCameraMoveSpeed * deltaTime * -1.0f);
+				sEditorCamera.location += math::GetForwardVector(sEditorCamera.rotation) * (gEditorSettings.mCameraMoveSpeed * deltaTime * -1.0f);
 			}
 			if (ImGui::IsKeyDown(ImGuiKey_Q))
 			{
-				sEditorCamera.location += math::GetUpVector(sEditorCamera.rotation) * (gEditorSettings.mEditorCameraMoveSpeed * deltaTime * 1.0f);
+				sEditorCamera.location += math::GetUpVector(sEditorCamera.rotation) * (gEditorSettings.mCameraMoveSpeed * deltaTime * 1.0f);
 			}
 			if (ImGui::IsKeyDown(ImGuiKey_E))
 			{
-				sEditorCamera.location += math::GetUpVector(sEditorCamera.rotation) * (gEditorSettings.mEditorCameraMoveSpeed * deltaTime * -1.0f);
+				sEditorCamera.location += math::GetUpVector(sEditorCamera.rotation) * (gEditorSettings.mCameraMoveSpeed * deltaTime * -1.0f);
 			}
 		}
 		// update camera rotation
@@ -1244,10 +1358,10 @@ void editor::Update(float deltaTime)
 				float deltaY = sMousePos.y - currentMousePos.y;
 
 				if (deltaX != 0.0f)
-					sEditorCamera.rotation.y += -deltaX * gEditorSettings.mEditorCameraRotationSpeed;
+					sEditorCamera.rotation.y += -deltaX * gEditorSettings.mCameraRotationSpeed;
 
 				if(deltaY)
-					sEditorCamera.rotation.x += -deltaY * gEditorSettings.mEditorCameraRotationSpeed;
+					sEditorCamera.rotation.x += -deltaY * gEditorSettings.mCameraRotationSpeed;
 			}
 		}
 	}
@@ -1282,10 +1396,10 @@ void editor::Render()
 		{
 			if (ImGui::MenuItem("Save"))
 			{
-				if (sEditorScene.scene)
+				if (sEditScene.scene)
 				{
-					sEditorScene.scene->Save();
-					sEditorScene.pendingSave = false;
+					sEditScene.scene->Save();
+					sEditScenePendingSave = false;
 					AssetManager::SaveRegistry();
 				}
 			}
@@ -1340,6 +1454,8 @@ void editor::Render()
 
 void editor::Shutdown()
 {
+	delete sPlayScene.scene;
+
 	gEditorSettings.Save();
 	windows::Shutdown();
 	res::Unload();

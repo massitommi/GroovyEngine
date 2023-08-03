@@ -536,7 +536,7 @@ void EditorSettingsWindow::RenderContent()
 	
 	ImGui::NextColumn();
 	
-	ImGui::DragFloat("##editor_camera_fov", &gEditorSettings.mEditorCameraFOV, 0.1f, 0.1f, 360.f);
+	ImGui::DragFloat("##editor_camera_fov", &gEditorSettings.mCameraFOV, 0.1f, 0.1f, 360.f);
 	ImGui::SameLine();
 	ImGui::TextDisabled("(?)");
 	if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayShort) && ImGui::BeginTooltip())
@@ -553,7 +553,7 @@ void EditorSettingsWindow::RenderContent()
 
 	ImGui::NextColumn();
 	
-	ImGui::DragFloat("##editor_camera_move_speed", &gEditorSettings.mEditorCameraMoveSpeed, 0.1f, 0.001f, 1000.0f);
+	ImGui::DragFloat("##editor_camera_move_speed", &gEditorSettings.mCameraMoveSpeed, 0.1f, 0.001f, 1000.0f);
 	ImGui::SameLine();
 	ImGui::TextDisabled("(?)");
 	if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayShort) && ImGui::BeginTooltip())
@@ -570,7 +570,7 @@ void EditorSettingsWindow::RenderContent()
 	
 	ImGui::NextColumn();
 
-	ImGui::DragFloat("##editor_camera_rot_speed", &gEditorSettings.mEditorCameraRotationSpeed, 0.1f, 0.001f, 1000.0f);
+	ImGui::DragFloat("##editor_camera_rot_speed", &gEditorSettings.mCameraRotationSpeed, 0.1f, 0.001f, 1000.0f);
 	ImGui::SameLine();
 	ImGui::TextDisabled("(?)");
 	if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayShort) && ImGui::BeginTooltip())
@@ -591,8 +591,8 @@ void EditorSettingsWindow::RenderContent()
 	if (ImGui::Button("Reset to defaults"))
 	{
 		EditorSettings* editorSettingsCDO = (EditorSettings*)EditorSettings::StaticCDO();
-		gEditorSettings.mEditorCameraFOV = editorSettingsCDO->mEditorCameraFOV;
-		gEditorSettings.mEditorCameraMoveSpeed = editorSettingsCDO->mEditorCameraMoveSpeed;
-		gEditorSettings.mEditorCameraRotationSpeed = editorSettingsCDO->mEditorCameraRotationSpeed;
+		gEditorSettings.mCameraFOV = editorSettingsCDO->mCameraFOV;
+		gEditorSettings.mCameraMoveSpeed = editorSettingsCDO->mCameraMoveSpeed;
+		gEditorSettings.mCameraRotationSpeed = editorSettingsCDO->mCameraRotationSpeed;
 	}
 }

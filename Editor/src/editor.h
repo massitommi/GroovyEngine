@@ -33,9 +33,13 @@ class EditorSettings : public GroovyObject
 {
 	GROOVY_CLASS_BODY(EditorSettings, GroovyObject)
 public:
-	float mEditorCameraFOV = 60.0f;
-	float mEditorCameraMoveSpeed = 1.0f;
-	float mEditorCameraRotationSpeed = 0.3f;
+	float mCameraFOV = 60.0f;
+	float mCameraMoveSpeed = 1.0f;
+	float mCameraRotationSpeed = 0.3f;
+
+	float mContentBrowserIconSize = 140.0f;
+	bool mClassBrowserShowEngineClasses = false;
+	bool mClassBrowserShowGameClasses = true;
 
 	void Load();
 	void Save();
