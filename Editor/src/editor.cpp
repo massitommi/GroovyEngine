@@ -20,6 +20,7 @@
 #include "gameframework/actorcomponent.h"
 #include "gameframework/blueprint.h"
 #include "gameframework/scene.h"
+#include "gameframework/components/cameracomponent.h"
 
 #include "classes/reflection.h"
 #include "classes/class_db.h"
@@ -556,7 +557,7 @@ namespace panels
 				panelAssets[i].flags |= PANEL_ASSET_FLAG_IS_DEFAULT;
 		}
 
-		ImGui::Begin("Asset manager");
+		ImGui::Begin("Content browser");
 
 		// stolen ui code that works pretty well
 
@@ -1213,8 +1214,17 @@ namespace panels
 
 	void GameViewport()
 	{
-		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, { 0,0 });
+		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, { 2, 2 });
+
+		ImVec4 wndBorderCol = { 0.0f, 0.0f, 0.0f, 1.0f };
+
+		if (sEditorSceneState == EDITOR_SCENE_STATE_PLAY)
+			wndBorderCol = { 1.0f, 1.0f, 0.0f, 1.0f };
+
+		ImGui::PushStyleColor(ImGuiCol_WindowBg, wndBorderCol);
+
 		ImGui::Begin("Game viewport", nullptr, sEditScenePendingSave ? ImGuiWindowFlags_UnsavedDocument : 0);
+
 		sGameViewportFocused = ImGui::IsWindowFocused();
 
 		if (sCurrentScene->scene)
@@ -1235,13 +1245,14 @@ namespace panels
 
 			float aspectRatio = (float)wndSize.x / (float)wndSize.y;
 
-			if (sEditorSceneState == EDITOR_SCENE_STATE_EDIT)
+			if (sEditorSceneState == EDITOR_SCENE_STATE_PLAY && sCurrentScene->scene->mCamera)
 			{
-				SceneRenderer::BeginScene(sEditorCamera.location, sEditorCamera.rotation, gEditorSettings.mCameraFOV, aspectRatio);
+				CameraComponent* cam = sCurrentScene->scene->mCamera;
+				SceneRenderer::BeginScene(cam, aspectRatio);
 			}
 			else
 			{
-				__debugbreak(); // pick default camera in the scene
+				SceneRenderer::BeginScene(sEditorCamera.location, sEditorCamera.rotation, gEditorSettings.mCameraFOV, aspectRatio);
 			}
 
 			SceneRenderer::RenderScene(sCurrentScene->scene);
@@ -1261,7 +1272,9 @@ namespace panels
 		}
 
 		ImGui::End();
+
 		ImGui::PopStyleVar();
+		ImGui::PopStyleColor();
 	}
 }
 

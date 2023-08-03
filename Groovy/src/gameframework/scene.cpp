@@ -7,7 +7,7 @@
 #include "components/meshcomponent.h"
 
 Scene::Scene()
-	: mUUID(0), mLoaded(false)
+	: mUUID(0), mLoaded(false), mCamera(nullptr)
 {
 }
 

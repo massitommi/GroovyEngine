@@ -6,12 +6,8 @@
 #include "gameframework/components/meshcomponent.h"
 
 void SceneRenderer::BeginScene(CameraComponent* camera, float aspectRatio)
-{
-	Vec3 camLocation = camera->mTransform.location;
-	Vec3 camRotation = camera->mTransform.rotation;
-	float fov = camera->mFOV;
-	
-	BeginScene(camLocation, camRotation, fov, aspectRatio);
+{	
+	BeginScene(camera->GetAbsoluteLocation(), camera->GetAbsoluteRotation(), camera->mFOV, aspectRatio);
 }
 
 void SceneRenderer::BeginScene(Vec3 camLocation, Vec3 camRotation, float FOV, float aspectRatio)
@@ -36,13 +32,7 @@ void SceneRenderer::RenderScene(Scene* scene)
 		if (!mesh)
 			continue;
 
-		Transform componentTransform = meshComp->GetTransform();
-		Transform transform = meshComp->GetOwner()->GetTransform();
-		transform.location += componentTransform.location;
-		transform.rotation += componentTransform.rotation;
-		transform.scale *= componentTransform.scale;
-
-		Mat4 model = math::GetModelMatrix(transform.location, transform.rotation, transform.scale);
+		Mat4 model = math::GetModelMatrix(meshComp->GetAbsoluteLocation(), meshComp->GetAbsoluteRotation(), meshComp->GetAbsoluteScale());
 		model = math::GetMatrixTransposed(model);
 
 		Renderer::SetModel(model);

@@ -53,6 +53,14 @@ public:
 #endif
 
 	inline const Transform& GetTransform() const { return mTransform; }
+	inline Vec3 GetLocation() const { return mTransform.location; }
+	inline Vec3 GetRotation() const { return mTransform.rotation; }
+	inline Vec3 GetScale() const { return mTransform.scale; }
+
+	Transform GetAbsoluteTransform() const;
+	Vec3 GetAbsoluteLocation() const;
+	Vec3 GetAbsoluteRotation() const;
+	Vec3 GetAbsoluteScale() const;
 
 private:
 	// Relative to parent component / actor
@@ -63,5 +71,3 @@ private:
 	friend class Scene;
 	friend class SceneRenderer;
 };
-
-class World* GetWorld();

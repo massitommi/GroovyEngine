@@ -73,7 +73,11 @@ private:
 	std::vector<Actor*> mActorKillQueue;
 
 	std::vector<class MeshComponent*> mRenderQueue;
+	
+public:
+	class CameraComponent* mCamera;
 
+private:
 	AssetUUID mUUID;
 	bool mLoaded;
 };
