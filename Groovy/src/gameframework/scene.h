@@ -23,9 +23,6 @@ public:
 	virtual void Serialize(DynamicBuffer& fileData) const override;
 	virtual void Deserialize(BufferView fileData) override;
 
-	void Initialize();
-	void Uninitialize();
-
 	Actor* SpawnActor(GroovyClass* actorClass, ActorBlueprint* bp = nullptr);
 
 	template<typename TActor>
@@ -45,29 +42,37 @@ public:
 
 	inline const std::vector<Actor*>& GetActors() const { return mActors; }
 
+	void BeginPlay();
 	void Tick(float deltaTime);
+	void Clear();
+
+	void SubmitForRendering(class MeshComponent* mesh);
+	void RemoveFromRenderQueue(class MeshComponent* mesh);
+
+	const std::vector<class MeshComponent*>& GetRenderQueue() const { return mRenderQueue; }
 
 #if WITH_EDITOR
 
 	// returns true if assetToBeDeleted was referenced
 	virtual bool Editor_FixDependencyDeletion(AssetHandle assetToBeDeleted) override;
 
-	virtual void Editor_SpawnActor(GroovyClass* actorClass, ActorBlueprint* bp);
+	virtual Actor* Editor_AddActor(GroovyClass* actorClass, ActorBlueprint* bp);
 	virtual void Editor_DeleteActor(Actor* actor);
 
 #endif
 
 private:
-	// used after play
-	void FinishDestroyingActors();
+	Actor* ConstructActor(GroovyClass* actorClass, ActorBlueprint* bp = nullptr);
 
 private:
 	std::vector<Actor*> mActors;
 
 	// empty before play
-	std::vector<Actor*> mActorsPlaying;
+	std::vector<Actor*> mActorTickQueue;
 	// empty before play
 	std::vector<Actor*> mActorKillQueue;
+
+	std::vector<class MeshComponent*> mRenderQueue;
 
 	AssetUUID mUUID;
 	bool mLoaded;

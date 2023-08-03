@@ -1,48 +1,21 @@
 #include "scene_renderer.h"
 #include "renderer.h"
 #include "math/math.h"
+#include "gameframework/scene.h"
 #include "gameframework/components/cameracomponent.h"
 #include "gameframework/components/meshcomponent.h"
-#include "gameframework/actor.h"
-#include "renderer/api/framebuffer.h"
 
-static FrameBuffer* sFrameBuffer;
-static std::vector<MeshComponent*> sMeshes;
-
-void SceneRenderer::SetFrameBuffer(FrameBuffer* frameBuffer)
-{
-	check(frameBuffer);
-	sFrameBuffer = frameBuffer;
-}
-
-void SceneRenderer::ClearMeshQueue()
-{
-	sMeshes.clear();
-}
-
-void SceneRenderer::Submit(MeshComponent* mesh)
-{
-	sMeshes.push_back(mesh);
-}
-
-void SceneRenderer::Remove(MeshComponent* mesh)
-{
-	sMeshes.erase(std::find(sMeshes.begin(), sMeshes.end(), mesh));
-}
-
-void SceneRenderer::BeginScene(CameraComponent* camera)
+void SceneRenderer::BeginScene(CameraComponent* camera, float aspectRatio)
 {
 	Vec3 camLocation = camera->mTransform.location;
 	Vec3 camRotation = camera->mTransform.rotation;
 	float fov = camera->mFOV;
 	
-	BeginScene(camLocation, camRotation, fov);
+	BeginScene(camLocation, camRotation, fov, aspectRatio);
 }
 
-void SceneRenderer::BeginScene(Vec3 camLocation, Vec3 camRotation, float FOV)
+void SceneRenderer::BeginScene(Vec3 camLocation, Vec3 camRotation, float FOV, float aspectRatio)
 {
-	float aspectRatio = (float)sFrameBuffer->GetSpecs().width / (float)sFrameBuffer->GetSpecs().height;
-
 	Mat4 vp =
 		math::GetViewMatrix(camLocation, camRotation)
 		*
@@ -52,9 +25,9 @@ void SceneRenderer::BeginScene(Vec3 camLocation, Vec3 camRotation, float FOV)
 	Renderer::SetCamera(vp);
 }
 
-void SceneRenderer::RenderScene()
+void SceneRenderer::RenderScene(Scene* scene)
 {
-	for (MeshComponent* meshComp : sMeshes)
+	for (MeshComponent* meshComp : scene->GetRenderQueue())
 	{
 		if (!meshComp->mVisible)
 			continue;

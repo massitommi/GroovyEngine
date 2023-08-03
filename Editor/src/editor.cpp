@@ -35,6 +35,7 @@
 
 #include "utils/string/string_utils.h"
 
+
 extern ClearColor gScreenClearColor;
 extern Window* gWindow;
 extern GroovyProject gProj;
@@ -193,7 +194,6 @@ void TravelToScene(Scene* scene)
 {
 	if (sEditorScene.scene)
 	{
-		sEditorScene.scene->Uninitialize();
 		sEditorScene.scene->Unload();
 	}
 
@@ -203,7 +203,6 @@ void TravelToScene(Scene* scene)
 	{
 		sEditorScene.name = AssetManager::Get(scene->GetUUID()).name;
 		sEditorScene.scene->Load();
-		sEditorScene.scene->Initialize();
 	}
 
 	sEditorScene.pendingSave = false;
@@ -782,7 +781,7 @@ namespace panels
 				{
 					if (ImGui::Selectable(bpHandle.name.c_str()))
 					{
-						sEditorScene.scene->Editor_SpawnActor(bp->GetActorClass(), bp);
+						sEditorScene.scene->Editor_AddActor(bp->GetActorClass(), bp);
 						sEditorScene.pendingSave = true;
 						ImGui::CloseCurrentPopup();
 						break;
@@ -799,7 +798,7 @@ namespace panels
 				{
 					if (ImGui::Selectable(groovyClass->name.c_str()))
 					{
-						sEditorScene.scene->Editor_SpawnActor((GroovyClass*)groovyClass, nullptr);
+						sEditorScene.scene->Editor_AddActor((GroovyClass*)groovyClass, nullptr);
 						sEditorScene.pendingSave = true;
 						ImGui::CloseCurrentPopup();
 						break;
@@ -1137,8 +1136,10 @@ namespace panels
 
 			if (sEditorScene.scene)
 			{
-				SceneRenderer::BeginScene(sEditorCamera.location, sEditorCamera.rotation, gEditorSettings.mEditorCameraFOV);
-				SceneRenderer::RenderScene();
+				float aspectRatio = (float)wndSize.x / (float)wndSize.y;
+
+				SceneRenderer::BeginScene(sEditorCamera.location, sEditorCamera.rotation, gEditorSettings.mEditorCameraFOV, aspectRatio);
+				SceneRenderer::RenderScene(sEditorScene.scene);
 			}
 
 			// draw framebuffer
@@ -1147,7 +1148,7 @@ namespace panels
 			// on screen text
 			ImGui::SetCursorPosY(ImGui::GetWindowSize().y - wndSize.y + 8);
 			ImGui::SetCursorPosX(8);
-			ImGui::Text("Framebuffer %ix%i", sGameViewportFrameBuffer->GetSpecs().width, sGameViewportFrameBuffer->GetSpecs().height);
+			ImGui::Text("Viewport %ix%i", sGameViewportFrameBuffer->GetSpecs().width, sGameViewportFrameBuffer->GetSpecs().height);
 		}
 		else
 		{
@@ -1176,8 +1177,6 @@ void editor::Init()
 	gameViewportSpec.height = panels::sGameViewportSize.y = 100;
 
 	sGameViewportFrameBuffer = FrameBuffer::Create(gameViewportSpec);
-
-	SceneRenderer::SetFrameBuffer(sGameViewportFrameBuffer);
 
 	gEditorSettings.Load();
 

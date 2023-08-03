@@ -102,5 +102,3 @@ private:
 	friend class ActorSerializer;
 	friend class Scene;
 };
-
-class World* GetWorld();

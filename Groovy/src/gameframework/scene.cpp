@@ -4,6 +4,7 @@
 #include "assets/asset_loader.h"
 #include "assets/asset_serializer.h"
 #include "assets/asset_manager.h"
+#include "components/meshcomponent.h"
 
 Scene::Scene()
 	: mUUID(0), mLoaded(false)
@@ -12,9 +13,7 @@ Scene::Scene()
 
 Scene::~Scene()
 {
-	for (Actor* actor : mActors)
-		mActorKillQueue.push_back(actor);
-	FinishDestroyingActors();
+	Clear();
 }
 
 void Scene::Load()
@@ -25,6 +24,8 @@ void Scene::Load()
 
 void Scene::Unload()
 {
+	Clear();
+	mLoaded = false;
 }
 
 void Scene::Save()
@@ -69,27 +70,176 @@ void Scene::Deserialize(BufferView fileData)
 					continue;
 			}
 			
-			Actor* newActor = SpawnActor(pack.actorClass, bp);
+			Actor* newActor = ConstructActor(pack.actorClass, bp);
 			newActor->mTransform = transform;
 			newActor->mName = name;
 			ActorSerializer::DeserializeActorPackData(pack, newActor);
+			newActor->InitializeComponents();
 		}
 	}
 }
 
-void Scene::Initialize()
-{
-	for (Actor* actor : mActors)
-		actor->InitializeComponents();
-}
-
-void Scene::Uninitialize()
-{
-	for (Actor* actor : mActors)
-		actor->UninitializeComponents();
-}
-
 Actor* Scene::SpawnActor(GroovyClass* actorClass, ActorBlueprint* bp)
+{
+	Actor* newActor = ConstructActor(actorClass, bp);
+	newActor->InitializeComponents();
+	newActor->BeginPlay();
+
+	if (newActor->mShouldTick)
+		mActorTickQueue.push_back(newActor);
+	
+	return newActor;
+}
+
+#if WITH_EDITOR
+
+bool Scene::Editor_FixDependencyDeletion(AssetHandle assetToBeDeleted)
+{
+	if (!mLoaded)
+		return false;
+
+	std::vector<Actor*> removeList;
+
+	if (assetToBeDeleted.type == ASSET_TYPE_ACTOR_BLUEPRINT)
+	{
+		for (Actor* actor : mActors)
+		{
+			if (actor->mTemplate == assetToBeDeleted.instance)
+			{
+				removeList.push_back(actor);
+			}
+		}
+
+		for (Actor* actor : removeList)
+		{
+			Editor_DeleteActor(actor);
+		}
+
+	}
+	
+	// TODO: REPLACE WITH NULL ASSET REFERENCES
+
+	for (Actor* actor : mActors)
+	{
+		
+	}
+
+	return removeList.size();
+}
+
+Actor* Scene::Editor_AddActor(GroovyClass* actorClass, ActorBlueprint* bp)
+{
+	Actor* newActor = ConstructActor(actorClass, bp);
+	newActor->InitializeComponents();
+	return newActor;
+}
+
+void Scene::Editor_DeleteActor(Actor* actor)
+{
+	check(actor);
+
+	actor->UninitializeComponents();
+
+	// free memory
+	ObjectAllocator::Destroy(actor);
+
+	// remove from actors list
+	auto it = std::find(mActors.begin(), mActors.end(), actor);
+	mActors.erase(it);
+}
+
+#endif
+
+void Scene::DestroyActor(Actor* actor)
+{
+	check(actor);
+
+	// push into kill queue
+	mActorKillQueue.push_back(actor);
+
+	// remove from actors
+	auto it = std::find(mActors.begin(), mActors.end(), actor);
+	mActors.erase(it);
+}
+
+void Scene::BeginPlay()
+{
+	for (Actor* actor : mActors)
+	{
+		if (actor->mShouldTick)
+			mActorTickQueue.push_back(actor);
+
+		actor->BeginPlay();
+	}
+}
+
+#define TICK_ACTORS_CREATED_DURING_TICK 0
+
+void Scene::Tick(float deltaTime)
+{
+#if TICK_ACTORS_CREATED_DURING_TICK
+
+	for (uint32 i = 0; i < mActorTickQueue.size(); i++)
+	{
+		mActorTickQueue[i]->Tick(deltaTime);
+	}
+
+#else
+
+	uint32 tickQueueCount = mActorTickQueue.size();
+	for (uint32 i = 0; i < tickQueueCount; i++)
+	{
+		mActorTickQueue[i]->Tick(deltaTime);
+	}
+
+#endif
+
+	for (Actor* actor : mActorKillQueue)
+	{
+		// remove from tick list
+		if (actor->mShouldTick)
+		{
+			auto it = std::find(mActorTickQueue.begin(), mActorTickQueue.end(), actor);
+			mActorTickQueue.erase(it);
+		}
+
+		actor->UninitializeComponents();
+
+		ObjectAllocator::Destroy(actor);
+	}
+}
+
+void Scene::Clear()
+{
+	checkf(mActorKillQueue.size() == 0, "Can't call Scene::Clear during playtime");
+
+	for (Actor* actor : mActors)
+	{
+		actor->UninitializeComponents();
+		ObjectAllocator::Destroy(actor);
+	}
+	mActors.clear();
+	mActorTickQueue.clear();
+
+	checkf(mRenderQueue.size() == 0, "There's a bug, scene render queue not empty after clear");
+}
+
+void Scene::SubmitForRendering(MeshComponent* mesh)
+{
+	check(mesh);
+
+	mRenderQueue.push_back(mesh);
+}
+
+void Scene::RemoveFromRenderQueue(MeshComponent* mesh)
+{
+	check(mesh);
+
+	auto it = std::find(mRenderQueue.begin(), mRenderQueue.end(), mesh);
+	mRenderQueue.erase(it);
+}
+
+Actor* Scene::ConstructActor(GroovyClass* actorClass, ActorBlueprint* bp)
 {
 	check(actorClass);
 	check(classUtils::IsA(actorClass, Actor::StaticClass()));
@@ -111,104 +261,4 @@ Actor* Scene::SpawnActor(GroovyClass* actorClass, ActorBlueprint* bp)
 	mActors.push_back(newActor);
 
 	return newActor;
-}
-
-#if WITH_EDITOR
-
-bool Scene::Editor_FixDependencyDeletion(AssetHandle assetToBeDeleted)
-{
-	return false;
-	bool wasLoaded = mLoaded;
-
-	if (!wasLoaded)
-		Load();
-
-	std::vector<Actor*> removeList;
-
-	if (assetToBeDeleted.type == ASSET_TYPE_ACTOR_BLUEPRINT)
-	{
-		for (Actor* actor : mActors)
-		{
-			if (actor->mTemplate == assetToBeDeleted.instance)
-			{
-				removeList.push_back(actor);
-			}
-		}
-
-		for (Actor* actor : removeList)
-		{
-			Editor_DeleteActor(actor);
-		}
-
-	}
-
-	if (!wasLoaded)
-	{
-		Save();
-		// unload
-		for (Actor* actor : mActors)
-			ObjectAllocator::Destroy(actor);
-		mActors.clear();
-	}
-
-	return removeList.size();
-}
-
-void Scene::Editor_SpawnActor(GroovyClass* actorClass, ActorBlueprint* bp)
-{
-	Actor* newActor = SpawnActor(actorClass, bp);
-	newActor->InitializeComponents();
-}
-
-void Scene::Editor_DeleteActor(Actor* actor)
-{
-	// free memory
-	ObjectAllocator::Destroy(actor);
-
-	// remove from actors list
-	auto it = std::find(mActors.begin(), mActors.end(), actor);
-	mActors.erase(it);
-}
-
-#endif
-
-void Scene::DestroyActor(Actor* actor)
-{
-	check(actor);
-
-	// notify the actor
-	actor->Destroy();
-
-	// remove from alive actors
-	auto it = std::find(mActorsPlaying.begin(), mActorsPlaying.end(), actor);
-	mActorsPlaying.erase(it);
-
-	// push into kill queue
-	mActorKillQueue.push_back(actor);
-}
-
-void Scene::Tick(float deltaTime)
-{
-	for (Actor* actor : mActors)
-	{
-		actor->Tick(deltaTime);
-	}
-	
-	if (mActorKillQueue.size())
-		FinishDestroyingActors();
-}
-
-void Scene::FinishDestroyingActors()
-{
-	for (Actor* actor : mActorKillQueue)
-	{
-		// free memory
-		ObjectAllocator::Destroy(actor);
-
-		// remove from actors list
-		auto it = std::find(mActors.begin(), mActors.end(), actor);
-		mActors.erase(it);
-	}
-
-	mActorKillQueue.clear();
 }
