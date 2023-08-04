@@ -59,6 +59,9 @@ protected:
 	virtual void Tick(float deltaTime);
 	virtual void Destroy();
 
+	void BeginPlayComponents();
+	void TickComponents(float deltaTime);
+
 public:
 	inline const std::vector<ActorComponent*>& GetComponents() const { return mComponents; }
 
@@ -70,6 +73,9 @@ public:
 	inline const std::string& GetName() const { return mName; }
 	inline ActorBlueprint* GetTemplate() const { return mTemplate; }
 	inline Scene* GetScene() const { return mScene; }
+
+	// Used by the scene system, do not use!
+	void Clone(Actor* to);
 
 protected:
 	ActorComponent* AddComponent(GroovyClass* componentClass, const std::string& name);

@@ -278,6 +278,26 @@ bool OnCloseRequested()
 	return false;
 }
 
+void Play()
+{
+	sEditScene.scene->Copy(sPlayScene.scene);
+	sPlayScene.scene->BeginPlay();
+	sCurrentScene = &sPlayScene;
+}
+
+void Pause()
+{
+}
+
+void Stop()
+{
+	sPlayScene.selectedActor = nullptr;
+	sPlayScene.selectedSubobject = nullptr;
+	sPlayScene.scene->Clear();
+
+	sCurrentScene = &sEditScene;
+}
+
 namespace newAsset
 {
 	static EAssetType sNewAssetType = ASSET_TYPE_NONE;
@@ -1353,6 +1373,11 @@ namespace panels
 
 			if (newSceneState != sEditorSceneState)
 			{
+				if (newSceneState == EDITOR_SCENE_STATE_PLAY)
+					Play();
+				else if (newSceneState == EDITOR_SCENE_STATE_EDIT)
+					Stop();
+
 				// play , pause etc..
 				sEditorSceneState = newSceneState;
 			}
@@ -1425,6 +1450,11 @@ void editor::Init()
 
 void editor::Update(float deltaTime)
 {
+	if (sEditorSceneState == EDITOR_SCENE_STATE_PLAY)
+	{
+		sPlayScene.scene->Tick(deltaTime);
+	}
+
 	ImVec2 currentMousePos = ImGui::GetMousePos();
 	// update editor camera
 	if (sEditorSceneState == EDITOR_SCENE_STATE_EDIT && sGameViewportFocused)

@@ -21,6 +21,8 @@ public:
 	template<typename GroovyClassT>
 	inline bool IsA() const { return classUtils::DynamicCast((GroovyObject*)this, GroovyClassT::StaticClass()); }
 
+	void CopyProperties(GroovyObject* to);
+
 	friend class ObjectSerializer;
 };
 

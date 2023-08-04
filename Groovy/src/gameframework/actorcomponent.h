@@ -30,6 +30,9 @@ protected:
 	virtual void Initialize() {}
 	virtual void Uninitialize() {}
 
+	virtual void BeginPlay() {}
+	virtual void Tick(float deltaTime) {}
+
 private:
 	std::string mName;
 	EActorComponentType mType;

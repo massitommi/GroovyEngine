@@ -26,12 +26,13 @@ enum EPropertyType : uint32
 
 enum EPropertyFlags : uint32
 {
-	PROPERTY_FLAG_IS_ARRAY = BITFLAG(1),
-	PROPERTY_FLAG_IS_DYNAMIC_ARRAY = BITFLAG(2),
-	PROPERTY_FLAG_IS_COMPLEX = BITFLAG(3),
-	PROPERTY_FLAG_NO_SERIALIZE = BITFLAG(4),
-	PROPERTY_FLAG_EDITOR_READONLY = BITFLAG(5),
-	PROPERTY_FLAG_EDITOR_HIDDEN = BITFLAG(6)
+	PROPERTY_FLAG_IS_ARRAY = BITFLAG(1),			// This property is an array
+	PROPERTY_FLAG_IS_DYNAMIC_ARRAY = BITFLAG(2),	// This property is a dynamic array
+	PROPERTY_FLAG_IS_COMPLEX = BITFLAG(3),			// This property is complex, and requires more than just a memcpy for serialization and deserialization (ex: Texture*)
+	PROPERTY_FLAG_NO_SERIALIZE = BITFLAG(4),		// This property should not be serialized
+	PROPERTY_FLAG_EDITOR_READONLY = BITFLAG(5),		// This property can't be edited inside the editor
+	PROPERTY_FLAG_EDITOR_HIDDEN = BITFLAG(6),		// This property is hidden in the editor
+	PROPERTY_FLAG_IS_NOT_VALUE_TYPE = BITFLAG(7)	// This property requires more than just a memcpy for copying (ex: String)
 };
 
 struct GroovyProperty

@@ -1,4 +1,5 @@
 #include "object.h"
+#include "reflection.h"
 
 GroovyClass GROOVY_CLASS_NAME(GroovyObject) =
 {
@@ -18,6 +19,11 @@ void GroovyObject::GetClassProperties(std::vector<GroovyProperty>& outProps)
 void GroovyObject::GetClassPropertiesRecursive(std::vector<GroovyProperty>& outProps) const
 {
 	GetClassProperties(outProps);
+}
+
+void GroovyObject::CopyProperties(GroovyObject* to)
+{
+	reflectionUtils::CopyProperties(to, this);
 }
 
 GroovyObject::GroovyObject()

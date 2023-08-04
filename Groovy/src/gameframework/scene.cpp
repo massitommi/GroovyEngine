@@ -170,6 +170,7 @@ void Scene::BeginPlay()
 			mActorTickQueue.push_back(actor);
 
 		actor->BeginPlay();
+		actor->BeginPlayComponents();
 	}
 }
 
@@ -182,6 +183,7 @@ void Scene::Tick(float deltaTime)
 	for (uint32 i = 0; i < mActorTickQueue.size(); i++)
 	{
 		mActorTickQueue[i]->Tick(deltaTime);
+		mActorTickQueue[i]->TickComponents(deltaTime);
 	}
 
 #else
@@ -190,6 +192,7 @@ void Scene::Tick(float deltaTime)
 	for (uint32 i = 0; i < tickQueueCount; i++)
 	{
 		mActorTickQueue[i]->Tick(deltaTime);
+		mActorTickQueue[i]->TickComponents(deltaTime);
 	}
 
 #endif
@@ -237,6 +240,18 @@ void Scene::RemoveFromRenderQueue(MeshComponent* mesh)
 
 	auto it = std::find(mRenderQueue.begin(), mRenderQueue.end(), mesh);
 	mRenderQueue.erase(it);
+}
+
+void Scene::Copy(Scene* to)
+{
+	check(to);
+
+	for (Actor* actor : mActors)
+	{
+		Actor* clone = to->ConstructActor(actor->GetClass(), actor->mTemplate);
+		actor->Clone(clone);
+		clone->InitializeComponents();
+	}
 }
 
 Actor* Scene::ConstructActor(GroovyClass* actorClass, ActorBlueprint* bp)

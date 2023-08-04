@@ -41,16 +41,31 @@ public:
 	{
 		testComp1 = AddComponent<TestActorComponent>("my test comp");
 		testComp2 = AddComponent<TestActorComponentDerived>("my test comp 2");
+
+		counter = 0.0f;
+	}
+
+	virtual void BeginPlay()
+	{
+		counter = 1.0f;
+	}
+
+	virtual void Tick(float deltaTime)
+	{
+		counter += 0.5f;
 	}
 
 private:
 	TestActorComponent* testComp1;
 	TestActorComponentDerived* testComp2;
 	float speed = 5.0f;
+	
+	float counter;
 };
 
 GROOVY_CLASS_IMPL(TestActor)
 	GROOVY_REFLECT(speed)
+	GROOVY_REFLECT_EX(counter, PROPERTY_FLAG_NO_SERIALIZE)
 GROOVY_CLASS_END()
 
 CLASS_LIST_BEGIN(GAME_CLASSES)

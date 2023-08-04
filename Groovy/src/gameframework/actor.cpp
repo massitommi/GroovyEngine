@@ -97,6 +97,35 @@ void Actor::Destroy()
 {
 }
 
+void Actor::BeginPlayComponents()
+{
+	for (ActorComponent* comp : mComponents)
+		comp->BeginPlay();
+}
+
+void Actor::TickComponents(float deltaTime)
+{
+	for (ActorComponent* comp : mComponents)
+		comp->Tick(deltaTime);
+}
+
+void Actor::Clone(Actor* to)
+{
+	CopyProperties(to);
+	to->mTransform = mTransform;
+	to->mName = mName;
+
+	for (ActorComponent* comp : mComponents)
+	{
+		if (comp->mType == ACTOR_COMPONENT_TYPE_EDITOR_SCENE)
+		{
+			ActorComponent* compClone = to->AddComponent(comp->GetClass(), comp->mName);
+			compClone->mType = ACTOR_COMPONENT_TYPE_EDITOR_SCENE;
+			comp->CopyProperties(compClone);
+		}
+	}
+}
+
 ActorComponent* Actor::AddComponent(GroovyClass* componentClass, const std::string& name)
 {
 	checkf(componentClass, "Component class is NULL");

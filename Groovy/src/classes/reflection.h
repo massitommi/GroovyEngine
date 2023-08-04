@@ -17,4 +17,6 @@ namespace reflectionUtils
 {
 	size_t GetPropertySize(EPropertyType type);
 	DynamicArrayPtr GetDynamicArrayPtr(EPropertyType type);
+	void CopyProperty(GroovyObject* dst, const GroovyObject* src, const GroovyProperty* prop);
+	void CopyProperties(GroovyObject* dst, const GroovyObject* src);
 }

@@ -51,6 +51,8 @@ public:
 
 	const std::vector<class MeshComponent*>& GetRenderQueue() const { return mRenderQueue; }
 
+	void Copy(Scene* to);
+
 #if WITH_EDITOR
 
 	// returns true if assetToBeDeleted was referenced
