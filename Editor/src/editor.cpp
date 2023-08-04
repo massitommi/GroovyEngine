@@ -115,6 +115,9 @@ namespace res
 	static Texture* sClassAssetIcon = nullptr;
 	static Texture* sBlueprintAssetIcon = nullptr;
 	static Texture* sSceneAssetIcon = nullptr;
+	static Texture* sPlayBtnIcon = nullptr;
+	static Texture* sPauseBtnIcon = nullptr;
+	static Texture* sStopBtnIcon = nullptr;
 
 	Texture* LoadEditorIcon(const std::string& path)
 	{
@@ -132,6 +135,9 @@ namespace res
 		sClassAssetIcon = LoadEditorIcon("res/class_asset_icon.png");
 		sBlueprintAssetIcon = LoadEditorIcon("res/blueprint_asset_icon.png");
 		sSceneAssetIcon = LoadEditorIcon("res/scene_asset_icon.png");
+		sPlayBtnIcon = LoadEditorIcon("res/play_btn_icon.png");
+		sPauseBtnIcon = LoadEditorIcon("res/pause_btn_icon.png");
+		sStopBtnIcon = LoadEditorIcon("res/stop_btn_icon.png");
 	}
 
 	void Unload()
@@ -142,6 +148,9 @@ namespace res
 		delete sClassAssetIcon;
 		delete sBlueprintAssetIcon;
 		delete sSceneAssetIcon;
+		delete sPlayBtnIcon;
+		delete sPauseBtnIcon;
+		delete sStopBtnIcon;
 	}
 }
 
@@ -638,7 +647,28 @@ namespace panels
 				case ASSET_TYPE_SCENE:
 					if (sEditorSceneState == EDITOR_SCENE_STATE_EDIT && sEditScene.scene != asset.instance)
 					{
-						TravelToScene((Scene*)asset.instance);
+						if (sEditScenePendingSave)
+						{
+							auto res = SysMessageBox::Show
+							(
+								"Changing scene without saving", "Do you want to save and travel to the new scene?",
+								MESSAGE_BOX_TYPE_WARNING, MESSAGE_BOX_OPTIONS_YESNOCANCEL
+							);
+
+							if (res == MESSAGE_BOX_RESPONSE_YES)
+							{
+								sEditScene.scene->Save();
+								TravelToScene((Scene*)asset.instance);
+							}
+							else if (res == MESSAGE_BOX_RESPONSE_NO)
+							{
+								TravelToScene((Scene*)asset.instance);
+							}
+						}
+						else
+						{
+							TravelToScene((Scene*)asset.instance);
+						}
 					}
 					break;
 				}
@@ -665,12 +695,15 @@ namespace panels
 						);
 						if (res == MESSAGE_BOX_RESPONSE_YES)
 						{
-							FileSystem::DeleteFile((gProj.GetAssetsPath() / asset.name).string());
+							if (asset.instance == gProj.GetStartupScene())
+								gProj.SetStartupScene(nullptr);
 
 							if (asset.instance == sEditScene.scene)
 								TravelToScene(nullptr);
 
 							AssetManager::Editor_Delete(asset.uuid);
+
+							FileSystem::DeleteFile((gProj.GetAssetsPath() / asset.name).string());
 						}
 					}
 
@@ -1217,6 +1250,8 @@ namespace panels
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, { 2, 2 });
 
 		ImVec4 wndBorderCol = { 0.0f, 0.0f, 0.0f, 1.0f };
+		ImVec2 btnsSize = { 38.0f, 38.0f };
+		float btnsSpacing = 10.0f;
 
 		if (sEditorSceneState == EDITOR_SCENE_STATE_PLAY)
 			wndBorderCol = { 1.0f, 1.0f, 0.0f, 1.0f };
@@ -1226,6 +1261,8 @@ namespace panels
 		ImGui::Begin("Game viewport", nullptr, sEditScenePendingSave ? ImGuiWindowFlags_UnsavedDocument : 0);
 
 		sGameViewportFocused = ImGui::IsWindowFocused();
+
+		ImVec2 startCursorPos = ImGui::GetCursorPos();
 
 		if (sCurrentScene->scene)
 		{
@@ -1264,6 +1301,62 @@ namespace panels
 			ImGui::SetCursorPosY(ImGui::GetWindowSize().y - wndSize.y + 8);
 			ImGui::SetCursorPosX(8);
 			ImGui::Text("Viewport %ix%i", sGameViewportFrameBuffer->GetSpecs().width, sGameViewportFrameBuffer->GetSpecs().height);
+
+			// play / pause / stop 
+
+			ImVec2 btnsCursorPos = startCursorPos;
+			btnsCursorPos.y += 8;
+
+			if (sEditorSceneState != EDITOR_SCENE_STATE_PLAY)
+			{
+				// 1 button
+				btnsCursorPos.x += (wndSize.x / 2.0f) - (btnsSize.x / 2.0f + ImGui::GetStyle().FramePadding.x);
+			}
+			else
+			{
+				// 2 buttons
+				btnsCursorPos.x += (wndSize.x / 2.0f) - (btnsSize.x + ImGui::GetStyle().FramePadding.x * 2 + btnsSpacing / 2);
+			}
+
+			ImGui::SetCursorPos(btnsCursorPos);
+
+			ImGui::PushStyleColor(ImGuiCol_ButtonActive, { 1,1,1,0.9f });
+			ImGui::PushStyleColor(ImGuiCol_ButtonHovered, { 1,1,1,0.6f });
+			ImGui::PushStyleColor(ImGuiCol_Button, { 1,1,1,0 });
+
+			EEditorSceneState newSceneState = sEditorSceneState;
+
+			if (sEditorSceneState == EDITOR_SCENE_STATE_EDIT)
+			{
+				if (ImGui::ImageButton("play_btn", res::sPlayBtnIcon->GetRendererID(), btnsSize))
+				{
+					newSceneState = EDITOR_SCENE_STATE_PLAY;
+				}
+			}
+			else
+			{
+				if (ImGui::ImageButton("pause_btn", res::sPauseBtnIcon->GetRendererID(), btnsSize))
+				{
+					// sEditorSceneState = EDITOR_SCENE_STATE_EDIT;
+				}
+				if(ImGui::IsItemHovered())
+					ImGui::SetTooltip("Not supported right now");
+
+				ImGui::SameLine(0.0f, btnsSpacing);
+				if (ImGui::ImageButton("stop_btn", res::sStopBtnIcon->GetRendererID(), btnsSize))
+				{
+					newSceneState = EDITOR_SCENE_STATE_EDIT;
+				}
+			}
+			
+			ImGui::PopStyleColor(3);
+
+			if (newSceneState != sEditorSceneState)
+			{
+				// play , pause etc..
+				sEditorSceneState = newSceneState;
+			}
+
 		}
 		else
 		{
