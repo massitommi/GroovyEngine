@@ -99,8 +99,6 @@ int32 GroovyEntryPoint(const char* args)
 
 	TickTimer::Init();
 
-	//wnd.SetFullscreen(true);
-
 	while (gEngineShouldRun)
 	{
 		wnd.ProcessEvents();
