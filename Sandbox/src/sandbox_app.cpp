@@ -24,8 +24,8 @@ void Application::Init()
 	sAspectRatio = (float)gWindow->GetProps().width / (float)gWindow->GetProps().height;
 	gWindow->SubmitToWndResizeCallback(OnWndResize);
 	gWindow->EnableCursor(false);
-	
-	//gWindow->SetFullscreen(true);
+	gWindow->SetMaxSize();
+	gWindow->SetFullscreen(true);
 
 	sScene = gProj.GetStartupScene();
 

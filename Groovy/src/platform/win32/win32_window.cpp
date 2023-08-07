@@ -258,6 +258,19 @@ void Window::GetCursorPos(uint32* xy)
 	xy[1] = p.y;
 }
 
+void Window::SetMaxSize()
+{
+	HMONITOR monitor = MonitorFromWindow((HWND)mHandle, MONITOR_DEFAULTTOPRIMARY);
+	MONITORINFOEXA monitorInfo = {};
+	monitorInfo.cbSize = sizeof(MONITORINFOEXA);
+	GetMonitorInfoA(monitor, &monitorInfo);
+	DEVMODEA devmode = {};
+	devmode.dmSize = sizeof(DEVMODEA);
+	EnumDisplaySettingsExA(monitorInfo.szDevice, ENUM_CURRENT_SETTINGS, &devmode, 0);
+
+	::SetWindowPos((HWND)mHandle, nullptr, 100, 100, devmode.dmPelsWidth, devmode.dmPelsHeight, SWP_NOMOVE | SWP_NOOWNERZORDER | SWP_NOZORDER);
+}
+
 bool Window::OnClose()
 {
 	if (mWndCloseCallback)

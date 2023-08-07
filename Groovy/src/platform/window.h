@@ -32,6 +32,8 @@ public:
 	void SetCursorPos(uint32 x, uint32 y);
 	void GetCursorPos(uint32* xy);
 
+	void SetMaxSize();
+
 	bool OnClose();
 	void OnResize(uint32 width, uint32 height);
 	void OnFilesDropped(const std::vector<std::string>& files);
