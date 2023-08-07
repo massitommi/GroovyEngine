@@ -2,6 +2,8 @@
 
 #include "platform/window.h"
 #include "win32_globals.h"
+#include "renderer/api/renderer_api.h"
+#include "platform/input.h"
 
 static const char* sWndClassName = "groovyWnd";
 
@@ -36,6 +38,10 @@ static std::vector<std::string> GetDroppedFiles(HDROP boh)
 	return result;
 }
 
+
+#define HID_USAGE_PAGE_GENERIC         ((USHORT) 0x01)
+#define HID_USAGE_GENERIC_MOUSE        ((USHORT) 0x02)
+
 static LRESULT CALLBACK GroovyWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
 #if WITH_EDITOR
@@ -44,6 +50,60 @@ static LRESULT CALLBACK GroovyWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARA
 
 	switch (uMsg)
 	{
+		case WM_KEYDOWN:
+		case WM_SYSKEYDOWN:
+		{
+			Input::OnKeyDown(wParam);
+		}
+		break;
+
+		case WM_KEYUP:
+		case WM_SYSKEYUP:
+		{
+			Input::OnKeyUp(wParam);
+		}
+		break;
+
+		case WM_LBUTTONDOWN:
+		{
+			Input::OnKeyDown(VK_LBUTTON);
+		}
+		break;
+
+		case WM_LBUTTONUP:
+		{
+			Input::OnKeyUp(VK_LBUTTON);
+		}
+		break;
+
+		case WM_RBUTTONDOWN:
+		{
+			Input::OnKeyDown(VK_RBUTTON);
+		}
+		break;
+
+		case WM_RBUTTONUP:
+		{
+			Input::OnKeyUp(VK_RBUTTON);
+		}
+		break;
+
+		case WM_INPUT:
+		{
+			UINT dwSize = sizeof(RAWINPUT);
+			static BYTE lpb[sizeof(RAWINPUT)];
+
+			GetRawInputData((HRAWINPUT)lParam, RID_INPUT, lpb, &dwSize, sizeof(RAWINPUTHEADER));
+
+			RAWINPUT* raw = (RAWINPUT*)lpb;
+
+			if (raw->header.dwType == RIM_TYPEMOUSE)
+			{
+				Input::OnMouseMove(raw->data.mouse.lLastX, raw->data.mouse.lLastY);
+			}
+		}
+		break;
+
 		case WM_SIZE:
 		{
 			uint32 width = LOWORD(lParam);
@@ -68,6 +128,13 @@ static LRESULT CALLBACK GroovyWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARA
 		{
 			CREATESTRUCTA* params = (CREATESTRUCTA*)lParam;
 			SetWindowLongPtrA(hWnd, GWLP_USERDATA, (LONG_PTR)params->lpCreateParams);
+
+			RAWINPUTDEVICE Rid[1];
+			Rid[0].usUsagePage = HID_USAGE_PAGE_GENERIC;
+			Rid[0].usUsage = HID_USAGE_GENERIC_MOUSE;
+			Rid[0].dwFlags = RIDEV_INPUTSINK;
+			Rid[0].hwndTarget = hWnd;
+			check(RegisterRawInputDevices(Rid, 1, sizeof(Rid[0])));
 		}
 		break;
 
@@ -139,6 +206,56 @@ void Window::SetTitle(const std::string& newTitle)
 	mProps.title = newTitle;
 	if(mHandle)
 		SetWindowTextA((HWND)mHandle, newTitle.c_str());
+}
+
+void Window::SetFullscreen(bool fullscreen)
+{
+	RendererAPI::Get().SetFullscreen(fullscreen);
+	switch (RendererAPI::GetAPI())
+	{
+		// custom stuff
+		// case opengl: trigger wm_size etc...
+	}
+	mProps.fullscreen = fullscreen;
+}
+
+void Window::EnableCursor(bool enable)
+{
+	POINT cursorPos;
+	::GetCursorPos(&cursorPos);
+
+	if (enable)
+	{
+		::SetCursor(LoadCursorA(nullptr, nullptr));
+		while (::ShowCursor(true) < 0);
+		::ClipCursor(nullptr);
+		::SetCursorPos(cursorPos.x, cursorPos.y);
+	}
+	else
+	{
+		RECT cursorLock;
+		cursorLock.left = cursorPos.x;
+		cursorLock.top = cursorPos.y;
+		cursorLock.right = cursorPos.x + 1;
+		cursorLock.bottom = cursorPos.y + 1;
+
+		::ClipCursor(&cursorLock);
+
+		while (::ShowCursor(false) >= 0);
+	}
+}
+
+void Window::SetCursorPos(uint32 x, uint32 y)
+{
+	::SetCursorPos(x, y);
+}
+
+void Window::GetCursorPos(uint32* xy)
+{
+	POINT p;
+	::GetCursorPos(&p);
+	xy[0] = p.x;
+	xy[1] = p.y;
 }
 
 bool Window::OnClose()

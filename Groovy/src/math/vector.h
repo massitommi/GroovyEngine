@@ -247,4 +247,7 @@ namespace math
 	Vec3 GetForwardVector(Vec3 rotation);
 	Vec3 GetRightVector(Vec3 rotation);
 	Vec3 GetUpVector(Vec3 rotation);
+
+	float Magnitude(Vec3 v);
+	Vec3 Normalize(Vec3 v);
 }

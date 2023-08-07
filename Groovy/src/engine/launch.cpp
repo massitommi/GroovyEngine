@@ -16,7 +16,8 @@ FrameBuffer* gScreenFrameBuffer = nullptr;
 GroovyProject gProj;
 ClassDB gClassDB;
 ClearColor gScreenClearColor = { 0.9f, 0.7f, 0.7f, 1.0f };
-
+double gTime = 0.0f;
+double gDeltaTime = 0.0f;
 extern std::vector<GroovyClass*> ENGINE_CLASSES;
 extern std::vector<GroovyClass*> GAME_CLASSES;
 
@@ -27,14 +28,18 @@ void OnWndResizeCallback(uint32 width, uint32 height)
 	if (gScreenFrameBuffer->GetSpecs().width != width || gScreenFrameBuffer->GetSpecs().height != height)
 	{
 		gScreenFrameBuffer->Resize(width, height);
-#if !WITH_EDITOR
 		gScreenFrameBuffer->Bind();
-#endif
 	}
 }
 
 int32 GroovyEntryPoint(const char* args)
 {
+	if (!args[0])
+	{
+		CORE_ASSERT(0, "No project supplied for engine launch");
+		return -1;
+	}
+
 	// register classes
 	for (GroovyClass* c : ENGINE_CLASSES)
 		gClassDB.Register(c);
@@ -48,9 +53,7 @@ int32 GroovyEntryPoint(const char* args)
 	{
 		"Groovy",			// title
 		1600, 900,			// resolution
-		0,					// refreshrate (0 = max)
-		false,				// fullscreen
-		false				// v-sync
+		false				// fullscreen
 	};
 
 	Window::InitSystem();
@@ -60,7 +63,11 @@ int32 GroovyEntryPoint(const char* args)
 	wnd.Show();
 
 	// startup renderering
-	RendererAPI::Create(RENDERER_API_D3D11, &wnd);
+	RendererAPISpec rendererAPISpec;
+	rendererAPISpec.refreshrate = 0;	// max monitor refreshrate
+	rendererAPISpec.vsync = 1;			// v-sync enabled
+
+	RendererAPI::Create(RENDERER_API_D3D11, rendererAPISpec, &wnd);
 
 	FrameBufferSpec screenBufferSpec;
 	screenBufferSpec.swapchainTarget = true;
@@ -71,41 +78,50 @@ int32 GroovyEntryPoint(const char* args)
 
 	gScreenFrameBuffer = FrameBuffer::Create(screenBufferSpec);
 
+
 	wnd.SubmitToWndResizeCallback(OnWndResizeCallback);
 
+
 	// load project and settings
-#if WITH_EDITOR
+
 	gProj.BuildPaths(args);
-#else
-	#error Sandbox not supported yet!
-#endif
 
 	AssetManager::Init();
 
-	gProj.Load();
+	gProj.Load(); // we need to initalize the assetManager in order to deserialize the startup scene
 
 	Application::Init();
 
 	gScreenFrameBuffer->Bind();
 	Renderer::Init();
 
+	Input::Init();
+
+	TickTimer::Init();
+
+	//wnd.SetFullscreen(true);
+
 	while (gEngineShouldRun)
 	{
 		wnd.ProcessEvents();
 
-		Application::Update(1.0f / 60.0f);
+		double currentTime = TickTimer::GetTimeSeconds();
+		gDeltaTime = currentTime - gTime;
+		gTime = currentTime;
+
+		Application::Update((float)gDeltaTime);
+
+		Input::Clear();
 
 		gScreenFrameBuffer->ClearColorAttachment(0, gScreenClearColor);
 		gScreenFrameBuffer->ClearDepthAttachment();
 
 		Application::Render();
 
-#if WITH_EDITOR
-		gScreenFrameBuffer->Bind();
-		Application::Render2EditorOnly();
-#endif
-		RendererAPI::Get().Present(0);
+		RendererAPI::Get().Present();
 	}
+
+	Input::Shutdown();
 
 	Renderer::Shutdown();
 

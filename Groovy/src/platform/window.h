@@ -6,8 +6,6 @@ struct WindowProps
 {
 	std::string title;
 	uint32 width, height;
-	uint32 refreshrate;
-	uint32 vsync;
 	bool fullscreen;
 };
 
@@ -28,6 +26,11 @@ public:
 	void ProcessEvents();
 	
 	void SetTitle(const std::string& newTitle);
+	void SetFullscreen(bool fullscreen);
+
+	void EnableCursor(bool enable);
+	void SetCursorPos(uint32 x, uint32 y);
+	void GetCursorPos(uint32* xy);
 
 	bool OnClose();
 	void OnResize(uint32 width, uint32 height);

@@ -3,7 +3,6 @@
 #include "vendor/imgui/misc/cpp/imgui_stdlib.h"
 #include "assets/asset_manager.h"
 #include "classes/class.h"
-#include "classes/reflection.h"
 #include "gameframework/blueprint.h"
 #include "gameframework/actor.h"
 #include "gameframework/actorcomponent.h"
@@ -21,7 +20,7 @@ bool editorGui::AssetRef(const char* label, EAssetType type, void* data, GroovyC
 			if (handle.type == ASSET_TYPE_BLUEPRINT || handle.type == ASSET_TYPE_ACTOR_BLUEPRINT)
 			{
 				Blueprint* bp = (Blueprint*)handle.instance;
-				if (classUtils::IsA(bp->GetClass(), classFilter))
+				if (GroovyClass_IsA(bp->GetClass(), classFilter))
 				{
 					assets.push_back(handle);
 				}
@@ -179,10 +178,10 @@ bool editorGui::Property(const GroovyProperty& prop, void* propData)
 		ImGui::PushStyleColor(ImGuiCol_HeaderHovered, { 1.0f, 1.0f, 1.0f, 0.1f });
 		if (ImGui::CollapsingHeader(prop.name.c_str()))
 		{
-			uint32 propSize = reflectionUtils::GetPropertySize(prop.type);
+			uint32 propSize = GroovyProperty_GetSize(prop.type);
 			if (prop.flags & PROPERTY_FLAG_IS_DYNAMIC_ARRAY)
 			{
-				DynamicArrayPtr arrayPtr = reflectionUtils::GetDynamicArrayPtr(prop.type);
+				DynamicArrayPtr arrayPtr = GroovyProperty_GetDynamicArrayPtr(prop.type);
 				void* dataData = arrayPtr.data(propData);
 				uint32 dataArrayCount = arrayPtr.size(propData);
 

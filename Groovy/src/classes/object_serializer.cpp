@@ -1,5 +1,5 @@
 #include "object_serializer.h"
-#include "reflection.h"
+#include "utils/reflection/reflection_utils.h"
 #include "class_db.h"
 #include "assets/asset_manager.h"
 
@@ -14,7 +14,7 @@ namespace utils
 
 		if (prop.flags & PROPERTY_FLAG_IS_DYNAMIC_ARRAY)
 		{
-			DynamicArrayPtr dap = reflectionUtils::GetDynamicArrayPtr(prop.type);
+			DynamicArrayPtr dap = GroovyProperty_GetDynamicArrayPtr(prop.type);
 			objProp1ArrayCount = dap.size(objProp1);
 			objProp2ArrayCount = dap.size(objProp2);
 			objProp1 = dap.data(objProp1);
@@ -26,7 +26,7 @@ namespace utils
 
 		if (!(prop.flags & PROPERTY_FLAG_IS_COMPLEX))
 		{
-			return memcmp(objProp1, objProp2, reflectionUtils::GetPropertySize(prop.type) * objProp1ArrayCount) == 0;
+			return memcmp(objProp1, objProp2, GroovyProperty_GetSize(prop.type) * objProp1ArrayCount) == 0;
 		}
 		else
 		{
@@ -87,7 +87,7 @@ namespace utils
 
 		if (prop.flags & PROPERTY_FLAG_IS_DYNAMIC_ARRAY)
 		{
-			DynamicArrayPtr dap = reflectionUtils::GetDynamicArrayPtr(prop.type);
+			DynamicArrayPtr dap = GroovyProperty_GetDynamicArrayPtr(prop.type);
 			objPropArrayCount = dap.size(objProp);
 			objProp = dap.data(objProp);
 		}
@@ -98,7 +98,7 @@ namespace utils
 
 		if (!(prop.flags & PROPERTY_FLAG_IS_COMPLEX))
 		{
-			size_t dataWidth = reflectionUtils::GetPropertySize(prop.type) * objPropArrayCount;
+			size_t dataWidth = GroovyProperty_GetSize(prop.type) * objPropArrayCount;
 			pack.data.push_bytes(objProp, dataWidth);
 			desc.sizeBytes = dataWidth;
 		}
@@ -159,7 +159,7 @@ namespace utils
 
 		if (desc.classProp->flags & PROPERTY_FLAG_IS_DYNAMIC_ARRAY)
 		{
-			DynamicArrayPtr dap = reflectionUtils::GetDynamicArrayPtr(desc.classProp->type);
+			DynamicArrayPtr dap = GroovyProperty_GetDynamicArrayPtr(desc.classProp->type);
 			dap.resize(objProp, desc.arrayCount);
 			objProp = dap.data(objProp);
 		}

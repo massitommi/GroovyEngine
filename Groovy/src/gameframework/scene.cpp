@@ -93,13 +93,14 @@ Actor* Scene::SpawnActor(GroovyClass* actorClass, ActorBlueprint* bp)
 
 #if WITH_EDITOR
 
+#include "utils/reflection/reflection_utils.h"
 bool Scene::Editor_FixDependencyDeletion(AssetHandle assetToBeDeleted)
 {
 	if (!mLoaded)
 		return false;
 
+	// remove blueprints instances if the asset type is ACTOR_BLUEPRINT
 	std::vector<Actor*> removeList;
-
 	if (assetToBeDeleted.type == ASSET_TYPE_ACTOR_BLUEPRINT)
 	{
 		for (Actor* actor : mActors)
@@ -114,17 +115,29 @@ bool Scene::Editor_FixDependencyDeletion(AssetHandle assetToBeDeleted)
 		{
 			Editor_DeleteActor(actor);
 		}
-
 	}
 	
-	// TODO: REPLACE WITH NULL ASSET REFERENCES
-
+	// Replace assets's references with NULL
+	uint32 refs = 0;
+	AssetInstance* assetI = assetToBeDeleted.instance;
+	AssetInstance* nullAsset = nullptr;
 	for (Actor* actor : mActors)
 	{
-		
+		reflectionUtils::ReplaceValueTypeProperty(actor, PROPERTY_TYPE_ASSET_REF, &assetI, &nullAsset);
+
+		for (ActorComponent* comp : actor->mComponents)
+		{
+			reflectionUtils::ReplaceValueTypeProperty(comp, PROPERTY_TYPE_ASSET_REF, &assetI, &nullAsset);
+		}
 	}
 
-	return removeList.size();
+	if (removeList.size() || refs)
+	{
+		Save();
+		return true;
+	}
+	
+	return false;
 }
 
 Actor* Scene::Editor_AddActor(GroovyClass* actorClass, ActorBlueprint* bp)
@@ -225,6 +238,8 @@ void Scene::Clear()
 	mActorTickQueue.clear();
 
 	checkf(mRenderQueue.size() == 0, "There's a bug, scene render queue not empty after clear");
+
+	mCamera = nullptr;
 }
 
 void Scene::SubmitForRendering(MeshComponent* mesh)
@@ -257,7 +272,7 @@ void Scene::Copy(Scene* to)
 Actor* Scene::ConstructActor(GroovyClass* actorClass, ActorBlueprint* bp)
 {
 	check(actorClass);
-	check(classUtils::IsA(actorClass, Actor::StaticClass()));
+	check(GroovyClass_IsA(actorClass, Actor::StaticClass()));
 
 	if (bp)
 	{

@@ -16,13 +16,13 @@
 #include "asset_importer.h"
 
 #include "gameframework/actor.h"
-#include "gameframework/meshactor.h"
+#include "gameframework/actors/meshactor.h"
+#include "gameframework/actors/spectator.h"
 #include "gameframework/actorcomponent.h"
 #include "gameframework/blueprint.h"
 #include "gameframework/scene.h"
 #include "gameframework/components/cameracomponent.h"
 
-#include "classes/reflection.h"
 #include "classes/class_db.h"
 
 #include "renderer/api/renderer_api.h"
@@ -93,9 +93,12 @@ extern GroovyProject gProj;
 extern std::vector<GroovyClass*> ENGINE_CLASSES;
 extern std::vector<GroovyClass*> GAME_CLASSES;
 extern ClassDB gClassDB;
+extern double gDeltaTime;
 
 static FrameBuffer* sGameViewportFrameBuffer = nullptr;
 static bool sGameViewportFocused = false;
+static ImVec2 sGameViewportSize = { 100, 100 };
+static ImVec2 sGameViewportStart = { 0, 0 };
 static ImVec2 sMousePos = { 0.0f, 0.0f };
 static std::string sEditSceneName;
 static bool sEditScenePendingSave = false;
@@ -430,7 +433,7 @@ namespace newAsset
 
 			for (const GroovyClass* gClass : gClassDB.GetClasses())
 			{
-				if (classUtils::IsA(gClass, Actor::StaticClass()) && ImGui::Selectable(gClass->name.c_str()))
+				if (GroovyClass_IsA(gClass, Actor::StaticClass()) && ImGui::Selectable(gClass->name.c_str()))
 				{
 					// create asset
 					ActorBlueprint* bp = new ActorBlueprint();
@@ -510,8 +513,6 @@ namespace newAsset
 
 namespace panels
 {
-	static ImVec2 sGameViewportSize = { 100, 100 };
-
 	static Actor* sActorToRename = nullptr;
 	static bool sShowActorRename = false;
 	static std::string sActorRename;
@@ -624,7 +625,9 @@ namespace panels
 
 		ImGui::Columns(columns, nullptr, false);
 
-		for (uint32 i = 0; i < assets.size(); ++i)
+		AssetHandle assetToDelete = {};
+
+		for (uint32 i = 0; i < assets.size(); i++)
 		{
 			const AssetHandle& asset = assets[i];
 			PanelAsset panelAsset = panelAssets[i];
@@ -715,15 +718,7 @@ namespace panels
 						);
 						if (res == MESSAGE_BOX_RESPONSE_YES)
 						{
-							if (asset.instance == gProj.GetStartupScene())
-								gProj.SetStartupScene(nullptr);
-
-							if (asset.instance == sEditScene.scene)
-								TravelToScene(nullptr);
-
-							AssetManager::Editor_Delete(asset.uuid);
-
-							FileSystem::DeleteFile((gProj.GetAssetsPath() / asset.name).string());
+							assetToDelete = asset;
 						}
 					}
 
@@ -769,6 +764,19 @@ namespace panels
 
 			ImGui::PopID();
 			ImGui::NextColumn();
+		}
+
+		if (assetToDelete.uuid)
+		{
+			if (assetToDelete.instance == gProj.GetStartupScene())
+				gProj.SetStartupScene(nullptr);
+
+			if (assetToDelete.instance == sEditScene.scene)
+				TravelToScene(nullptr);
+
+			AssetManager::Editor_Delete(assetToDelete.uuid);
+
+			FileSystem::DeleteFile((gProj.GetAssetsPath() / assetToDelete.name).string());
 		}
 
 		ImGui::End();
@@ -884,6 +892,12 @@ namespace panels
 						sEditScenePendingSave = true;
 						ImGui::CloseCurrentPopup();
 					}
+					if (ImGui::Selectable("Spectator"))
+					{
+						sCurrentScene->scene->Editor_AddActor(Spectator::StaticClass(), nullptr);
+						sEditScenePendingSave = true;
+						ImGui::CloseCurrentPopup();
+					}
 
 					ImGui::EndTabItem();
 				}
@@ -920,7 +934,7 @@ namespace panels
 
 					for (const GroovyClass* groovyClass : gClassDB.GetClasses())
 					{
-						if (classUtils::IsA(groovyClass, Actor::StaticClass()))
+						if (GroovyClass_IsA(groovyClass, Actor::StaticClass()))
 						{
 							if (ImGui::Selectable(groovyClass->name.c_str()))
 							{
@@ -1096,7 +1110,7 @@ namespace panels
 
 					for (const GroovyClass* gClass : gClassDB.GetClasses())
 					{
-						if (classUtils::IsA(gClass, ActorComponent::StaticClass()))
+						if (GroovyClass_IsA(gClass, ActorComponent::StaticClass()))
 						{
 							if (ImGui::Selectable(gClass->name.c_str()))
 							{
@@ -1284,10 +1298,13 @@ namespace panels
 
 		ImVec2 startCursorPos = ImGui::GetCursorPos();
 
+		ImVec2 wndSize = ImGui::GetContentRegionAvail();
+		sGameViewportSize = wndSize;
+		sGameViewportStart = ImGui::GetWindowPos();
+
 		if (sCurrentScene->scene)
 		{
 			// resize framebuffer if needed
-			ImVec2 wndSize = ImGui::GetContentRegionAvail();
 			bool differentSize = wndSize.x != sGameViewportFrameBuffer->GetSpecs().width || wndSize.y != sGameViewportFrameBuffer->GetSpecs().height;
 			bool okSize = wndSize.x > 0 && wndSize.y > 0;
 			if (differentSize && okSize)
@@ -1297,7 +1314,7 @@ namespace panels
 			// clear frame buffer
 			sGameViewportFrameBuffer->ClearDepthAttachment();
 			sGameViewportFrameBuffer->ClearColorAttachment(0, gScreenClearColor);
-
+			// bind framebuffer
 			sGameViewportFrameBuffer->Bind();
 
 			float aspectRatio = (float)wndSize.x / (float)wndSize.y;
@@ -1367,6 +1384,11 @@ namespace panels
 				{
 					newSceneState = EDITOR_SCENE_STATE_EDIT;
 				}
+
+				if (ImGui::IsKeyDown(ImGuiKey_Escape))
+				{
+					newSceneState = EDITOR_SCENE_STATE_EDIT;
+				}
 			}
 			
 			ImGui::PopStyleColor(3);
@@ -1374,9 +1396,16 @@ namespace panels
 			if (newSceneState != sEditorSceneState)
 			{
 				if (newSceneState == EDITOR_SCENE_STATE_PLAY)
+				{
 					Play();
+					gWindow->SetCursorPos(wndSize.x / 2, wndSize.y / 2);
+					gWindow->EnableCursor(false);
+				}
 				else if (newSceneState == EDITOR_SCENE_STATE_EDIT)
+				{
 					Stop();
+					gWindow->EnableCursor(true);
+				}
 
 				// play , pause etc..
 				sEditorSceneState = newSceneState;
@@ -1408,8 +1437,8 @@ void editor::Init()
 	gameViewportSpec.colorAttachments = { COLOR_FORMAT_R8G8B8A8_UNORM };
 	gameViewportSpec.hasDepthAttachment = true;
 	gameViewportSpec.swapchainTarget = false;
-	gameViewportSpec.width = panels::sGameViewportSize.x = 100;
-	gameViewportSpec.height = panels::sGameViewportSize.y = 100;
+	gameViewportSpec.width = sGameViewportSize.x = 100;
+	gameViewportSpec.height = sGameViewportSize.y = 100;
 
 	sGameViewportFrameBuffer = FrameBuffer::Create(gameViewportSpec);
 
@@ -1455,49 +1484,70 @@ void editor::Update(float deltaTime)
 		sPlayScene.scene->Tick(deltaTime);
 	}
 
-	ImVec2 currentMousePos = ImGui::GetMousePos();
+	int32 mouseDelta[2];
+	Input::GetRawMouseDelta(mouseDelta);
+	ImVec2 currentMousePos;
+	uint32 mousePos[2];
+	gWindow->GetCursorPos(mousePos);
+	currentMousePos.x = (float)mousePos[0];
+	currentMousePos.y = (float)mousePos[1];
+
 	// update editor camera
-	if (sEditorSceneState == EDITOR_SCENE_STATE_EDIT && sGameViewportFocused)
+	bool insideViewportX = currentMousePos.x > sGameViewportStart.x && currentMousePos.x < sGameViewportSize.x;
+	bool insideViewportY = currentMousePos.y > sGameViewportStart.y && currentMousePos.y < sGameViewportSize.y;
+	bool cursorInsideViewport = insideViewportX && insideViewportY;
+
+	if (sEditorSceneState == EDITOR_SCENE_STATE_EDIT && sGameViewportFocused && cursorInsideViewport)
 	{
-		// update camera location
+		if (ImGui::IsKeyPressed(ImGuiKey_MouseRight))
 		{
-			if (ImGui::IsKeyDown(ImGuiKey_D))
-			{
-				sEditorCamera.location += math::GetRightVector(sEditorCamera.rotation) * (gEditorSettings.mCameraMoveSpeed * deltaTime * 1.0f);
-			}
-			if (ImGui::IsKeyDown(ImGuiKey_A))
-			{
-				sEditorCamera.location += math::GetRightVector(sEditorCamera.rotation) * (gEditorSettings.mCameraMoveSpeed * deltaTime * -1.0f);
-			}
-			if (ImGui::IsKeyDown(ImGuiKey_W))
-			{
-				sEditorCamera.location += math::GetForwardVector(sEditorCamera.rotation) * (gEditorSettings.mCameraMoveSpeed * deltaTime * 1.0f);
-			}
-			if (ImGui::IsKeyDown(ImGuiKey_S))
-			{
-				sEditorCamera.location += math::GetForwardVector(sEditorCamera.rotation) * (gEditorSettings.mCameraMoveSpeed * deltaTime * -1.0f);
-			}
-			if (ImGui::IsKeyDown(ImGuiKey_Q))
-			{
-				sEditorCamera.location += math::GetUpVector(sEditorCamera.rotation) * (gEditorSettings.mCameraMoveSpeed * deltaTime * 1.0f);
-			}
-			if (ImGui::IsKeyDown(ImGuiKey_E))
-			{
-				sEditorCamera.location += math::GetUpVector(sEditorCamera.rotation) * (gEditorSettings.mCameraMoveSpeed * deltaTime * -1.0f);
-			}
+			gWindow->EnableCursor(false);
 		}
+		if (ImGui::IsKeyReleased(ImGuiKey_MouseRight))
+		{
+			gWindow->EnableCursor(true);
+		}
+
 		// update camera rotation
 		{
 			if (ImGui::IsKeyDown(ImGuiKey_MouseRight))
 			{
-				float deltaX = sMousePos.x - currentMousePos.x;
-				float deltaY = sMousePos.y - currentMousePos.y;
+				// camera rotation
 
-				if (deltaX != 0.0f)
-					sEditorCamera.rotation.y += -deltaX * gEditorSettings.mCameraRotationSpeed;
+				sEditorCamera.rotation.y += (float)mouseDelta[0] * gEditorSettings.mCameraRotationSpeed;
+				sEditorCamera.rotation.x += (float)mouseDelta[1] * gEditorSettings.mCameraRotationSpeed;
 
-				if(deltaY)
-					sEditorCamera.rotation.x += -deltaY * gEditorSettings.mCameraRotationSpeed;
+				// camera location
+
+				Vec3 inputDirection = { 0.0f, 0.0f, 0.0f };
+
+				if (ImGui::IsKeyDown(ImGuiKey_W))
+					inputDirection.z += 1.0f;
+				if (ImGui::IsKeyDown(ImGuiKey_S))
+					inputDirection.z += -1.0f;
+				if (ImGui::IsKeyDown(ImGuiKey_D))
+					inputDirection.x += 1.0f;
+				if (ImGui::IsKeyDown(ImGuiKey_A))
+					inputDirection.x += -1.0f;
+				if (ImGui::IsKeyDown(ImGuiKey_Q))
+					inputDirection.y += 1.0f;
+				if (ImGui::IsKeyDown(ImGuiKey_E))
+					inputDirection.y += -1.0f;
+
+				if (inputDirection.x || inputDirection.y || inputDirection.z)
+				{
+					Vec3 movement =
+						math::GetForwardVector(sEditorCamera.rotation) * inputDirection.z
+						+
+						math::GetRightVector(sEditorCamera.rotation) * inputDirection.x
+						+
+						math::GetUpVector(sEditorCamera.rotation) * inputDirection.y;
+
+					movement = math::Normalize(movement);
+					movement *= gEditorSettings.mCameraMoveSpeed * deltaTime;
+
+					sEditorCamera.location += movement;
+				}
 			}
 		}
 	}
@@ -1553,7 +1603,6 @@ void editor::Render()
 			ImGui::EndMenu();
 		}
 
-
 		if (ImGui::BeginMenu("Create"))
 		{
 			if (ImGui::MenuItem("Material"))
@@ -1567,6 +1616,13 @@ void editor::Render()
 
 			ImGui::EndMenu();
 		}
+
+		ImGui::Spacing();
+		ImGui::Spacing();
+		ImGui::Spacing();
+		ImGui::Spacing();
+		ImGui::Spacing();
+		ImGui::Text("Frametime: %.4fms FPS: %.3f", (float)gDeltaTime * 1000.0f, 1.0f / (float)gDeltaTime);
 
 		ImGui::EndMenuBar();
 	}

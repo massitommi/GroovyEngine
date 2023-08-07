@@ -9,7 +9,6 @@
 #include "classes/class_db.h"
 #include "renderer/mesh.h"
 #include "gameframework/blueprint.h"
-#include "classes/reflection.h"
 #include "runtime/object_allocator.h"
 #include "gameframework/actor.h"
 #include "gameframework/actorcomponent.h"
@@ -307,7 +306,7 @@ void ActorBlueprintEditorWindow::RenderContent()
 				extern ClassDB gClassDB;
 				for (const GroovyClass* gClass : gClassDB.GetClasses())
 				{
-					if (classUtils::IsA(gClass, ActorComponent::StaticClass()))
+					if (GroovyClass_IsA(gClass, ActorComponent::StaticClass()))
 					{
 						if (ImGui::Selectable(gClass->name.c_str()))
 						{

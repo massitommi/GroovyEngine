@@ -7,8 +7,8 @@ public:
 	static void Init();
 	static void Update(float deltaTime);
 	static void Render();
-#if WITH_EDITOR
-	static void Render2EditorOnly();
-#endif
 	static void Shutdown();
+
+	// If scene is nullptr the application quits
+	void Travel(class Scene* scene);
 };

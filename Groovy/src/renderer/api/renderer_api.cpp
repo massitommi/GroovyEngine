@@ -6,14 +6,14 @@
 RendererAPI* RendererAPI::sInstance = nullptr;
 ERendererAPI RendererAPI::sSelectedAPI = RENDERER_API_NONE;
 
-void RendererAPI::Create(ERendererAPI api, Window* wnd)
+void RendererAPI::Create(ERendererAPI api, RendererAPISpec spec, Window* wnd)
 {
 	switch (api)
 	{
 #if PLATFORM_WIN32
 	case RENDERER_API_D3D11:
 	{
-		sInstance = new D3D11RendererAPI(wnd);
+		sInstance = new D3D11RendererAPI(spec, wnd);
 		sSelectedAPI = RENDERER_API_D3D11;
 		return;
 	}

@@ -5,9 +5,15 @@
 class D3D11RendererAPI : public RendererAPI
 {
 public:
-	D3D11RendererAPI(class Window* wnd);
+	D3D11RendererAPI(RendererAPISpec spec, class Window* wnd);
 	virtual ~D3D11RendererAPI();
 
 	virtual void DrawIndexed(uint32 vertexOffset, uint32 indexOffset, uint32 indexCount) override;
-	virtual void Present(uint32 syncInteval) override;
+	virtual void Present() override;
+	virtual void SetFullscreen(bool fullscreen) override;
+	virtual void SetVSync(uint32 syncInterval) override;
+	virtual RendererAPISpec GetSpec() const override { return mSpec; }
+
+private:
+	RendererAPISpec mSpec;
 };

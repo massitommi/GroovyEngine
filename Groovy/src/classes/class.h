@@ -48,6 +48,17 @@ struct GroovyProperty
 	uint64 param2;
 };
 
+struct DynamicArrayPtr
+{
+	void* (*data)(void*);
+	size_t(*size)(void*);
+	void (*resize)(void*, size_t);
+	void (*clear)(void*);
+	void (*removeAt)(void*, size_t);
+	void (*insertAt)(void*, size_t);
+	void (*add)(void*);
+};
+
 template<typename T>
 struct PropType
 {
@@ -268,14 +279,11 @@ struct PropertyPack
 	DynamicBuffer data;
 };
 
-namespace classUtils
-{
-	// Gets all the properties exposed by a groovy class, sorted means that the first are the base class ones, and the last are the gClass ones
-	void GetClassPropertiesRecursiveSorted(GroovyClass* gClass, std::vector<GroovyProperty>& outProps);
-	uint32 FindProperty(const std::vector<GroovyProperty>& props, const std::string& propName);
-	GroovyObject* DynamicCast(GroovyObject* obj, const GroovyClass* gClass);
-	bool IsA(const GroovyClass* c1, const GroovyClass* c2);
-}
+size_t GroovyProperty_GetSize(EPropertyType type);
+DynamicArrayPtr GroovyProperty_GetDynamicArrayPtr(EPropertyType type);
+
+GroovyObject* GroovyClass_DynamicCast(GroovyObject* obj, const GroovyClass* gClass);
+bool GroovyClass_IsA(const GroovyClass* c1, const GroovyClass* c2);
 
 /*
 	How to create a groovy class:

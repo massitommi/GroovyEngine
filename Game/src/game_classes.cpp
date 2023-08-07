@@ -24,11 +24,15 @@ class TestActorComponentDerived : public TestActorComponent
 public:
 	bool mDerivedBool = false;
 	std::string mDerivedStr = "testing123";
+
+	Texture* assetRefTest2 = nullptr;
+
 };
 
 GROOVY_CLASS_IMPL(TestActorComponentDerived)
 	GROOVY_REFLECT(mDerivedBool)
 	GROOVY_REFLECT(mDerivedStr)
+	GROOVY_REFLECT(assetRefTest2)
 GROOVY_CLASS_END()
 
 GROOVY_CLASS_DECL(TestActor)
@@ -59,6 +63,8 @@ private:
 	TestActorComponent* testComp1;
 	TestActorComponentDerived* testComp2;
 	float speed = 5.0f;
+
+	std::vector<Texture*> assetRefTest;
 	
 	float counter;
 };
@@ -66,6 +72,7 @@ private:
 GROOVY_CLASS_IMPL(TestActor)
 	GROOVY_REFLECT(speed)
 	GROOVY_REFLECT_EX(counter, PROPERTY_FLAG_NO_SERIALIZE)
+	GROOVY_REFLECT(assetRefTest)
 GROOVY_CLASS_END()
 
 CLASS_LIST_BEGIN(GAME_CLASSES)

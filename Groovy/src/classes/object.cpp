@@ -1,5 +1,5 @@
 #include "object.h"
-#include "reflection.h"
+#include "utils/reflection/reflection_utils.h"
 
 GroovyClass GROOVY_CLASS_NAME(GroovyObject) =
 {

@@ -10,7 +10,8 @@
     #define SWAPCHAIN_FLAG_DEBUG 0
 #endif
 
-D3D11RendererAPI::D3D11RendererAPI(Window* wnd)
+D3D11RendererAPI::D3D11RendererAPI(RendererAPISpec spec, Window* wnd)
+    : mSpec(spec)
 {
     WindowProps wndProps = wnd->GetProps();
     HWND wndHandle = (HWND)wnd->GetNativeHandle();
@@ -23,12 +24,13 @@ D3D11RendererAPI::D3D11RendererAPI(Window* wnd)
         swapchainDesc.BufferDesc.Height = wndProps.height;
         swapchainDesc.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
         swapchainDesc.BufferDesc.Scaling = DXGI_MODE_SCALING_UNSPECIFIED;
-        swapchainDesc.BufferDesc.RefreshRate.Numerator = wndProps.refreshrate;
+        swapchainDesc.BufferDesc.RefreshRate.Numerator = spec.refreshrate;
         swapchainDesc.BufferDesc.RefreshRate.Denominator = 1;
         swapchainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
         swapchainDesc.OutputWindow = wndHandle;
         swapchainDesc.SampleDesc.Count = 1;
-        swapchainDesc.Windowed = !wndProps.fullscreen;
+        swapchainDesc.Windowed = true; // always windowed at startup
+        swapchainDesc.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
 
         d3dcheckslow(D3D11CreateDeviceAndSwapChain
         (
@@ -81,9 +83,19 @@ void D3D11RendererAPI::DrawIndexed(uint32 vertexOffset, uint32 indexOffset, uint
     d3dUtils::gContext->DrawIndexed(indexCount, indexOffset, vertexOffset);
 }
 
-void D3D11RendererAPI::Present(uint32 syncInteval)
+void D3D11RendererAPI::Present()
 {
-    d3dUtils::gSwapChain->Present(syncInteval, 0);
+    d3dUtils::gSwapChain->Present(mSpec.vsync, 0);
+}
+
+void D3D11RendererAPI::SetFullscreen(bool fullscreen)
+{
+    d3dcheck(d3dUtils::gSwapChain->SetFullscreenState(fullscreen, nullptr));
+}
+
+void D3D11RendererAPI::SetVSync(uint32 syncInterval)
+{
+    mSpec.vsync = syncInterval;
 }
 
 D3D11RendererAPI::~D3D11RendererAPI()

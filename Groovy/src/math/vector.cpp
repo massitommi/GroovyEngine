@@ -35,3 +35,13 @@ Vec3 math::GetUpVector(Vec3 rotation)
 
     return { up.m128_f32[0], up.m128_f32[1], up.m128_f32[2] };
 }
+
+float math::Magnitude(Vec3 v)
+{
+    return sqrt(v.x * v.x + v.y * v.y + v.z * v.z);
+}
+
+Vec3 math::Normalize(Vec3 v)
+{
+    return v / Magnitude(v);
+}

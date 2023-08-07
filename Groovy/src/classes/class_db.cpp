@@ -1,5 +1,6 @@
 #include "class_db.h"
 #include "runtime/object_allocator.h"
+#include "utils/reflection/reflection_utils.h"
 
 ClassDB::ClassDB()
 {
@@ -9,7 +10,7 @@ void ClassDB::Register(GroovyClass* gClass)
 {
 	check(gClass);
 	std::vector<GroovyProperty> props;
-	classUtils::GetClassPropertiesRecursiveSorted(gClass, props);
+	reflectionUtils::GetClassPropertiesRecursiveSorted(gClass, props);
 	
 	mClasses.push_back(gClass);
 	mClassDB[gClass->name] = gClass;

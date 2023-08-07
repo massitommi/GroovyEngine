@@ -70,6 +70,10 @@ public:
 	inline Vec3 GetRotation() const { return mTransform.rotation; }
 	inline Vec3 GetScale() const { return mTransform.scale; }
 
+	void SetLocation(Vec3 location);
+	void SetRotation(Vec3 rotation);
+	void SetScale(Vec3 scale);
+
 	inline const std::string& GetName() const { return mName; }
 	inline ActorBlueprint* GetTemplate() const { return mTemplate; }
 	inline Scene* GetScene() const { return mScene; }

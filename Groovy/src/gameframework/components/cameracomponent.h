@@ -10,7 +10,10 @@ class CameraComponent : public SceneComponent
 public:
 	CameraComponent();
 
+	virtual void BeginPlay();
+
 	float mFOV;
+	bool mSceneMainCamera;
 
 	friend class SceneRenderer;
 };

@@ -125,10 +125,14 @@ uint32 DepencyDeletionFix(const AssetHandle& assetToBeDeleted, PropertyPack& pac
 	return fixed;
 }
 
+#if WITH_EDITOR
+
 bool ObjectBlueprint::Editor_FixDependencyDeletion(AssetHandle assetToBeDeleted)
 {
 	return DepencyDeletionFix(assetToBeDeleted, mPropertyPack);
 }
+
+#endif
 
 ActorBlueprint::ActorBlueprint()
 	: mUUID(0), mLoaded(false)
@@ -218,6 +222,8 @@ void ActorBlueprint::RebuildPack(Actor* basedOn)
 	ActorSerializer::DeserializeActorPackData(mActorPack, mDefaultActor);
 }
 
+#if WITH_EDITOR
+
 bool ActorBlueprint::Editor_FixDependencyDeletion(AssetHandle assetToBeDeleted)
 {
 	bool actorFixed = false;
@@ -236,3 +242,5 @@ bool ActorBlueprint::Editor_FixDependencyDeletion(AssetHandle assetToBeDeleted)
 
 	return actorFixed || nativeComponentsFixed || editorComponentsFixed;
 }
+
+#endif

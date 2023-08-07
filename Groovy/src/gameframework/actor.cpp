@@ -109,6 +109,21 @@ void Actor::TickComponents(float deltaTime)
 		comp->Tick(deltaTime);
 }
 
+void Actor::SetLocation(Vec3 location)
+{
+	mTransform.location = location;
+}
+
+void Actor::SetRotation(Vec3 rotation)
+{
+	mTransform.rotation = rotation;
+}
+
+void Actor::SetScale(Vec3 scale)
+{
+	mTransform.scale = scale;
+}
+
 void Actor::Clone(Actor* to)
 {
 	CopyProperties(to);
@@ -117,19 +132,29 @@ void Actor::Clone(Actor* to)
 
 	for (ActorComponent* comp : mComponents)
 	{
-		if (comp->mType == ACTOR_COMPONENT_TYPE_EDITOR_SCENE)
+		ActorComponent* compClone = nullptr;
+
+		if (comp->mType != ACTOR_COMPONENT_TYPE_EDITOR_SCENE)
 		{
-			ActorComponent* compClone = to->AddComponent(comp->GetClass(), comp->mName);
-			compClone->mType = ACTOR_COMPONENT_TYPE_EDITOR_SCENE;
-			comp->CopyProperties(compClone);
+			compClone = to->GetComponent(comp->GetName());
 		}
+		else
+		{
+			compClone = to->AddComponent(comp->GetClass(), comp->mName);
+			compClone->mType = ACTOR_COMPONENT_TYPE_EDITOR_SCENE;
+		}
+
+		check(compClone);
+		check(compClone->GetClass() == comp->GetClass());
+
+		comp->CopyProperties(compClone);
 	}
 }
 
 ActorComponent* Actor::AddComponent(GroovyClass* componentClass, const std::string& name)
 {
 	checkf(componentClass, "Component class is NULL");
-	checkf(classUtils::IsA(componentClass, ActorComponent::StaticClass()), "Component class is not an ActorComponent");
+	checkf(GroovyClass_IsA(componentClass, ActorComponent::StaticClass()), "Component class is not an ActorComponent");
 	checkf(name.length() && std::count(name.begin(), name.end(), ' ') < name.length(), "Invalid component name");
 
 	ActorComponent*& dbRecord = mComponentsDB[name];
@@ -152,7 +177,10 @@ ActorComponent* Actor::__internal_Editor_AddEditorcomponent_BP(GroovyClass* comp
 {
 	ActorComponent* newComponent = AddComponent(componentClass, name);
 	newComponent->mType = ACTOR_COMPONENT_TYPE_EDITOR_BP;
-	newComponent->Initialize();
+	if (mScene)
+	{
+		newComponent->Initialize();
+	}
 	return newComponent;
 }
 
@@ -160,7 +188,10 @@ ActorComponent* Actor::__internal_Editor_AddEditorcomponent_Scene(GroovyClass* c
 {
 	ActorComponent* newComponent = AddComponent(componentClass, name);
 	newComponent->mType = ACTOR_COMPONENT_TYPE_EDITOR_SCENE;
-	newComponent->Initialize();
+	if (mScene)
+	{
+		newComponent->Initialize();
+	}
 	return newComponent;
 }
 
