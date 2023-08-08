@@ -6,6 +6,8 @@
 #include "renderer/scene_renderer.h"
 #include "platform/window.h"
 #include "gameframework/components/cameracomponent.h"
+#include "platform/input.h"
+#include "renderer/api/renderer_api.h"
 
 extern bool gEngineShouldRun;
 extern GroovyProject gProj;
@@ -51,6 +53,26 @@ void Application::Init()
 
 void Application::Update(float deltaTime)
 {
+#if !BUILD_SHIPPING // debug stuff
+	if (Input::IsKeyPressed(EKeyCode::F3))
+	{
+		RasterizerState rasterState = RendererAPI::Get().GetRasterizerState();
+
+		if (rasterState.fillMode == RASTERIZER_FILL_MODE_SOLID)
+		{
+			rasterState.fillMode = RASTERIZER_FILL_MODE_WIREFRAME;
+			rasterState.cullMode = RASTERIZER_CULL_MODE_NONE;
+		}
+		else
+		{
+			rasterState.fillMode = RASTERIZER_FILL_MODE_SOLID;
+			rasterState.cullMode = RASTERIZER_CULL_MODE_BACK;
+		}
+
+		RendererAPI::Get().SetRasterizerState(rasterState);
+	}
+#endif
+
 	sScene->Tick(deltaTime);
 }
 

@@ -595,3 +595,8 @@ void EditorSettingsWindow::RenderContent()
 		gEditorSettings.mCameraRotationSpeed = editorSettingsCDO->mCameraRotationSpeed;
 	}
 }
+
+void HelpWindow::RenderContent()
+{
+	ImGui::Text("- Press F3 to toggle wireframe view");
+}

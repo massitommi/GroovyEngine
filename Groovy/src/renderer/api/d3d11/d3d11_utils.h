@@ -21,6 +21,7 @@ namespace d3dUtils
 	ID3D11PixelShader* CreatePixelShader(ID3DBlob* bytecode);
 	ID3D11InputLayout* CreateInputLayout(ID3DBlob* vertexBytecode, D3D11_INPUT_ELEMENT_DESC* layout, size_t numElements);
 	ID3D11Buffer* CreateBuffer(UINT bindFlags, UINT cpuAccessFlags, D3D11_USAGE usage, size_t size, const void* initialData);
+	ID3D11RasterizerState* CreateRasterizerState(D3D11_FILL_MODE fillMode, D3D11_CULL_MODE cullMode);
 }
 
 #define d3dcheckslow(HResult) { checkslow((HResult) == S_OK); }

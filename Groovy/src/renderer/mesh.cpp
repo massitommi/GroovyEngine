@@ -7,6 +7,11 @@ Mesh::Mesh()
 {
 }
 
+Mesh::Mesh(VertexBuffer* v, IndexBuffer* i, const std::vector<SubmeshData>& s, const std::vector<Material*>& m)
+	: mVertexBuffer(v), mIndexBuffer(i), mSubmeshes(s), mMaterials(m), mUUID(0), mLoaded(false)
+{
+}
+
 Mesh::~Mesh()
 {
 	delete mVertexBuffer;

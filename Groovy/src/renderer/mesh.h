@@ -26,6 +26,7 @@ class Mesh : public AssetInstance
 
 public:
 	Mesh();
+	Mesh(VertexBuffer* v, IndexBuffer* i, const std::vector<SubmeshData>& s, const std::vector<Material*>& m);
 	~Mesh();
 
 	void __internal_SetUUID(AssetUUID uuid) override { mUUID = uuid; }

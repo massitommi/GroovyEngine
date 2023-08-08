@@ -17,7 +17,14 @@ workspace "GroovyEngine"
     defines "PLATFORM_WIN32"
 
     rtti "Off"
-    debugargs { "test/TestProject/TestProj.groovyproj" }
+
+    filter "configurations:Debug_Editor or Development_Editor"
+        debugargs { "test/TestProject/TestProj.groovyproj" }
+    filter {}
+
+    filter "configurations:Debug_Game or Shipping"
+        debugargs { "../Editor/test/TestProject/TestProj.groovyproj" }
+    filter {}
 
     filter "configurations:Debug_Editor or Development_Editor"
         defines "WITH_EDITOR"

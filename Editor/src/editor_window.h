@@ -142,3 +142,9 @@ class EditorSettingsWindow : public EditorWindow
 public:
 	virtual void RenderContent() override;
 };
+
+class HelpWindow : public EditorWindow
+{
+public:
+	virtual void RenderContent() override;
+};

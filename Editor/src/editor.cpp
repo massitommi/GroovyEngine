@@ -583,7 +583,7 @@ namespace panels
 				break;
 			}
 
-			if (assets[i].uuid <= 3)
+			if (assets[i].uuid <= 4)
 				panelAssets[i].flags |= PANEL_ASSET_FLAG_IS_DEFAULT;
 		}
 
@@ -1484,6 +1484,24 @@ void editor::Update(float deltaTime)
 		sPlayScene.scene->Tick(deltaTime);
 	}
 
+	if (ImGui::IsKeyPressed(ImGuiKey_F3))
+	{
+		RasterizerState rasterState = RendererAPI::Get().GetRasterizerState();
+
+		if (rasterState.fillMode == RASTERIZER_FILL_MODE_SOLID)
+		{
+			rasterState.fillMode = RASTERIZER_FILL_MODE_WIREFRAME;
+			rasterState.cullMode = RASTERIZER_CULL_MODE_NONE;
+		}
+		else
+		{
+			rasterState.fillMode = RASTERIZER_FILL_MODE_SOLID;
+			rasterState.cullMode = RASTERIZER_CULL_MODE_BACK;
+		}
+
+		RendererAPI::Get().SetRasterizerState(rasterState);
+	}
+
 	int32 mouseDelta[2];
 	Input::GetRawMouseDelta(mouseDelta);
 	ImVec2 currentMousePos;
@@ -1600,6 +1618,12 @@ void editor::Render()
 			if (ImGui::MenuItem("Editor settings"))
 				windows::AddWindow<EditorSettingsWindow>("Editor settings");
 			
+			ImGui::EndMenu();
+		}
+
+		if (ImGui::BeginMenu("Help"))
+		{
+			windows::AddWindow<HelpWindow>("Help window");
 			ImGui::EndMenu();
 		}
 

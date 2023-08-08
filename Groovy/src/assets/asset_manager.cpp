@@ -30,6 +30,7 @@ extern GroovyProject gProj;
 Texture* DEFAULT_TEXTURE = nullptr;
 Shader* DEFAULT_SHADER = nullptr;
 Material* DEFAULT_MATERIAL = nullptr;
+Mesh* DEFAULT_CUBE = nullptr;
 
 static AssetInstance* InstantiateAsset(const AssetHandle& handle)
 {
@@ -94,7 +95,164 @@ void AssetManager::Init()
 			DEFAULT_MATERIAL->SetShader(DEFAULT_SHADER);
 			DEFAULT_MATERIAL->SetResources(DEFAULT_TEXTURE);
 		}
+		// default mesh
+		{
+			MeshVertex cubeVertexBuffer[] =
+			{
+				// front face
+				{
+					{ -0.5f, -0.5f, -0.5f, 1.0f },
+					{ 1.0f, 1.0f, 1.0f, 1.0f },
+					{ 0.0f, 1.0f }
+				},
+				{
+					{ -0.5f, +0.5f, -0.5f, 1.0f },
+					{ 1.0f, 1.0f, 1.0f, 1.0f },
+					{ 0.0f, 0.0f }
+				},
+				{
+					{ +0.5f, +0.5f, -0.5f, 1.0f },
+					{ 1.0f, 1.0f, 1.0f, 1.0f },
+					{ 1.0f, 0.0f }
+				},
+				{
+					{ +0.5f, -0.5f, -0.5f, 1.0f },
+					{ 1.0f, 1.0f, 1.0f, 1.0f },
+					{ 1.0f, 1.0f }
+				},
+				// right face
+				{
+					{ +0.5f, -0.5f, -0.5f, 1.0f },
+					{ 1.0f, 1.0f, 1.0f, 1.0f },
+					{ 0.0f, 1.0f }
+				},
+				{
+					{ +0.5f, +0.5f, -0.5f, 1.0f },
+					{ 1.0f, 1.0f, 1.0f, 1.0f },
+					{ 0.0f, 0.0f }
+				},
+				{
+					{ +0.5f, +0.5f, +0.5f, 1.0f },
+					{ 1.0f, 1.0f, 1.0f, 1.0f },
+					{ 1.0f, 0.0f }
+				},
+				{
+					{ +0.5f, -0.5f, +0.5f, 1.0f },
+					{ 1.0f, 1.0f, 1.0f, 1.0f },
+					{ 1.0f, 1.0f }
+				},
+				// left face
+				{
+					{ -0.5f, -0.5f, +0.5f, 1.0f },
+					{ 1.0f, 1.0f, 1.0f, 1.0f },
+					{ 0.0f, 1.0f }
+				},
+				{
+					{ -0.5f, +0.5f, +0.5f, 1.0f },
+					{ 1.0f, 1.0f, 1.0f, 1.0f },
+					{ 0.0f, 0.0f }
+				},
+				{
+					{ -0.5f, +0.5f, -0.5f, 1.0f },
+					{ 1.0f, 1.0f, 1.0f, 1.0f },
+					{ 1.0f, 0.0f }
+				},
+				{
+					{ -0.5f, -0.5f, -0.5f, 1.0f },
+					{ 1.0f, 1.0f, 1.0f, 1.0f },
+					{ 1.0f, 1.0f }
+				},
+				// top face
+				{
+					{ -0.5f, +0.5f, -0.5f, 1.0f },
+					{ 1.0f, 1.0f, 1.0f, 1.0f },
+					{ 0.0f, 1.0f }
+				},
+				{
+					{ -0.5f, +0.5f, +0.5f, 1.0f },
+					{ 1.0f, 1.0f, 1.0f, 1.0f },
+					{ 0.0f, 0.0f }
+				},
+				{
+					{ +0.5f, +0.5f, +0.5f, 1.0f },
+					{ 1.0f, 1.0f, 1.0f, 1.0f },
+					{ 1.0f, 0.0f }
+				},
+				{
+					{ +0.5f, +0.5f, -0.5f, 1.0f },
+					{ 1.0f, 1.0f, 1.0f, 1.0f },
+					{ 1.0f, 1.0f }
+				},
+				// bottom face
+				{
+					{ -0.5f, -0.5f, +0.5f, 1.0f },
+					{ 1.0f, 1.0f, 1.0f, 1.0f },
+					{ 0.0f, 1.0f }
+				},
+				{
+					{ -0.5f, -0.5f, -0.5f, 1.0f },
+					{ 1.0f, 1.0f, 1.0f, 1.0f },
+					{ 0.0f, 0.0f }
+				},
+				{
+					{ +0.5f, -0.5f, -0.5f, 1.0f },
+					{ 1.0f, 1.0f, 1.0f, 1.0f },
+					{ 1.0f, 0.0f }
+				},
+				{
+					{ +0.5f, -0.5f, +0.5f, 1.0f },
+					{ 1.0f, 1.0f, 1.0f, 1.0f },
+					{ 1.0f, 1.0f }
+				},
+				// back face
+				{
+					{ +0.5f, -0.5f, +0.5f, 1.0f },
+					{ 1.0f, 1.0f, 1.0f, 1.0f },
+					{ 0.0f, 1.0f }
+				},
+				{
+					{ +0.5f, +0.5f, +0.5f, 1.0f },
+					{ 1.0f, 1.0f, 1.0f, 1.0f },
+					{ 0.0f, 0.0f }
+				},
+				{
+					{ -0.5f, +0.5f, +0.5f, 1.0f },
+					{ 1.0f, 1.0f, 1.0f, 1.0f },
+					{ 1.0f, 0.0f }
+				},
+				{
+					{ -0.5f, -0.5f, +0.5f, 1.0f },
+					{ 1.0f, 1.0f, 1.0f, 1.0f },
+					{ 1.0f, 1.0f }
+				}
+			};
 
+			MeshIndex cubeIndexBuffer[6 * 6];
+
+			for (uint32 i = 0; i < 6; i++)
+			{
+				cubeIndexBuffer[i * 6 + 0] = 0 + 4 * i;
+				cubeIndexBuffer[i * 6 + 1] = 1 + 4 * i;
+				cubeIndexBuffer[i * 6 + 2] = 2 + 4 * i;
+				cubeIndexBuffer[i * 6 + 3] = 2 + 4 * i;
+				cubeIndexBuffer[i * 6 + 4] = 3 + 4 * i;
+				cubeIndexBuffer[i * 6 + 5] = 0 + 4 * i;
+			}
+
+			VertexBuffer* vBuffer = VertexBuffer::Create(sizeof(cubeVertexBuffer), cubeVertexBuffer, sizeof(MeshVertex));
+			IndexBuffer* iBuffer = IndexBuffer::Create(sizeof(cubeIndexBuffer), cubeIndexBuffer);
+			std::vector<SubmeshData> submeshes;
+			submeshes.push_back
+			({
+				sizeof(cubeVertexBuffer) / sizeof(MeshVertex),
+				sizeof(cubeIndexBuffer) / sizeof(MeshIndex)
+			});
+			std::vector<Material*> mats;
+			mats.push_back(DEFAULT_MATERIAL);
+
+			DEFAULT_CUBE = new Mesh(vBuffer, iBuffer, submeshes, mats);
+		}
+;
 		AssetHandle tmpHandle;
 
 		tmpHandle.name = "DEFAULT_TEXTURE";
@@ -120,6 +278,15 @@ void AssetManager::Init()
 		tmpHandle.uuid = 3;
 		tmpHandle.instance = DEFAULT_MATERIAL;
 		tmpHandle.instance->__internal_SetUUID(3);
+
+		sAssets.push_back(tmpHandle);
+		sAssetRegistry[tmpHandle.uuid] = tmpHandle;
+
+		tmpHandle.name = "DEFAULT_CUBE";
+		tmpHandle.type = ASSET_TYPE_MESH;
+		tmpHandle.uuid = 4;
+		tmpHandle.instance = DEFAULT_CUBE;
+		tmpHandle.instance->__internal_SetUUID(4);
 
 		sAssets.push_back(tmpHandle);
 		sAssetRegistry[tmpHandle.uuid] = tmpHandle;
@@ -163,7 +330,7 @@ void AssetManager::Init()
 	}
 
 	// load assets
-	for(uint32 i = 3; i < sAssets.size(); i++)
+	for(uint32 i = 4; i < sAssets.size(); i++)
 		if (sAssets[i].type != ASSET_TYPE_SCENE && !sAssets[i].instance->IsLoaded())
 			sAssets[i].instance->Load();
 }
@@ -189,9 +356,9 @@ void AssetManager::SaveRegistry()
 {
 	DynamicBuffer registryFile;
 
-	registryFile.push<uint32>(sAssets.size() - 3);
+	registryFile.push<uint32>(sAssets.size() - 4);
 
-	for (uint32 i = 3; i < sAssets.size(); i++)
+	for (uint32 i = 4; i < sAssets.size(); i++)
 	{
 		registryFile.push(sAssets[i].name);
 		registryFile.push(sAssets[i].uuid);

@@ -13,7 +13,10 @@ public:
 	virtual void SetFullscreen(bool fullscreen) override;
 	virtual void SetVSync(uint32 syncInterval) override;
 	virtual RendererAPISpec GetSpec() const override { return mSpec; }
+	virtual RasterizerState GetRasterizerState() const override { return mRasterizerState; }
+	virtual void SetRasterizerState(RasterizerState newState) override;
 
 private:
 	RendererAPISpec mSpec;
+	RasterizerState mRasterizerState;
 };

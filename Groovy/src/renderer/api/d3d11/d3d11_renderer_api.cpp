@@ -10,8 +10,10 @@
     #define SWAPCHAIN_FLAG_DEBUG 0
 #endif
 
+static ID3D11RasterizerState* sRasterizerState = nullptr;
+
 D3D11RendererAPI::D3D11RendererAPI(RendererAPISpec spec, Window* wnd)
-    : mSpec(spec)
+    : mSpec(spec), mRasterizerState({ RASTERIZER_FILL_MODE_SOLID, RASTERIZER_CULL_MODE_BACK })
 {
     WindowProps wndProps = wnd->GetProps();
     HWND wndHandle = (HWND)wnd->GetNativeHandle();
@@ -98,6 +100,48 @@ void D3D11RendererAPI::SetVSync(uint32 syncInterval)
     mSpec.vsync = syncInterval;
 }
 
+void D3D11RendererAPI::SetRasterizerState(RasterizerState newState)
+{
+    D3D11_FILL_MODE nativeFillMode = D3D11_FILL_SOLID;
+    D3D11_CULL_MODE nativeCullMode = D3D11_CULL_BACK;
+
+    switch (newState.fillMode)
+    {
+        case RASTERIZER_FILL_MODE_SOLID:
+            nativeFillMode = D3D11_FILL_SOLID;
+            break;
+        case RASTERIZER_FILL_MODE_WIREFRAME:
+            nativeFillMode = D3D11_FILL_WIREFRAME;
+            break;
+        default:
+            checkslowf(0, "ERasterizerFillMode enum value not implemented");
+    }
+
+    switch (newState.cullMode)
+    {
+        case RASTERIZER_CULL_MODE_BACK:
+            nativeCullMode = D3D11_CULL_BACK;
+            break;
+        case RASTERIZER_CULL_MODE_FRONT:
+            nativeCullMode = D3D11_CULL_FRONT;
+            break;
+        case RASTERIZER_CULL_MODE_NONE:
+            nativeCullMode = D3D11_CULL_NONE;
+            break;
+        default:
+            checkslowf(0, "ERasterizerCullMode enum value not implemented");
+    }
+
+    ID3D11RasterizerState* newRasterizerState = d3dUtils::CreateRasterizerState(nativeFillMode, nativeCullMode);
+    d3dUtils::gContext->RSSetState(newRasterizerState);
+    if (sRasterizerState)
+    {
+        sRasterizerState->Release();
+    }
+    sRasterizerState = newRasterizerState;
+    mRasterizerState = newState;
+}
+
 D3D11RendererAPI::~D3D11RendererAPI()
 {
 #if 0
@@ -105,6 +149,9 @@ D3D11RendererAPI::~D3D11RendererAPI()
     d3dUtils::gDevice->QueryInterface(__uuidof(ID3D11Debug), reinterpret_cast<void**>(&boh));
     boh->ReportLiveDeviceObjects(D3D11_RLDO_DETAIL);
 #endif
+    if (sRasterizerState)
+        sRasterizerState->Release();
+
     d3dUtils::gSwapChain->Release();
     d3dUtils::gContext->Release();
     d3dUtils::gDevice->Release();

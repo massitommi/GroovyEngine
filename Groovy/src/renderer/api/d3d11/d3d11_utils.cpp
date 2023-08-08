@@ -143,3 +143,26 @@ ID3D11Buffer* d3dUtils::CreateBuffer(UINT bindFlags, UINT cpuAccessFlags, D3D11_
     d3dcheckslow(gDevice->CreateBuffer(&desc, initalDataPtr, &result));
     return result;
 }
+
+ID3D11RasterizerState* d3dUtils::CreateRasterizerState(D3D11_FILL_MODE fillMode, D3D11_CULL_MODE cullMode)
+{
+    D3D11_RASTERIZER_DESC desc = {};
+    
+    // custom stuff
+    desc.CullMode = cullMode;
+    desc.FillMode = fillMode;
+    desc.MultisampleEnable = false;
+    desc.AntialiasedLineEnable = false;
+
+    // default stuff
+    desc.FrontCounterClockwise = false;
+    desc.DepthBias = 0;
+    desc.SlopeScaledDepthBias = 0.0f;
+    desc.DepthBiasClamp = 0.0f;
+    desc.DepthClipEnable = true;
+    desc.ScissorEnable = false;
+
+    ID3D11RasterizerState* result;
+    d3dcheckslow(gDevice->CreateRasterizerState(&desc, &result));
+    return result;
+}
