@@ -92,7 +92,7 @@ void D3D11RendererAPI::Present()
 
 void D3D11RendererAPI::SetFullscreen(bool fullscreen)
 {
-    d3dcheck(d3dUtils::gSwapChain->SetFullscreenState(fullscreen, nullptr));
+    d3dcheckslow(d3dUtils::gSwapChain->SetFullscreenState(fullscreen, nullptr));
 }
 
 void D3D11RendererAPI::SetVSync(uint32 syncInterval)

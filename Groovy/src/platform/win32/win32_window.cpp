@@ -134,7 +134,7 @@ static LRESULT CALLBACK GroovyWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARA
 			Rid[0].usUsage = HID_USAGE_GENERIC_MOUSE;
 			Rid[0].dwFlags = RIDEV_INPUTSINK;
 			Rid[0].hwndTarget = hWnd;
-			check(RegisterRawInputDevices(Rid, 1, sizeof(Rid[0])));
+			checkslow(RegisterRawInputDevices(Rid, 1, sizeof(Rid[0])));
 		}
 		break;
 
