@@ -11,5 +11,7 @@ namespace reflectionUtils
 	void CopyProperty(GroovyObject* dst, const GroovyObject* src, const GroovyProperty* prop);
 	void CopyProperties(GroovyObject* dst, const GroovyObject* src);
 
+	bool PropertyIsEqual(GroovyObject* obj1, GroovyObject* obj2, const GroovyProperty* prop);
+
 	void ReplaceValueTypeProperty(GroovyObject* obj, EPropertyType type, void* find, void* replaceWith);
 }

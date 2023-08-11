@@ -18,6 +18,8 @@ public:
 	ActorComponent* GetComponent(GroovyClass* componentClass) const;
 	ActorComponent* GetComponentExact(GroovyClass* componentClass) const;
 
+	inline bool HasComponent(const std::string& name) const { return GetComponent(name); }
+
 	uint32 GetComponents(GroovyClass* componentClass, std::vector<ActorComponent*>& outComponents) const;
 	uint32 GetComponentsExact(GroovyClass* componentClass, std::vector<ActorComponent*>& outComponents) const;
 
@@ -95,6 +97,7 @@ public:
 
 	Transform& Editor_TransformRef() { return mTransform; }
 	std::string& Editor_NameRef() { return mName; }
+	ActorBlueprint*& Editor_Template() { return mTemplate; }
 
 #endif
 

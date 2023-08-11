@@ -82,6 +82,68 @@ void reflectionUtils::CopyProperties(GroovyObject* dst, const GroovyObject* src)
 		CopyProperty(dst, src, &p);
 }
 
+bool reflectionUtils::PropertyIsEqual(GroovyObject* obj1, GroovyObject* obj2, const GroovyProperty* prop)
+{
+	void* objProp1 = (byte*)obj1 + prop->offset;
+	void* objProp2 = (byte*)obj2 + prop->offset;
+	uint32 objProp1ArrayCount = prop->arrayCount;
+	uint32 objProp2ArrayCount = prop->arrayCount;
+
+	if (prop->flags & PROPERTY_FLAG_IS_DYNAMIC_ARRAY)
+	{
+		DynamicArrayPtr dap = GroovyProperty_GetDynamicArrayPtr(prop->type);
+		objProp1ArrayCount = dap.size(objProp1);
+		objProp2ArrayCount = dap.size(objProp2);
+		objProp1 = dap.data(objProp1);
+		objProp2 = dap.data(objProp2);
+
+		if (objProp1ArrayCount != objProp2ArrayCount)
+			return false;
+	}
+
+	if (!(prop->flags & PROPERTY_FLAG_IS_NOT_VALUE_TYPE))
+	{
+		return memcmp(objProp1, objProp2, GroovyProperty_GetSize(prop->type) * objProp1ArrayCount) == 0;
+	}
+	else
+	{
+		switch (prop->type)
+		{
+			case PROPERTY_TYPE_STRING:
+			{
+				std::string* strPtr1 = (std::string*)objProp1;
+				std::string* strPtr2 = (std::string*)objProp2;
+				for (uint32 i = 0; i < objProp1ArrayCount; i++)
+				{
+					if (strPtr1[i] != strPtr2[i])
+						return false;
+				}
+				return true;
+			}
+			break;
+
+			case PROPERTY_TYPE_BUFFER:
+			{
+				Buffer* bufferPtr1 = (Buffer*)objProp1;
+				Buffer* bufferPtr2 = (Buffer*)objProp2;
+				for (uint32 i = 0; i < objProp1ArrayCount; i++)
+				{
+					if (bufferPtr1[i].size() != bufferPtr2[i].size())
+						return false;
+					if (memcmp(bufferPtr1[i].data(), bufferPtr2[i].data(), bufferPtr1[i].size()) != 0)
+						return false;
+				}
+				return true;
+			}
+			break;
+
+			default:
+				checkslowf(0, "Property comparison for this type not implemented");
+				break;
+		}
+	}
+}
+
 void reflectionUtils::ReplaceValueTypeProperty(GroovyObject* obj, EPropertyType type, void* find, void* replaceWith)
 {
 	check(obj);

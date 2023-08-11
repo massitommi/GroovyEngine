@@ -53,6 +53,8 @@ public:
 
 	void Copy(Scene* to);
 
+	bool ReferencesBlueprint(ActorBlueprint* bp);
+
 #if WITH_EDITOR
 
 	// returns true if assetToBeDeleted was referenced
@@ -60,6 +62,8 @@ public:
 
 	virtual Actor* Editor_AddActor(GroovyClass* actorClass, ActorBlueprint* bp);
 	virtual void Editor_DeleteActor(Actor* actor);
+
+	virtual uint32 Editor_OnBlueprintUpdated(ActorBlueprint* bp, Actor* oldTemplate, Actor* newTemplate);
 
 #endif
 

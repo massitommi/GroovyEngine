@@ -301,6 +301,7 @@ ActorBlueprintEditorWindow::ActorBlueprintEditorWindow(const AssetHandle& asset)
 	checkslow(asset.type == ASSET_TYPE_ACTOR_BLUEPRINT);
 
 	mLiveActor = mLiveScene.SpawnActor(mBlueprint->GetActorClass(), mBlueprint);
+	mLiveActor->Editor_Template() = nullptr;
 
 	mTmpCompName = "";
 	mCanRenameOrAddComp = false;
@@ -587,6 +588,18 @@ void ActorBlueprintEditorWindow::RenderContent()
 
 void ActorBlueprintEditorWindow::Save()
 {
+	// update current scene
+	Scene* editScene = editor::GetEditScene();
+
+	if (editScene)
+	{
+		editor::OnBPUpdated(mBlueprint);
+
+		if (editScene->Editor_OnBlueprintUpdated(mBlueprint, mBlueprint->GetDefaultActor(), mLiveActor))
+			editor::FlagEditScenePendingSave();
+	}
+
+	// save stuff
 	mBlueprint->RebuildPack(mLiveActor);
 	mBlueprint->Save();
 	AssetEditorWindow::Save();

@@ -13,12 +13,19 @@ namespace editorGui
 	bool PropertiesAllClasses(GroovyObject* obj);
 }
 
+class ActorBlueprint;
+
 namespace editor
 {
 	void Init();
 	void Update(float deltaTime);
 	void Render();
 	void Shutdown();
+
+	Scene* GetEditScene();
+	void FlagEditScenePendingSave();
+
+	void OnBPUpdated(ActorBlueprint* bp);
 
 	namespace utils
 	{

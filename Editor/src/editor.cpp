@@ -22,6 +22,7 @@
 #include "gameframework/blueprint.h"
 #include "gameframework/scene.h"
 #include "gameframework/components/cameracomponent.h"
+#include "gameframework/blueprint.h"
 
 #include "classes/class_db.h"
 
@@ -402,6 +403,9 @@ namespace newAsset
 
 			for (const GroovyClass* gClass : gClassDB.GetClasses())
 			{
+				if (GroovyClass_IsA(gClass, Actor::StaticClass()))
+					continue;
+
 				if (ImGui::Selectable(gClass->name.c_str()))
 				{
 					// create asset
@@ -436,7 +440,10 @@ namespace newAsset
 
 			for (const GroovyClass* gClass : gClassDB.GetClasses())
 			{
-				if (GroovyClass_IsA(gClass, Actor::StaticClass()) && ImGui::Selectable(gClass->name.c_str()))
+				if (!GroovyClass_IsA(gClass, Actor::StaticClass()))
+					continue;
+
+				if (ImGui::Selectable(gClass->name.c_str()))
 				{
 					// create asset
 					ActorBlueprint* bp = new ActorBlueprint();
@@ -779,6 +786,9 @@ namespace panels
 
 			if (assetToDelete.instance == sEditScene.scene)
 				TravelToScene(nullptr);
+
+			if (assetToDelete.type == ASSET_TYPE_ACTOR_BLUEPRINT && sEditScene.scene && sEditScene.scene->ReferencesBlueprint((ActorBlueprint*)assetToDelete.instance))
+				sEditScenePendingSave = true;
 
 			AssetManager::Editor_Delete(assetToDelete.uuid);
 
@@ -1678,6 +1688,22 @@ void editor::Shutdown()
 	windows::Shutdown();
 	res::Unload();
 	delete sGameViewportFrameBuffer;
+}
+
+Scene* editor::GetEditScene()
+{
+	return sEditScene.scene;
+}
+
+void editor::FlagEditScenePendingSave()
+{
+	sEditScenePendingSave = true;
+}
+
+void editor::OnBPUpdated(ActorBlueprint* bp)
+{
+	if (sEditScene.selectedActor && sEditScene.selectedActor->GetTemplate() == bp)
+		sEditScene.selectedSubobject = nullptr;
 }
 
 const char* editor::utils::AssetTypeToStr(EAssetType type)

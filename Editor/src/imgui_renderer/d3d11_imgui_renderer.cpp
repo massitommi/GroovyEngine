@@ -36,6 +36,7 @@ void D3D11_ImGuiRenderer::SetGroovyRenderState()
 		[](const ImDrawList* imdrawlist, const ImDrawCmd* cmd)
 		{
 			d3dUtils::gContext->OMGetBlendState(&imguiBlendState, imguiBlendFactor, &imguiBlendMask);
+			imguiBlendState->Release();
 			d3dUtils::gContext->OMSetBlendState(0, 0, 0xffffffff);
 
 		}, nullptr);

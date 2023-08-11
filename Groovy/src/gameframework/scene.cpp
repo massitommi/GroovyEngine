@@ -5,6 +5,8 @@
 #include "assets/asset_serializer.h"
 #include "assets/asset_manager.h"
 #include "components/meshcomponent.h"
+#include "utils/reflection/reflection_utils.h"
+#include "classes/class_db.h"
 
 Scene::Scene()
 	: mUUID(0), mLoaded(false), mCamera(nullptr)
@@ -93,7 +95,6 @@ Actor* Scene::SpawnActor(GroovyClass* actorClass, ActorBlueprint* bp)
 
 #if WITH_EDITOR
 
-#include "utils/reflection/reflection_utils.h"
 bool Scene::Editor_FixDependencyDeletion(AssetHandle assetToBeDeleted)
 {
 	if (!mLoaded)
@@ -159,6 +160,102 @@ void Scene::Editor_DeleteActor(Actor* actor)
 	// remove from actors list
 	auto it = std::find(mActors.begin(), mActors.end(), actor);
 	mActors.erase(it);
+}
+
+uint32 Scene::Editor_OnBlueprintUpdated(ActorBlueprint* bp, Actor* oldTemplate, Actor* newTemplate)
+{
+	extern ClassDB gClassDB;
+
+	// find blueprint instances
+	std::vector<Actor*> bpInstances;
+
+	for (Actor* actor : mActors)
+		if (actor->GetTemplate() == bp)
+			bpInstances.push_back(actor);
+
+	if (bpInstances.size())
+	{
+		// figure out what components have been added and removed
+
+		std::vector<ActorComponent*> bpComponentsToAdd;
+		std::vector<ActorComponent*> bpComponentsToRemove;
+
+		for (ActorComponent* comp : newTemplate->GetComponents())
+		{
+			if (comp->GetType() != ACTOR_COMPONENT_TYPE_EDITOR_BP)
+				continue;
+
+			ActorComponent* oldComp = oldTemplate->GetComponent(comp->GetName());
+
+			if (!oldComp)
+			{
+				bpComponentsToAdd.push_back(comp);
+			}
+			else
+			{
+				if (comp->GetClass() != oldComp->GetClass())
+				{
+					bpComponentsToRemove.push_back(comp);
+					bpComponentsToAdd.push_back(comp);
+				}
+			}
+		}
+
+		for (ActorComponent* comp : oldTemplate->GetComponents())
+		{
+			if (comp->GetType() != ACTOR_COMPONENT_TYPE_EDITOR_BP)
+				continue;
+
+			if (!newTemplate->HasComponent(comp->GetName()))
+			{
+				bpComponentsToRemove.push_back(comp);
+			}
+		}
+
+		// fix the scene
+
+		for (Actor* actor : bpInstances)
+		{
+			// remove deleted components
+			for (ActorComponent* comp : bpComponentsToRemove)
+				actor->__internal_Editor_RemoveEditorComponent(actor->GetComponent(comp->GetName()));
+
+			// add added components
+			for (ActorComponent* comp : bpComponentsToAdd)
+			{
+				ActorComponent* newComp = actor->__internal_Editor_AddEditorcomponent_BP(comp->GetClass(), comp->GetName());
+				comp->CopyProperties(newComp);
+			}
+
+			// overwrite actor properties but only if they were equal to the old template
+
+			const std::vector<GroovyProperty>& actorProps = gClassDB[actor->GetClass()];
+
+			for (const GroovyProperty& prop : actorProps)
+			{
+				if (reflectionUtils::PropertyIsEqual(actor, oldTemplate, &prop))
+					reflectionUtils::CopyProperty(actor, newTemplate, &prop);
+			}
+
+			// overwrite component properties but only if they were equal to the old template
+			for (uint32 i = 0; i < actor->GetComponents().size() - bpComponentsToAdd.size(); i++)
+			{
+				ActorComponent* actorComp = actor->GetComponents()[i];
+				ActorComponent* oldTemplateComp = oldTemplate->GetComponent(actorComp->GetName());
+				ActorComponent* newTemplateComp = newTemplate->GetComponent(actorComp->GetName());
+
+				const std::vector<GroovyProperty>& compProps = gClassDB[actorComp->GetClass()];
+
+				for (const GroovyProperty& prop : compProps)
+				{
+					if (reflectionUtils::PropertyIsEqual(actorComp, oldTemplateComp, &prop))
+						reflectionUtils::CopyProperty(actorComp, newTemplateComp, &prop);
+				}
+			}
+		}
+	}
+
+	return bpInstances.size();
 }
 
 #endif
@@ -267,6 +364,14 @@ void Scene::Copy(Scene* to)
 		actor->Clone(clone);
 		clone->InitializeComponents();
 	}
+}
+
+bool Scene::ReferencesBlueprint(ActorBlueprint* bp)
+{
+	for (Actor* actor : mActors)
+		if (actor->mTemplate == bp)
+			return true;
+	return false;
 }
 
 Actor* Scene::ConstructActor(GroovyClass* actorClass, ActorBlueprint* bp)
