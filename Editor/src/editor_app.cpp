@@ -7,6 +7,7 @@
 #include "editor.h"
 #include "renderer/api/framebuffer.h"
 #include "platform/messagebox.h"
+#include "renderer/api/shader.h"
 
 IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
@@ -15,9 +16,10 @@ LRESULT Win32_EditorWndProcCallback(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM 
 	return ImGui_ImplWin32_WndProcHandler(hWnd, uMsg, wParam, lParam);
 }
 
-static ImGuiRenderer* sRenderer = nullptr;
+ImGuiRenderer* gGroovyGuiRenderer = nullptr;
 
 extern FrameBuffer* gScreenFrameBuffer;
+extern Shader* DEFAULT_SHADER;
 
 void Application::Init()
 {
@@ -25,8 +27,8 @@ void Application::Init()
 	ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 	ImGui::StyleColorsDark();
 
-	sRenderer = ImGuiRenderer::Create();
-	sRenderer->Init();
+	gGroovyGuiRenderer = ImGuiRenderer::Create();
+	gGroovyGuiRenderer->Init();
 
 	editor::Init();
 }
@@ -38,20 +40,24 @@ void Application::Update(float deltaTime)
 
 void Application::Render()
 {
-	sRenderer->NewFrame();
+	gGroovyGuiRenderer->NewFrame();
+	
 	ImGui::NewFrame();
 
 	editor::Render();
 
+	ImGui::Render();
+
 	gScreenFrameBuffer->Bind();
-	sRenderer->RenderDrawData();
+	
+	gGroovyGuiRenderer->RenderDrawData();
 }
 
 void Application::Shutdown()
 {
 	editor::Shutdown();
 
-	delete sRenderer;
+	delete gGroovyGuiRenderer;
 
 	ImGui_ImplDX11_Shutdown();
 	ImGui_ImplWin32_Shutdown();

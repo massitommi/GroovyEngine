@@ -23,6 +23,12 @@ public:
 
 	void CopyProperties(GroovyObject* to);
 
+#if WITH_EDITOR
+
+	virtual void Editor_OnPropertyChanged(const GroovyProperty* prop) {}
+
+#endif
+
 	friend class ObjectSerializer;
 };
 

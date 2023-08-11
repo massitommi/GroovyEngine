@@ -37,8 +37,6 @@ public:
 	void SetResource(Texture* texture, uint32 slot);
 	void SetResources(Texture* texture);
 
-	void FixForRendering();
-
 	const Shader* GetShader() const { return mShader; }
 	const std::vector<MaterialResource>& GetResources() const { return mResources; }
 	const Buffer& GetConstBuffersData() const { return mConstBuffersData; }

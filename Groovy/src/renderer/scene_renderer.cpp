@@ -36,6 +36,15 @@ void SceneRenderer::RenderScene(Scene* scene)
 		model = math::GetMatrixTransposed(model);
 
 		Renderer::SetModel(model);
-		Renderer::RenderMesh(mesh);
+
+		std::vector<Material*> materials = meshComp->mMesh->GetMaterials();
+		for (uint32 i = 0; i < materials.size(); i++)
+		{
+			Material* matOverride = meshComp->mMaterialOverrides[i];
+			if (matOverride)
+				materials[i] = matOverride;
+		}
+
+		Renderer::RenderMesh(mesh, materials);
 	}
 }

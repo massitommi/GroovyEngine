@@ -97,6 +97,7 @@ extern double gDeltaTime;
 
 static FrameBuffer* sGameViewportFrameBuffer = nullptr;
 static bool sGameViewportFocused = false;
+static bool sGameVieportHovered = false;
 static ImVec2 sGameViewportSize = { 100, 100 };
 static ImVec2 sGameViewportStart = { 0, 0 };
 static ImVec2 sMousePos = { 0.0f, 0.0f };
@@ -107,6 +108,8 @@ static EditorScene sEditScene;
 static EditorScene sPlayScene;
 static EEditorSceneState sEditorSceneState = EDITOR_SCENE_STATE_EDIT;
 static EditorScene* sCurrentScene = nullptr;
+
+extern ImGuiRenderer* gGroovyGuiRenderer;
 
 EditorSettings gEditorSettings;
 
@@ -642,58 +645,61 @@ namespace panels
 
 			if (ImGui::ImageButton(fileNameNoExt.c_str(), panelAsset.thumbnail, { gEditorSettings.mContentBrowserIconSize - 10, gEditorSettings.mContentBrowserIconSize - 5 }, { 0,0 }, { 1,1 }, { 1,1,1,1 }))
 			{
-				switch (asset.type)
+				if (!(panelAsset.flags & PANEL_ASSET_FLAG_IS_DEFAULT))
 				{
-				case ASSET_TYPE_TEXTURE:
-					windows::AddWindow<TexturePreviewWindow>(asset.name, asset);
-					break;
-
-				case ASSET_TYPE_SHADER:
-					break;
-
-				case ASSET_TYPE_MATERIAL:
-					windows::AddWindow<EditMaterialWindow>(asset.name, asset);
-					break;
-
-				case ASSET_TYPE_MESH:
-					windows::AddWindow<MeshPreviewWindow>(asset.name, asset);
-					break;
-
-				case ASSET_TYPE_BLUEPRINT:
-					windows::AddWindow<ObjectBlueprintEditorWindow>(asset.name, asset);
-					break;
-
-				case ASSET_TYPE_ACTOR_BLUEPRINT:
-					windows::AddWindow<ActorBlueprintEditorWindow>(asset.name, asset);
-					break;
-
-				case ASSET_TYPE_SCENE:
-					if (sEditorSceneState == EDITOR_SCENE_STATE_EDIT && sEditScene.scene != asset.instance)
+					switch (asset.type)
 					{
-						if (sEditScenePendingSave)
-						{
-							auto res = SysMessageBox::Show
-							(
-								"Changing scene without saving", "Do you want to save and travel to the new scene?",
-								MESSAGE_BOX_TYPE_WARNING, MESSAGE_BOX_OPTIONS_YESNOCANCEL
-							);
+					case ASSET_TYPE_TEXTURE:
+						windows::AddWindow<TexturePreviewWindow>(asset.name, asset);
+						break;
 
-							if (res == MESSAGE_BOX_RESPONSE_YES)
-							{
-								sEditScene.scene->Save();
-								TravelToScene((Scene*)asset.instance);
-							}
-							else if (res == MESSAGE_BOX_RESPONSE_NO)
-							{
-								TravelToScene((Scene*)asset.instance);
-							}
-						}
-						else
+					case ASSET_TYPE_SHADER:
+						break;
+
+					case ASSET_TYPE_MATERIAL:
+						windows::AddWindow<EditMaterialWindow>(asset.name, asset);
+						break;
+
+					case ASSET_TYPE_MESH:
+						windows::AddWindow<MeshPreviewWindow>(asset.name, asset);
+						break;
+
+					case ASSET_TYPE_BLUEPRINT:
+						windows::AddWindow<ObjectBlueprintEditorWindow>(asset.name, asset);
+						break;
+
+					case ASSET_TYPE_ACTOR_BLUEPRINT:
+						windows::AddWindow<ActorBlueprintEditorWindow>(asset.name, asset);
+						break;
+
+					case ASSET_TYPE_SCENE:
+						if (sEditorSceneState == EDITOR_SCENE_STATE_EDIT && sEditScene.scene != asset.instance)
 						{
-							TravelToScene((Scene*)asset.instance);
+							if (sEditScenePendingSave)
+							{
+								auto res = SysMessageBox::Show
+								(
+									"Changing scene without saving", "Do you want to save and travel to the new scene?",
+									MESSAGE_BOX_TYPE_WARNING, MESSAGE_BOX_OPTIONS_YESNOCANCEL
+								);
+
+								if (res == MESSAGE_BOX_RESPONSE_YES)
+								{
+									sEditScene.scene->Save();
+									TravelToScene((Scene*)asset.instance);
+								}
+								else if (res == MESSAGE_BOX_RESPONSE_NO)
+								{
+									TravelToScene((Scene*)asset.instance);
+								}
+							}
+							else
+							{
+								TravelToScene((Scene*)asset.instance);
+							}
 						}
+						break;
 					}
-					break;
 				}
 			}
 
@@ -1295,6 +1301,7 @@ namespace panels
 		ImGui::Begin("Game viewport", nullptr, sEditScenePendingSave ? ImGuiWindowFlags_UnsavedDocument : 0);
 
 		sGameViewportFocused = ImGui::IsWindowFocused();
+		sGameVieportHovered = ImGui::IsWindowHovered();
 
 		ImVec2 startCursorPos = ImGui::GetCursorPos();
 
@@ -1332,7 +1339,9 @@ namespace panels
 			SceneRenderer::RenderScene(sCurrentScene->scene);
 
 			// draw framebuffer
+			gGroovyGuiRenderer->SetGroovyRenderState();
 			ImGui::Image(sGameViewportFrameBuffer->GetRendererID(0), wndSize);
+			gGroovyGuiRenderer->SetImguiRenderState();
 
 			// on screen text
 			ImGui::SetCursorPosY(ImGui::GetWindowSize().y - wndSize.y + 8);
@@ -1510,12 +1519,7 @@ void editor::Update(float deltaTime)
 	currentMousePos.x = (float)mousePos[0];
 	currentMousePos.y = (float)mousePos[1];
 
-	// update editor camera
-	bool insideViewportX = currentMousePos.x > sGameViewportStart.x && currentMousePos.x < sGameViewportSize.x;
-	bool insideViewportY = currentMousePos.y > sGameViewportStart.y && currentMousePos.y < sGameViewportSize.y;
-	bool cursorInsideViewport = insideViewportX && insideViewportY;
-
-	if (sEditorSceneState == EDITOR_SCENE_STATE_EDIT && sGameViewportFocused && cursorInsideViewport)
+	if (sEditorSceneState == EDITOR_SCENE_STATE_EDIT && sGameViewportFocused && sGameVieportHovered)
 	{
 		if (ImGui::IsKeyPressed(ImGuiKey_MouseRight))
 		{
@@ -1664,8 +1668,6 @@ void editor::Render()
 	windows::UpdateWindows();
 
 	ImGui::End();
-
-	ImGui::Render();
 }
 
 void editor::Shutdown()

@@ -5,7 +5,7 @@
 
 namespace editorGui
 {
-	bool AssetRef(const char* label, EAssetType type, void* data, GroovyClass* classFilter = nullptr);
+	bool AssetRef(const char* label, EAssetType type, void* data, bool allowNull, GroovyClass* classFilter = nullptr);
 	bool Transform(const char* label, void* data);
 	bool PropertyInput(const std::string& label, EPropertyType type, void* data, bool readonly, float lblColWidth, uint64 param1 = 0, uint64 param2 = 0);
 	bool Property(const GroovyProperty& prop, void* propData);

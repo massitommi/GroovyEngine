@@ -4,6 +4,7 @@
 #include "renderer/api/shader.h"
 #include "classes/class.h"
 #include "renderer/material.h"
+#include "gameframework/scene.h"
 
 class EditorWindow
 {
@@ -79,12 +80,16 @@ class MeshPreviewWindow : public AssetEditorWindow
 {
 public:
 	MeshPreviewWindow(const AssetHandle& asset);
+	~MeshPreviewWindow();
 
 	virtual void RenderContent() override;
 	virtual void Save() override;
 
 private:
 	class Mesh* mMesh;
+	class FrameBuffer* mPreviewFrameBuffer;
+	Transform mModelTransform;
+	float mCameraZoom;
 	std::vector<Material*> mMeshMats;
 };
 
@@ -113,7 +118,10 @@ public:
 
 private:
 	class ActorBlueprint* mBlueprint;
+	Scene mLiveScene;
 	class Actor* mLiveActor;
+	float mCameraZoom;
+	class FrameBuffer* mPreviewFrameBuffer;
 
 	std::string mTmpCompName;
 	bool mCanRenameOrAddComp;

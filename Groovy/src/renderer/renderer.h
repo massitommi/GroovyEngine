@@ -14,6 +14,8 @@ public:
 	static void SetCamera(Mat4& vpMatrix);
 
 	static void SetModel(Mat4& modelMatrix);
+
+	static void RenderMesh(Mesh* mesh, const std::vector<Material*>& materials);
 	static void RenderMesh(Mesh* mesh);
 
 	static void Shutdown();

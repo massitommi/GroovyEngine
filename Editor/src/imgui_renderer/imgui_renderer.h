@@ -8,6 +8,9 @@ public:
 	virtual void NewFrame() = 0;
 	virtual void RenderDrawData() = 0;
 
+	virtual void SetGroovyRenderState() = 0;
+	virtual void SetImguiRenderState() = 0;
+
 	static ImGuiRenderer* Create();
 };
 
@@ -18,4 +21,7 @@ public:
 	virtual void Init() override;
 	virtual void NewFrame() override;
 	virtual void RenderDrawData() override;
+
+	virtual void SetGroovyRenderState() override;
+	virtual void SetImguiRenderState() override;
 };

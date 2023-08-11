@@ -1,6 +1,7 @@
 #include "editor_window.h"
 #include "vendor/imgui/imgui.h"
 #include "vendor/imgui/misc/cpp/imgui_stdlib.h"
+#include "imgui_renderer/imgui_renderer.h"
 #include "platform/messagebox.h"
 #include "classes/object_serializer.h"
 #include "assets/assets.h"
@@ -13,6 +14,11 @@
 #include "gameframework/actor.h"
 #include "gameframework/actorcomponent.h"
 #include "editor.h"
+#include "renderer/api/framebuffer.h"
+#include "renderer/renderer.h"
+#include "renderer/scene_renderer.h"
+
+extern ImGuiRenderer* gGroovyGuiRenderer;
 
 void EditorWindow::RenderWindow()
 {
@@ -112,7 +118,7 @@ void EditMaterialWindow::RenderContent()
 		std::string resLbl = "##" + res.name;
 		ImGui::Text(res.name.c_str());
 		ImGui::SameLine();
-		if (editorGui::AssetRef(resLbl.c_str(), ASSET_TYPE_TEXTURE, &res.res))
+		if (editorGui::AssetRef(resLbl.c_str(), ASSET_TYPE_TEXTURE, &res.res, false))
 			FlagPendingSave();
 	}
 
@@ -145,6 +151,24 @@ MeshPreviewWindow::MeshPreviewWindow(const AssetHandle& asset)
 	checkslowf(asset.type == ASSET_TYPE_MESH, "Invalid asset type");
 
 	mMeshMats = mMesh->GetMaterials();
+
+	FrameBufferSpec frameBufferSpec;
+	frameBufferSpec.swapchainTarget = false;
+	frameBufferSpec.colorAttachments = { COLOR_FORMAT_R8G8B8A8_UNORM };
+	frameBufferSpec.hasDepthAttachment = true;
+	frameBufferSpec.width = frameBufferSpec.height = 100;
+	mPreviewFrameBuffer = FrameBuffer::Create(frameBufferSpec);
+
+	mModelTransform.location = { 0.0f, 0.0f, 0.0f };
+	mModelTransform.rotation = { 0.0f, 0.0f, 0.0f };
+	mModelTransform.scale = { 1.0f, 1.0f, 1.0f };
+
+	mCameraZoom = -3.0f;
+}
+
+MeshPreviewWindow::~MeshPreviewWindow()
+{
+	delete mPreviewFrameBuffer;
 }
 
 void MeshPreviewWindow::RenderContent()
@@ -161,12 +185,14 @@ void MeshPreviewWindow::RenderContent()
 	ImGui::Spacing();
 	ImGui::Spacing();
 
+	ImGui::Text("Materials");
+
 	for (uint32 i = 0; i < mMeshMats.size(); i++)
 	{
 		std::string lbl = "##_mesh_res_" + std::to_string(i);
 		ImGui::Text("[%i]", i);
 		ImGui::SameLine();
-		if (editorGui::AssetRef(lbl.c_str(), ASSET_TYPE_MATERIAL, &mMeshMats[i]))
+		if (editorGui::AssetRef(lbl.c_str(), ASSET_TYPE_MATERIAL, &mMeshMats[i], false))
 			FlagPendingSave();
 	}
 
@@ -174,6 +200,48 @@ void MeshPreviewWindow::RenderContent()
 	{
 		Save();
 	}
+
+	ImGui::Spacing();
+	ImGui::Separator();
+
+	editorGui::Transform("", &mModelTransform);
+
+	if (ImGui::IsWindowFocused() && ImGui::IsWindowHovered())
+	{
+		mCameraZoom += ImGui::GetIO().MouseWheel * 0.5f;
+	}
+
+	ImVec2 wndSize = ImGui::GetContentRegionAvail();
+	bool okSize = wndSize.x > 0.0f && wndSize.y > 0.0f;
+	bool differentSize = wndSize.x != mPreviewFrameBuffer->GetSpecs().width || wndSize.y != mPreviewFrameBuffer->GetSpecs().height;
+
+	if (differentSize && okSize)
+	{
+		mPreviewFrameBuffer->Resize((uint32)wndSize.x, (uint32)wndSize.y);
+	}
+
+	mPreviewFrameBuffer->ClearColorAttachment(0, { .4f, .5f, 0.6f, 1.0f });
+	mPreviewFrameBuffer->ClearDepthAttachment();
+	mPreviewFrameBuffer->Bind();
+
+	Mat4 camera =
+		math::GetViewMatrix({ 0, 0, mCameraZoom }, { 0,0,0 })
+		*
+		math::GetPerspectiveMatrix(wndSize.x / wndSize.y, 60.0f, 0.01f, 1000.0f);
+
+	Mat4 model = math::GetModelMatrix(mModelTransform.location, mModelTransform.rotation, mModelTransform.scale);
+
+	camera = math::GetMatrixTransposed(camera);
+	model = math::GetMatrixTransposed(model);
+
+	Renderer::SetCamera(camera);
+	Renderer::SetModel(model);
+
+	Renderer::RenderMesh(mMesh, mMeshMats);
+
+	gGroovyGuiRenderer->SetGroovyRenderState();
+	ImGui::Image(mPreviewFrameBuffer->GetRendererID(0), wndSize);
+	gGroovyGuiRenderer->SetImguiRenderState();
 }
 
 void MeshPreviewWindow::Save()
@@ -232,8 +300,7 @@ ActorBlueprintEditorWindow::ActorBlueprintEditorWindow(const AssetHandle& asset)
 {
 	checkslow(asset.type == ASSET_TYPE_ACTOR_BLUEPRINT);
 
-	mLiveActor = ObjectAllocator::Instantiate<Actor>(mBlueprint->GetClass());
-	mBlueprint->CopyProperties(mLiveActor);
+	mLiveActor = mLiveScene.SpawnActor(mBlueprint->GetActorClass(), mBlueprint);
 
 	mTmpCompName = "";
 	mCanRenameOrAddComp = false;
@@ -243,11 +310,20 @@ ActorBlueprintEditorWindow::ActorBlueprintEditorWindow(const AssetHandle& asset)
 	mShowRenamePopup = false;
 	
 	mSelected = mLiveActor;
+
+	FrameBufferSpec frameBufferSpec;
+	frameBufferSpec.swapchainTarget = false;
+	frameBufferSpec.colorAttachments = { COLOR_FORMAT_R8G8B8A8_UNORM };
+	frameBufferSpec.hasDepthAttachment = true;
+	frameBufferSpec.width = frameBufferSpec.height = 100;
+	mPreviewFrameBuffer = FrameBuffer::Create(frameBufferSpec);
+
+	mCameraZoom = -3.0f;
 }
 
 ActorBlueprintEditorWindow::~ActorBlueprintEditorWindow()
 {
-	ObjectAllocator::Destroy(mLiveActor);
+	delete mPreviewFrameBuffer;
 }
 
 void ActorBlueprintEditorWindow::RenderContent()
@@ -452,6 +528,30 @@ void ActorBlueprintEditorWindow::RenderContent()
 		ImGui::Spacing();
 		ImGui::Spacing();
 
+		ImVec2 wndSize = ImGui::GetContentRegionAvail();
+		bool okSize = wndSize.x > 0.0f && wndSize.y > 0.0f;
+		bool differentSize = wndSize.x != mPreviewFrameBuffer->GetSpecs().width || wndSize.y != mPreviewFrameBuffer->GetSpecs().height;
+
+		if (ImGui::IsWindowFocused() && ImGui::IsWindowHovered())
+		{
+			mCameraZoom += ImGui::GetIO().MouseWheel * 0.5f;
+		}
+
+		if (differentSize && okSize)
+		{
+			mPreviewFrameBuffer->Resize((uint32)wndSize.x, (uint32)wndSize.y);
+		}
+
+		mPreviewFrameBuffer->ClearColorAttachment(0, { .4f, .5f, 0.6f, 1.0f });
+		mPreviewFrameBuffer->ClearDepthAttachment();
+		mPreviewFrameBuffer->Bind();
+
+		SceneRenderer::BeginScene({ 0.0f, 0.0f, mCameraZoom }, { 0.0f, 0.0f, 0.0f }, 60.0f, wndSize.x / wndSize.y);
+		SceneRenderer::RenderScene(&mLiveScene);
+
+		gGroovyGuiRenderer->SetGroovyRenderState();
+		ImGui::Image(mPreviewFrameBuffer->GetRendererID(0), wndSize);
+		gGroovyGuiRenderer->SetImguiRenderState();
 
 		ImGui::EndChild();
 		ImGui::NextColumn();

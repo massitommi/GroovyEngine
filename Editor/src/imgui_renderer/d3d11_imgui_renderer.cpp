@@ -9,6 +9,10 @@
 
 extern Window* gWindow;
 
+static ID3D11BlendState* imguiBlendState;
+static float imguiBlendFactor[4];
+static uint32 imguiBlendMask;
+
 void D3D11_ImGuiRenderer::Init()
 {
 	ImGui_ImplWin32_Init(gWindow->GetNativeHandle());
@@ -24,4 +28,25 @@ void D3D11_ImGuiRenderer::NewFrame()
 void D3D11_ImGuiRenderer::RenderDrawData()
 {
 	ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
+}
+
+void D3D11_ImGuiRenderer::SetGroovyRenderState()
+{
+	ImGui::GetWindowDrawList()->AddCallback(
+		[](const ImDrawList* imdrawlist, const ImDrawCmd* cmd)
+		{
+			d3dUtils::gContext->OMGetBlendState(&imguiBlendState, imguiBlendFactor, &imguiBlendMask);
+			d3dUtils::gContext->OMSetBlendState(0, 0, 0xffffffff);
+
+		}, nullptr);
+}
+
+void D3D11_ImGuiRenderer::SetImguiRenderState()
+{
+	ImGui::GetWindowDrawList()->AddCallback(
+		[](const ImDrawList* imdrawlist, const ImDrawCmd* cmd)
+		{
+			d3dUtils::gContext->OMSetBlendState(imguiBlendState, imguiBlendFactor, imguiBlendMask);
+
+		}, nullptr);
 }

@@ -7,6 +7,7 @@
 GROOVY_CLASS_IMPL(MeshComponent)
 	GROOVY_REFLECT(mVisible)
 	GROOVY_REFLECT(mMesh)
+	GROOVY_REFLECT_EX(mMaterialOverrides, PROPERTY_FLAG_EDITOR_NO_RESIZE)
 GROOVY_CLASS_END()
 
 MeshComponent::MeshComponent()
@@ -16,9 +17,6 @@ MeshComponent::MeshComponent()
 
 void MeshComponent::Initialize()
 {
-	if (mMesh)
-		mMesh->FixForRendering();
-
 	GetOwner()->GetScene()->SubmitForRendering(this);
 }
 
@@ -26,3 +24,17 @@ void MeshComponent::Uninitialize()
 {
 	GetOwner()->GetScene()->RemoveFromRenderQueue(this);
 }
+
+#if WITH_EDITOR
+
+void MeshComponent::Editor_OnPropertyChanged(const GroovyProperty* prop)
+{
+	if (prop->name == "mMesh")
+	{
+		mMaterialOverrides.clear();
+		if (mMesh)
+			mMaterialOverrides.resize(mMesh->GetMaterials().size(), nullptr);
+	}
+}
+
+#endif

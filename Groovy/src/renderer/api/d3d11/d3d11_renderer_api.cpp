@@ -10,8 +10,6 @@
     #define SWAPCHAIN_FLAG_DEBUG 0
 #endif
 
-static ID3D11RasterizerState* sRasterizerState = nullptr;
-
 D3D11RendererAPI::D3D11RendererAPI(RendererAPISpec spec, Window* wnd)
     : mSpec(spec), mRasterizerState({ RASTERIZER_FILL_MODE_SOLID, RASTERIZER_CULL_MODE_BACK })
 {
@@ -134,11 +132,8 @@ void D3D11RendererAPI::SetRasterizerState(RasterizerState newState)
 
     ID3D11RasterizerState* newRasterizerState = d3dUtils::CreateRasterizerState(nativeFillMode, nativeCullMode);
     d3dUtils::gContext->RSSetState(newRasterizerState);
-    if (sRasterizerState)
-    {
-        sRasterizerState->Release();
-    }
-    sRasterizerState = newRasterizerState;
+    newRasterizerState->Release();
+
     mRasterizerState = newState;
 }
 
@@ -149,9 +144,6 @@ D3D11RendererAPI::~D3D11RendererAPI()
     d3dUtils::gDevice->QueryInterface(__uuidof(ID3D11Debug), reinterpret_cast<void**>(&boh));
     boh->ReportLiveDeviceObjects(D3D11_RLDO_DETAIL);
 #endif
-    if (sRasterizerState)
-        sRasterizerState->Release();
-
     d3dUtils::gSwapChain->Release();
     d3dUtils::gContext->Release();
     d3dUtils::gDevice->Release();

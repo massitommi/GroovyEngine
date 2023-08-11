@@ -46,7 +46,6 @@ public:
 	const std::vector<Material*>& GetMaterials() const { return mMaterials; }
 
 	void SetMaterial(Material* mat, uint32 index) { check(index < mMaterials.size()); mMaterials[index] = mat; }
-	void FixForRendering();
 
 	size_t GetAssetOffsetForSerialization() const { return sizeof(MeshAssetHeader) + mVertexBuffer->GetSize() + mIndexBuffer->GetSize(); }
 	virtual void Serialize(DynamicBuffer& fileData) const override;

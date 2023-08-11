@@ -7,7 +7,7 @@
 #include "gameframework/actor.h"
 #include "gameframework/actorcomponent.h"
 
-bool editorGui::AssetRef(const char* label, EAssetType type, void* data, GroovyClass* classFilter)
+bool editorGui::AssetRef(const char* label, EAssetType type, void* data, bool allowNull, GroovyClass* classFilter)
 {
 	AssetInstance** assetPtr = (AssetInstance**)data;
 	std::vector<AssetHandle> assets;
@@ -41,8 +41,9 @@ bool editorGui::AssetRef(const char* label, EAssetType type, void* data, GroovyC
 	}
 
 	bool validAsset = true;
-	if (*assetPtr)
-		validAsset = std::find_if(assets.begin(), assets.end(), [=](const AssetHandle& h) { return h.instance == *assetPtr; }) != assets.end();
+
+	if (*assetPtr == nullptr)
+		validAsset = allowNull;
 
 	if (!validAsset)
 		ImGui::PushStyleColor(ImGuiCol_Text, { 1.0f, 0.0f, 0.0f, 1.0f });
@@ -58,17 +59,30 @@ bool editorGui::AssetRef(const char* label, EAssetType type, void* data, GroovyC
 			validAsset = true; // just for imgui
 		}
 
+		if (!allowNull)
+			ImGui::BeginDisabled();
+
 		if (ImGui::Selectable("NONE", *assetPtr == nullptr))
 		{
-			*assetPtr = nullptr;
-			click = true;
+			if (*assetPtr != nullptr)
+			{
+				*assetPtr = nullptr;
+				click = true;
+			}
 		}
+
+		if (!allowNull)
+			ImGui::EndDisabled();
+
 		for (const AssetHandle& handle : assets)
 		{
 			if (ImGui::Selectable(handle.name.c_str(), *assetPtr == handle.instance))
 			{
-				*assetPtr = handle.instance;
-				click = true;
+				if (*assetPtr != handle.instance)
+				{
+					*assetPtr = handle.instance;
+					click = true;
+				}
 			}
 		}
 		ImGui::EndCombo();
@@ -144,7 +158,7 @@ bool editorGui::PropertyInput(const std::string& label, EPropertyType type, void
 			click = ImGui::InputText(lblVal.c_str(), (std::string*)data);
 			break;
 		case PROPERTY_TYPE_ASSET_REF:
-			click = AssetRef(lblVal.c_str(), (EAssetType)param1, data, (GroovyClass*)param2);
+			click = AssetRef(lblVal.c_str(), (EAssetType)param1, data, true, (GroovyClass*)param2);
 			break;
 		default:
 			ImGui::Text("PROPERTY_TYPE_UI_NOT_IMPLEMENTED");
@@ -181,6 +195,8 @@ bool editorGui::Property(const GroovyProperty& prop, void* propData)
 			uint32 propSize = GroovyProperty_GetSize(prop.type);
 			if (prop.flags & PROPERTY_FLAG_IS_DYNAMIC_ARRAY)
 			{
+				bool cantResize = prop.flags & PROPERTY_FLAG_EDITOR_NO_RESIZE;
+
 				DynamicArrayPtr arrayPtr = GroovyProperty_GetDynamicArrayPtr(prop.type);
 				void* dataData = arrayPtr.data(propData);
 				uint32 dataArrayCount = arrayPtr.size(propData);
@@ -208,6 +224,10 @@ bool editorGui::Property(const GroovyProperty& prop, void* propData)
 					changed = PropertyInput(labelName, prop.type, (byte*)dataData + (propSize * i), readonly, lblColWidth, prop.param1, prop.param2);
 					ImGui::SameLine();
 					ImGui::PushID(i);
+					
+					if (readonly || cantResize)
+						ImGui::BeginDisabled();
+
 					if (ImGui::Button("X"))
 					{
 						postAction.action = REMOVE_AT;
@@ -219,18 +239,30 @@ bool editorGui::Property(const GroovyProperty& prop, void* propData)
 						postAction.action = INSERT_AT;
 						postAction.param = i;
 					}
+
+					if (readonly || cantResize)
+						ImGui::EndDisabled();
+
 					ImGui::PopID();
 				}
+
+				if (readonly || cantResize)
+					ImGui::BeginDisabled();
 
 				if (ImGui::Button("Clear"))
 				{
 					postAction.action = CLEAR;
+					changed = true;
 				}
 				ImGui::SameLine();
 				if (ImGui::Button("Add"))
 				{
 					postAction.action = ADD;
+					changed = true;
 				}
+
+				if (readonly || cantResize)
+					ImGui::EndDisabled();
 
 				// take action 
 				switch (postAction.action)
@@ -289,7 +321,10 @@ bool editorGui::PropertiesSingleClass(GroovyObject* obj, GroovyClass* gClass, co
 		ImGui::Spacing();
 		
 		if (Property(prop, (byte*)obj + prop.offset))
+		{
+			obj->Editor_OnPropertyChanged(&prop);
 			changed = true;
+		}
 		
 		ImGui::Spacing();
 		ImGui::Spacing();

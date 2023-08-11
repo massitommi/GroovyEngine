@@ -33,7 +33,7 @@ void Renderer::SetModel(Mat4& modelMatrix)
 	sModelBuffer->Overwrite(&modelMatrix, sizeof(Mat4));
 }
 
-void Renderer::RenderMesh(Mesh* mesh)
+void Renderer::RenderMesh(Mesh* mesh, const std::vector<Material*>& materials)
 {
 	check(mesh);
 
@@ -44,20 +44,27 @@ void Renderer::RenderMesh(Mesh* mesh)
 	uint32 vertexOffset = 0;
 	for (uint32 i = 0; i < mesh->mSubmeshes.size(); i++)
 	{
-		Material* mat = mesh->GetMaterials()[i];
-		
+		const Material* mat = materials[i];
+
 		if (mat->mShader != sCurrentlyBoundShader)
 		{
 			mat->mShader->Bind();
 			sCurrentlyBoundShader = mat->mShader;
 		}
 
-		for (MaterialResource& res : mat->mResources)
+		for (const MaterialResource& res : mat->mResources)
 			res.res->Bind(res.slot);
 
 		RendererAPI::Get().DrawIndexed(vertexOffset, indexOffset, mesh->mSubmeshes[i].indexCount);
-		
+
 		vertexOffset += mesh->mSubmeshes[i].vertexCount;
 		indexOffset += mesh->mSubmeshes[i].indexCount;
 	}
+}
+
+void Renderer::RenderMesh(Mesh* mesh)
+{
+	check(mesh);
+
+	RenderMesh(mesh, mesh->GetMaterials());
 }

@@ -15,11 +15,16 @@ public:
 	virtual void Initialize() override;
 	virtual void Uninitialize() override;
 
+#if WITH_EDITOR
+	void Editor_OnPropertyChanged(const GroovyProperty* prop) override;
+#endif
+
 public:
 	bool mVisible;
 
 private:
 	Mesh* mMesh;
+	std::vector<Material*> mMaterialOverrides;
 
 
 	friend class SceneRenderer;

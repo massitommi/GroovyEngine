@@ -32,7 +32,8 @@ enum EPropertyFlags : uint32
 	PROPERTY_FLAG_NO_SERIALIZE = BITFLAG(4),		// This property should not be serialized
 	PROPERTY_FLAG_EDITOR_READONLY = BITFLAG(5),		// This property can't be edited inside the editor
 	PROPERTY_FLAG_EDITOR_HIDDEN = BITFLAG(6),		// This property is hidden in the editor
-	PROPERTY_FLAG_IS_NOT_VALUE_TYPE = BITFLAG(7)	// This property requires more than just a memcpy for copying (ex: String)
+	PROPERTY_FLAG_IS_NOT_VALUE_TYPE = BITFLAG(7),	// This property requires more than just a memcpy for copying (ex: String)
+	PROPERTY_FLAG_EDITOR_NO_RESIZE = BITFLAG(8)		// This property is supposed to be a DynamicArray and can't be resized in the editor
 };
 
 struct GroovyProperty

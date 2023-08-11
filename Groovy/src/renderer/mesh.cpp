@@ -2,6 +2,8 @@
 #include "classes/object_serializer.h"
 #include "assets/assets.h"
 
+extern Material* DEFAULT_MATERIAL;
+
 Mesh::Mesh()
 	: mVertexBuffer(nullptr), mIndexBuffer(nullptr), mUUID(0), mLoaded(false)
 {
@@ -52,17 +54,6 @@ bool Mesh::Editor_FixDependencyDeletion(AssetHandle assetToBeDeleted)
 
 #endif
 
-void Mesh::FixForRendering()
-{
-	extern Material* DEFAULT_MATERIAL;
-	for (Material*& mat : mMaterials)
-	{
-		if (!mat)
-			mat = DEFAULT_MATERIAL;
-		mat->FixForRendering();
-	}
-}
-
 void Mesh::Serialize(DynamicBuffer& fileData) const
 {
 	MeshAssetFile asset;
@@ -87,6 +78,11 @@ void Mesh::Deserialize(BufferView fileData)
 	ObjectSerializer::DeserializePropertyPackData(meshAssetPropPack, &asset);
 	mSubmeshes = asset.submeshes;
 	mMaterials = asset.materials;
+
+	for (Material* mat : mMaterials)
+		if (!mat)
+			mat = DEFAULT_MATERIAL;
+
 }
 
 IMPL_PROPERTY_TYPE(SubmeshData, PROPERTY_TYPE_INTERNAL_SUBMESHDATA)

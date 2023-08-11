@@ -4,6 +4,9 @@
 #include "assets/asset_manager.h"
 #include "assets/asset_serializer.h"
 
+extern Shader* DEFAULT_SHADER;
+extern Texture* DEFAULT_TEXTURE;
+
 Material::Material()
 	: mShader(nullptr), mUUID(0), mLoaded(false)
 {
@@ -116,24 +119,6 @@ void Material::SetResources(Texture* texture)
 		res.res = texture;
 }
 
-void Material::FixForRendering()
-{
-	extern Shader* DEFAULT_SHADER;
-	extern Texture* DEFAULT_TEXTURE;
-
-	// set shader to DEFAULT_SHADER if null
-	if (!mShader)
-		SetShader(DEFAULT_SHADER);
-	
-	// set null textures to DEFAULT_TEXTURE
-	for (MaterialResource& res : mResources)
-		if (!res.res)
-			res.res = DEFAULT_TEXTURE;
-
-	// clear const buffers data
-	memset(mConstBuffersData.data(), 0, mConstBuffersData.size());
-}
-
 GROOVY_CLASS_IMPL(MaterialAssetFile)
 	GROOVY_REFLECT(shader)
 	GROOVY_REFLECT(constBuffersData)
@@ -175,10 +160,13 @@ void Material::Deserialize(BufferView fileData)
 	ObjectSerializer::DeserializePropertyPackData(matAssetPropPack, &asset);
 
 	// shader
-	SetShader(asset.shader);
+	Shader* shaderToSet = asset.shader;
+	if (!shaderToSet)
+		shaderToSet = DEFAULT_SHADER;
+	SetShader(shaderToSet);
 
 	// resources
-	for (const MaterialResource& res : mResources)
+	for (MaterialResource& res : mResources)
 	{
 		auto it = std::find(asset.shaderResNames.begin(), asset.shaderResNames.end(), res.name);
 		uint32 resIndex = it - asset.shaderResNames.begin();
@@ -188,6 +176,10 @@ void Material::Deserialize(BufferView fileData)
 			mResources[resIndex].res = asset.shaderRes[resIndex];
 		}
 	}
+
+	for (MaterialResource& res : mResources)
+		if (!res.res)
+			res.res = DEFAULT_TEXTURE;
 
 	// const buffers data
 	if (mConstBuffersData.size() == mConstBuffersData.size())
