@@ -148,4 +148,9 @@ bool FileSystem::FileExists(const std::string& path)
 	return GetFileAttributesA(path.c_str()) != INVALID_FILE_ATTRIBUTES;
 }
 
+bool FileSystem::Rename(const std::string& path, const std::string& newPath)
+{
+	return rename(path.c_str(), newPath.c_str()) == 0;
+}
+
 #endif

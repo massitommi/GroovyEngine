@@ -305,218 +305,370 @@ void Stop()
 	sCurrentScene = &sEditScene;
 }
 
-namespace newAsset
+namespace assetPopups
 {
-	static EAssetType sNewAssetType = ASSET_TYPE_NONE;
-	static std::string sNewAssetName = "New_Asset";
-
-	bool IsValidAssetName()
+	bool IsValidAssetName(const std::string& name)
 	{
 		return
-			!sNewAssetName.empty() &&													// path is not empty
-			sNewAssetName.find(' ') == std::string::npos &&								// path does not contain whitespaces
-			!AssetManager::FindByPath(sNewAssetName + GROOVY_ASSET_EXT).instance &&		// there is no asset with the same path
-			!stringUtils::EqualsCaseInsensitive(sNewAssetName, "DEFAULT_SHADER") &&		// blacklisted filename
-			!stringUtils::EqualsCaseInsensitive(sNewAssetName, "DEFAULT_TEXTURE") &&	// blacklisted filename
-			!stringUtils::EqualsCaseInsensitive(sNewAssetName, "DEFAULT_MATERIAL") &&	// blacklisted filename
-			!stringUtils::EqualsCaseInsensitive(sNewAssetName, "Empty_Scene");			// blacklisted filename
+			!name.empty() &&													// path is not empty
+			name.find(' ') == std::string::npos &&								// path does not contain whitespaces
+			!AssetManager::FindByPath(name + GROOVY_ASSET_EXT).instance &&		// there is no asset with the same path
+			!AssetManager::FindByPath(name).instance;							// there is no default asset with the same path
 	}
 
-	void CreateNewAsset()
+	bool AssetNameInput(std::string& filename)
 	{
-		auto FilePathInput = [&]()
+		bool validPath = IsValidAssetName(filename);
+
+		if (!validPath)
+			ImGui::PushStyleColor(ImGuiCol_Text, { 1.0f, 0.7f, 0.0f, 1.0f });
+
+		ImGui::InputText("##new_asset_name", &filename);
+
+		if (!validPath)
+			ImGui::PopStyleColor();
+
+		ImGui::SameLine();
+		ImGui::Text(GROOVY_ASSET_EXT);
+
+		if (!validPath)
 		{
-			ImGui::Text("Filename");
-
-			bool validPath = IsValidAssetName();
-
-			if (!validPath)
-				ImGui::PushStyleColor(ImGuiCol_Text, { 1.0f, 0.7f, 0.0f, 1.0f });
-
-			ImGui::InputText("##new_asset_name", &sNewAssetName);
-			ImGui::SameLine();
-			ImGui::Text(GROOVY_ASSET_EXT);
-			ImGui::SameLine();
-			ImGui::TextDisabled("(?)");
-			if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayShort) && ImGui::BeginTooltip())
-			{
-				ImGui::PushTextWrapPos(ImGui::GetFontSize() * 35.0f);
-				ImGui::TextUnformatted("Filenames can't contain whitespaces, filenames are case-insensitive");
-				ImGui::PopTextWrapPos();
-				ImGui::EndTooltip();
-			}
-
-			if (!validPath)
-				ImGui::PopStyleColor();
-
-			ImGui::Spacing();
-			ImGui::Spacing();
-			ImGui::Spacing();
-			ImGui::Spacing();
-
-			return validPath;
-		};
-
-		if (ImGui::BeginPopupModal("New material"))
+			ImGui::PushStyleColor(ImGuiCol_Text, { 0.8f, 0.0f, 0.0f, 1.0f });
+			ImGui::Text("Filenames can't contain whitespaces, filenames are case-insensitive");
+			ImGui::PopStyleColor();
+		}
+		else
 		{
-			bool validPath = FilePathInput();
-
-			ImGui::Text("Select shader:");
+			ImGui::SetCursorPosY(ImGui::GetCursorPosY() + ImGui::GetTextLineHeight());
 			ImGui::Spacing();
-
-			if (!validPath)
-				ImGui::BeginDisabled();
-
-			for (AssetHandle& asset : AssetManager::GetAssets(ASSET_TYPE_SHADER))
-			{
-				if (ImGui::Selectable(asset.name.c_str()))
-				{
-					// create asset
-					Material* newMat = new Material();
-					newMat->SetShader((Shader*)asset.instance);
-					// pending save stuff
-					AssetManager::Editor_OnAdd(sNewAssetName + GROOVY_ASSET_EXT, ASSET_TYPE_MATERIAL, newMat);
-					newMat->Save();
-					// close popup
-					ImGui::CloseCurrentPopup();
-				}
-			}
-
-			if (!validPath)
-				ImGui::EndDisabled();
-
-			if (ImGui::IsKeyPressed(ImGuiKey_Escape))
-				ImGui::CloseCurrentPopup();
-
-			ImGui::EndPopup();
 		}
 
-		if (ImGui::BeginPopupModal("New blueprint"))
-		{
-			bool validPath = FilePathInput();
-
-			ImGui::Text("Select class:");
-			ImGui::Spacing();
-
-			if (!validPath)
-				ImGui::BeginDisabled();
-
-			for (const GroovyClass* gClass : gClassDB.GetClasses())
-			{
-				if (GroovyClass_IsA(gClass, Actor::StaticClass()))
-					continue;
-
-				if (ImGui::Selectable(gClass->name.c_str()))
-				{
-					// create asset
-					ObjectBlueprint* bp = new ObjectBlueprint();
-					bp->SetupEmpty((GroovyClass*)gClass);
-					// pending save stuff
-					AssetManager::Editor_OnAdd(sNewAssetName + GROOVY_ASSET_EXT, ASSET_TYPE_BLUEPRINT, bp);
-					bp->Save();
-					// close popup
-					ImGui::CloseCurrentPopup();
-				}
-			}
-
-			if (!validPath)
-				ImGui::EndDisabled();
-
-			if (ImGui::IsKeyPressed(ImGuiKey_Escape))
-				ImGui::CloseCurrentPopup();
-
-			ImGui::EndPopup();
-		}
-
-		if (ImGui::BeginPopupModal("New actor blueprint"))
-		{
-			bool validPath = FilePathInput();
-
-			ImGui::Text("Select class:");
-			ImGui::Spacing();
-
-			if (!validPath)
-				ImGui::BeginDisabled();
-
-			for (const GroovyClass* gClass : gClassDB.GetClasses())
-			{
-				if (!GroovyClass_IsA(gClass, Actor::StaticClass()))
-					continue;
-
-				if (ImGui::Selectable(gClass->name.c_str()))
-				{
-					// create asset
-					ActorBlueprint* bp = new ActorBlueprint();
-					bp->SetupEmpty((GroovyClass*)gClass);
-					// pending save stuff
-					AssetManager::Editor_OnAdd(sNewAssetName + GROOVY_ASSET_EXT, ASSET_TYPE_ACTOR_BLUEPRINT, bp);
-					bp->Save();
-					// close popup
-					ImGui::CloseCurrentPopup();
-				}
-			}
-
-			if (!validPath)
-				ImGui::EndDisabled();
-
-			if (ImGui::IsKeyPressed(ImGuiKey_Escape))
-				ImGui::CloseCurrentPopup();
-
-			ImGui::EndPopup();
-		}
-
-		if (ImGui::BeginPopupModal("New scene"))
-		{
-			bool validPath = FilePathInput();
-			
-			ImGui::Spacing();
-
-			if (!validPath)
-				ImGui::BeginDisabled();
-
-			if (ImGui::Button("Save"))
-			{
-				Scene* newScene = new Scene();
-				AssetManager::Editor_OnAdd(sNewAssetName + GROOVY_ASSET_EXT, ASSET_TYPE_SCENE, newScene);
-				newScene->Save();
-				ImGui::CloseCurrentPopup();
-			}
-
-			if (!validPath)
-				ImGui::EndDisabled();
-
-			if (ImGui::IsKeyPressed(ImGuiKey_Escape))
-				ImGui::CloseCurrentPopup();
-
-			ImGui::EndPopup();
-		}
+		return validPath;
 	}
 
-	void NewAssetPopup()
+	enum EAssetAction
 	{
-		if (sNewAssetType != ASSET_TYPE_NONE)
+		ASSET_ACTION_NONE,
+		ASSET_ACTION_DELETE,
+		ASSET_ACTION_RENAME
+	};
+
+	static EAssetAction sAssetAction = ASSET_ACTION_NONE;
+	static AssetHandle sAssetActionHandle = {};
+	static EAssetType sNewAssetType = ASSET_TYPE_NONE;
+	static std::string sAssetRename;
+
+	void RenderPopups()
+	{
+		// delete // rename
+		if (sAssetAction != ASSET_ACTION_NONE)
+		{
+			switch (sAssetAction)
+			{
+				case ASSET_ACTION_DELETE:
+					ImGui::OpenPopup("Delete asset");
+					break;
+
+				case ASSET_ACTION_RENAME:
+					ImGui::OpenPopup("Rename asset");
+					break;
+			}
+
+			if (ImGui::BeginPopupModal("Delete asset"))
+			{
+				ImGui::Text("Are you sure you want to permanently delete \"%s\" ?", sAssetRename.c_str());
+				bool popupShouldClose = false;
+
+				if (ImGui::Button("Delete"))
+				{
+					switch (sAssetActionHandle.type)
+					{
+						case ASSET_TYPE_SCENE:
+						{
+							if (sAssetActionHandle.instance == sEditScene.scene)
+								TravelToScene(nullptr);
+
+							if (sAssetActionHandle.instance == gProj.GetStartupScene())
+								gProj.SetStartupScene(nullptr);
+						}
+						break;
+
+						case ASSET_TYPE_ACTOR_BLUEPRINT:
+						{
+							if (sEditScene.scene && sEditScene.scene->ReferencesBlueprint((ActorBlueprint*)sAssetActionHandle.instance))
+								sEditScenePendingSave = true;
+						}
+						break;
+					}
+
+					AssetManager::Editor_Remove(sAssetActionHandle);
+
+					FileSystem::DeleteFile((gProj.GetAssetsPath() / sAssetActionHandle.name).string());
+
+					popupShouldClose = true;
+				}
+
+				if (ImGui::IsKeyPressed(ImGuiKey_Escape))
+					popupShouldClose = true;
+
+				if (popupShouldClose)
+				{
+					ImGui::CloseCurrentPopup();
+					sAssetAction = ASSET_ACTION_NONE;
+					sAssetActionHandle = {};
+					sAssetRename = "";
+				}
+
+				ImGui::EndPopup();
+			}
+
+			if (ImGui::BeginPopupModal("Rename asset"))
+			{
+				bool validName = AssetNameInput(sAssetRename);
+				bool popupShouldClose = false;
+
+				ImGui::Spacing();
+				ImGui::Spacing();
+
+				if (!validName)
+					ImGui::BeginDisabled();
+
+				if (ImGui::Button("Rename"))
+				{
+					AssetManager::Editor_Rename(sAssetActionHandle, sAssetRename + GROOVY_ASSET_EXT);
+					FileSystem::Rename((gProj.GetAssetsPath() / sAssetActionHandle.name).string(), (gProj.GetAssetsPath() / (sAssetRename + GROOVY_ASSET_EXT)).string());
+
+					popupShouldClose = true;
+				}
+
+				if (ImGui::IsKeyPressed(ImGuiKey_Escape))
+					popupShouldClose = true;
+
+				if (popupShouldClose)
+				{
+					ImGui::CloseCurrentPopup();
+					sAssetAction = ASSET_ACTION_NONE;
+					sAssetActionHandle = {};
+					sAssetRename = "";
+				}
+
+				if (!validName)
+					ImGui::EndDisabled();
+
+				ImGui::EndPopup();
+			}
+		}
+		// create
+		else if (sNewAssetType != ASSET_TYPE_NONE)
 		{
 			switch (sNewAssetType)
 			{
 				case ASSET_TYPE_MATERIAL:
 					ImGui::OpenPopup("New material");
-					sNewAssetName = "My_New_Material";
 					break;
+
 				case ASSET_TYPE_BLUEPRINT:
 					ImGui::OpenPopup("New blueprint");
-					sNewAssetName = "My_New_Blueprint";
 					break;
+
 				case ASSET_TYPE_ACTOR_BLUEPRINT:
 					ImGui::OpenPopup("New actor blueprint");
-					sNewAssetName = "My_New_Actor_Blueprint";
 					break;
+
 				case ASSET_TYPE_SCENE:
 					ImGui::OpenPopup("New scene");
-					sNewAssetName = "My_New_Scene";
 					break;
 			}
 
-			sNewAssetType = ASSET_TYPE_NONE;
+			if (ImGui::BeginPopupModal("New material"))
+			{
+				bool validName = AssetNameInput(sAssetRename);
+				bool popupShouldClose = false;
+
+				if (!validName)
+					ImGui::BeginDisabled();
+
+				ImGui::Spacing();
+				ImGui::Spacing();
+				ImGui::Text("Select a shader program:");
+				ImGui::Spacing();
+				ImGui::Spacing();
+				ImGui::Spacing();
+
+				for (AssetHandle& asset : AssetManager::GetAssets(ASSET_TYPE_SHADER))
+				{
+					if (ImGui::Selectable(asset.name.c_str()))
+					{
+						// create asset
+						Material* newMat = new Material();
+						newMat->SetShader((Shader*)asset.instance);
+
+						// notify asset manager and save
+						AssetManager::Editor_Add(sAssetRename + GROOVY_ASSET_EXT, ASSET_TYPE_MATERIAL, newMat);
+						newMat->Save();
+
+						// reset popup
+						popupShouldClose = true;
+					}
+					ImGui::Spacing();
+				}
+
+				if (ImGui::IsKeyPressed(ImGuiKey_Escape))
+					popupShouldClose = true;
+
+				if (popupShouldClose)
+				{
+					ImGui::CloseCurrentPopup();
+					sNewAssetType = ASSET_TYPE_NONE;
+					sAssetRename = "";
+				}
+
+				if (!validName)
+					ImGui::EndDisabled();
+
+				ImGui::EndPopup();
+			}
+
+			if (ImGui::BeginPopupModal("New blueprint"))
+			{
+				bool validName = AssetNameInput(sAssetRename);
+				bool popupShouldClose = false;
+
+				if (!validName)
+					ImGui::BeginDisabled();
+
+				ImGui::Spacing();
+				ImGui::Spacing();
+				ImGui::Text("Select a groovy class:");
+				ImGui::Spacing();
+				ImGui::Spacing();
+				ImGui::Spacing();
+
+				for (const GroovyClass* gClass : gClassDB.GetClasses())
+				{
+					if (!GroovyClass_IsA(gClass, Actor::StaticClass()) && ImGui::Selectable(gClass->name.c_str()))
+					{
+						// create asset
+						ObjectBlueprint* newBP = new ObjectBlueprint();
+						newBP->SetupEmpty((GroovyClass*)gClass);
+
+						// notify asset manager and save
+						AssetManager::Editor_Add(sAssetRename + GROOVY_ASSET_EXT, ASSET_TYPE_BLUEPRINT, newBP);
+						newBP->Save();
+
+						// reset popup
+						popupShouldClose = true;
+
+						ImGui::Spacing();
+					}
+				}
+
+				if (ImGui::IsKeyPressed(ImGuiKey_Escape))
+					popupShouldClose = true;
+
+				if (popupShouldClose)
+				{
+					ImGui::CloseCurrentPopup();
+					sNewAssetType = ASSET_TYPE_NONE;
+					sAssetRename = "";
+				}
+
+				if (!validName)
+					ImGui::EndDisabled();
+
+				ImGui::EndPopup();
+			}
+
+			if (ImGui::BeginPopupModal("New actor blueprint"))
+			{
+				bool validName = AssetNameInput(sAssetRename);
+				bool popupShouldClose = false;
+
+				if (!validName)
+					ImGui::BeginDisabled();
+
+				ImGui::Spacing();
+				ImGui::Spacing();
+				ImGui::Text("Select an actor class:");
+				ImGui::Spacing();
+				ImGui::Spacing();
+				ImGui::Spacing();
+
+
+				for (const GroovyClass* gClass : gClassDB.GetClasses())
+				{
+					if (GroovyClass_IsA(gClass, Actor::StaticClass()) && ImGui::Selectable(gClass->name.c_str()))
+					{
+						// create asset
+						ActorBlueprint* newBP = new ActorBlueprint();
+						newBP->SetupEmpty((GroovyClass*)gClass);
+
+						// notify asset manager and save
+						AssetManager::Editor_Add(sAssetRename + GROOVY_ASSET_EXT, ASSET_TYPE_ACTOR_BLUEPRINT, newBP);
+						newBP->Save();
+
+						// reset popup
+						popupShouldClose = true;
+
+						ImGui::Spacing();
+					}
+				}
+
+				if (ImGui::IsKeyPressed(ImGuiKey_Escape))
+					popupShouldClose = true;
+
+				if (popupShouldClose)
+				{
+					ImGui::CloseCurrentPopup();
+					sNewAssetType = ASSET_TYPE_NONE;
+					sAssetRename = "";
+				}
+
+				if (!validName)
+					ImGui::EndDisabled();
+
+				ImGui::EndPopup();
+			}
+
+			if (ImGui::BeginPopupModal("New scene"))
+			{
+				bool validName = AssetNameInput(sAssetRename);
+				bool popupShouldClose = false;
+
+				if (!validName)
+					ImGui::BeginDisabled();
+
+				ImGui::Spacing();
+				ImGui::Spacing();
+
+				if (ImGui::Button("Create"))
+				{
+					// create asset
+					Scene* newScene = new Scene();
+
+					// notify asset manager and save
+					AssetManager::Editor_Add(sAssetRename + GROOVY_ASSET_EXT, ASSET_TYPE_SCENE, newScene);
+					newScene->Save();
+
+					// reset popup
+					popupShouldClose = true;
+				}
+
+				if (ImGui::IsKeyPressed(ImGuiKey_Escape))
+					popupShouldClose = true;
+
+				if (popupShouldClose)
+				{
+					ImGui::CloseCurrentPopup();
+					sNewAssetType = ASSET_TYPE_NONE;
+					sAssetRename = "";
+				}
+
+				if (!validName)
+					ImGui::EndDisabled();
+
+				ImGui::EndPopup();
+			}
 		}
 	}
 }
@@ -619,13 +771,25 @@ namespace panels
 			if (ImGui::BeginMenu("Create"))
 			{
 				if (ImGui::MenuItem("Material"))
-					newAsset::sNewAssetType = ASSET_TYPE_MATERIAL;
+				{
+					assetPopups::sNewAssetType = ASSET_TYPE_MATERIAL;
+					assetPopups::sAssetRename = "My_New_Material";
+				}
 				if (ImGui::MenuItem("Blueprint"))
-					newAsset::sNewAssetType = ASSET_TYPE_BLUEPRINT;
+				{
+					assetPopups::sNewAssetType = ASSET_TYPE_BLUEPRINT;
+					assetPopups::sAssetRename = "My_New_Blueprint";
+				}
 				if (ImGui::MenuItem("Actor blueprint"))
-					newAsset::sNewAssetType = ASSET_TYPE_ACTOR_BLUEPRINT;
+				{
+					assetPopups::sNewAssetType = ASSET_TYPE_ACTOR_BLUEPRINT;
+					assetPopups::sAssetRename = "My_New_Actor_Blueprint";
+				}
 				if (ImGui::MenuItem("Scene"))
-					newAsset::sNewAssetType = ASSET_TYPE_SCENE;
+				{
+					assetPopups::sNewAssetType = ASSET_TYPE_SCENE;
+					assetPopups::sAssetRename = "My_New_Scene";
+				}
 
 				ImGui::EndMenu();
 			}
@@ -635,14 +799,10 @@ namespace panels
 
 		ImGui::Columns(columns, nullptr, false);
 
-		AssetHandle assetToDelete = {};
-
 		for (uint32 i = 0; i < assets.size(); i++)
 		{
 			const AssetHandle& asset = assets[i];
 			PanelAsset panelAsset = panelAssets[i];
-
-			ImGui::PushID(i);
 
 			ImGui::BeginGroup();
 
@@ -650,7 +810,47 @@ namespace panels
 
 			ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, { 3,3 });
 
-			if (ImGui::ImageButton(fileNameNoExt.c_str(), panelAsset.thumbnail, { gEditorSettings.mContentBrowserIconSize - 10, gEditorSettings.mContentBrowserIconSize - 5 }, { 0,0 }, { 1,1 }, { 1,1,1,1 }))
+			ImGui::ImageButton(fileNameNoExt.c_str(), panelAsset.thumbnail, { gEditorSettings.mContentBrowserIconSize - 10, gEditorSettings.mContentBrowserIconSize - 5 }, { 0,0 }, { 1,1 }, { 1,1,1,1 });
+			if (ImGui::BeginPopupContextItem(fileNameNoExt.c_str(), ImGuiPopupFlags_MouseButtonRight))
+			{
+				// rename
+				{
+					bool canRename = !(panelAsset.flags & PANEL_ASSET_FLAG_IS_DEFAULT);
+
+					if (!canRename)
+						ImGui::BeginDisabled();
+
+					if (ImGui::Selectable("Rename"))
+					{
+						assetPopups::sAssetAction = assetPopups::ASSET_ACTION_RENAME;
+						assetPopups::sAssetActionHandle = asset;
+						assetPopups::sAssetRename = fileNameNoExt;
+					}
+
+					if (!canRename)
+						ImGui::EndDisabled();
+				}
+				// delete
+				{
+					bool canDelete = sEditorSceneState == EDITOR_SCENE_STATE_EDIT && !(panelAsset.flags & PANEL_ASSET_FLAG_IS_DEFAULT);
+
+					if (!canDelete)
+						ImGui::BeginDisabled();
+
+					if (ImGui::Selectable("Delete"))
+					{
+						assetPopups::sAssetAction = assetPopups::ASSET_ACTION_DELETE;
+						assetPopups::sAssetActionHandle = asset;
+						assetPopups::sAssetRename = fileNameNoExt;
+					}
+
+					if (!canDelete)
+						ImGui::EndDisabled();
+				}
+
+				ImGui::EndPopup();
+			}
+			else if (ImGui::IsItemActive() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
 			{
 				if (!(panelAsset.flags & PANEL_ASSET_FLAG_IS_DEFAULT))
 				{
@@ -709,90 +909,44 @@ namespace panels
 					}
 				}
 			}
-
-			ImGui::PopStyleVar();
-
-			if (ImGui::BeginPopupContextItem(fileNameNoExt.c_str(), ImGuiPopupFlags_MouseButtonRight))
-			{
-				// delete
-				{
-					bool cantDelete = sEditorSceneState != EDITOR_SCENE_STATE_EDIT || panelAsset.flags & PANEL_ASSET_FLAG_IS_DEFAULT;
-
-					if (cantDelete)
-						ImGui::BeginDisabled();
-
-					if (ImGui::Selectable("Delete"))
-					{
-						auto res = SysMessageBox::Show
-						(
-							"Asset deletion",
-							"Deleting an asset is dangerous, it could break dependencies with other assets, do you want to continue?",
-							MESSAGE_BOX_TYPE_WARNING, MESSAGE_BOX_OPTIONS_YESNOCANCEL
-						);
-						if (res == MESSAGE_BOX_RESPONSE_YES)
-						{
-							assetToDelete = asset;
-						}
-					}
-
-					if (cantDelete)
-						ImGui::EndDisabled();
-				}
-
-				ImGui::EndPopup();
-			}
 			else if (ImGui::IsItemHovered())
 			{
 				switch (asset.type)
 				{
-				case ASSET_TYPE_BLUEPRINT:
-				case ASSET_TYPE_ACTOR_BLUEPRINT:
-				{
-					std::string bpClass = ((Blueprint*)asset.instance)->GetClass() ? ((Blueprint*)asset.instance)->GetClass()->name : "NULL";
-					ImGui::SetTooltip
-					(
-						"File: %s" "\n" "Type: %s" "\n" "Class: %s",
-						asset.name.c_str(),
-						TYPES_STR[panelAsset.typeNameIndex],
-						bpClass.c_str()
-					);
-				}
-				break;
+					case ASSET_TYPE_BLUEPRINT:
+					case ASSET_TYPE_ACTOR_BLUEPRINT:
+					{
+						std::string bpClass = ((Blueprint*)asset.instance)->GetClass() ? ((Blueprint*)asset.instance)->GetClass()->name : "NULL";
+						ImGui::SetTooltip
+						(
+							"File: %s" "\n" "Type: %s" "\n" "Class: %s",
+							asset.name.c_str(),
+							TYPES_STR[panelAsset.typeNameIndex],
+							bpClass.c_str()
+						);
+					}
+					break;
 
-				default:
-				{
-					ImGui::SetTooltip
-					(
-						"File: %s" "\n" "Type: %s",
-						asset.name.c_str(),
-						TYPES_STR[panelAsset.typeNameIndex]
-					);
-				}
-				break;
+					default:
+					{
+						ImGui::SetTooltip
+						(
+							"File: %s" "\n" "Type: %s",
+							asset.name.c_str(),
+							TYPES_STR[panelAsset.typeNameIndex]
+						);
+					}
+					break;
 				}
 			}
+
+			ImGui::PopStyleVar();
+
 			ImGui::Text(fileNameNoExt.c_str());
 
 			ImGui::EndGroup();
 
-			ImGui::PopID();
 			ImGui::NextColumn();
-		}
-
-		if (assetToDelete.uuid)
-		{
-			if (assetToDelete.instance == gProj.GetStartupScene())
-				gProj.SetStartupScene(nullptr);
-
-			if (assetToDelete.instance == sEditScene.scene)
-				TravelToScene(nullptr);
-
-			if (assetToDelete.type == ASSET_TYPE_ACTOR_BLUEPRINT && sEditScene.scene && sEditScene.scene->ReferencesBlueprint((ActorBlueprint*)assetToDelete.instance))
-				sEditScenePendingSave = true;
-
-			AssetManager::Editor_Delete(assetToDelete.uuid);
-
-			FileSystem::DeleteFile((gProj.GetAssetsPath() / assetToDelete.name).string());
 		}
 
 		ImGui::End();
@@ -1489,7 +1643,7 @@ void editor::Init()
 		else
 		{
 			Scene* newEmptyScene = new Scene();
-			AssetManager::Editor_OnAdd("Empty_Scene" GROOVY_ASSET_EXT, ASSET_TYPE_SCENE, newEmptyScene);
+			AssetManager::Editor_Add("Empty_Scene" GROOVY_ASSET_EXT, ASSET_TYPE_SCENE, newEmptyScene);
 			newEmptyScene->Save();
 			TravelToScene(newEmptyScene);
 		}
@@ -1644,22 +1798,30 @@ void editor::Render()
 		if (ImGui::BeginMenu("Create"))
 		{
 			if (ImGui::MenuItem("Material"))
-				newAsset::sNewAssetType = ASSET_TYPE_MATERIAL;
+			{
+				assetPopups::sNewAssetType = ASSET_TYPE_MATERIAL;
+				assetPopups::sAssetRename = "My_New_Material";
+			}
 			if (ImGui::MenuItem("Blueprint"))
-				newAsset::sNewAssetType = ASSET_TYPE_BLUEPRINT;
+			{
+				assetPopups::sNewAssetType = ASSET_TYPE_BLUEPRINT;
+				assetPopups::sAssetRename = "My_New_Blueprint";
+			}
 			if (ImGui::MenuItem("Actor blueprint"))
-				newAsset::sNewAssetType = ASSET_TYPE_ACTOR_BLUEPRINT;
+			{
+				assetPopups::sNewAssetType = ASSET_TYPE_ACTOR_BLUEPRINT;
+				assetPopups::sAssetRename = "My_New_Actor_Blueprint";
+			}
 			if (ImGui::MenuItem("Scene"))
-				newAsset::sNewAssetType = ASSET_TYPE_SCENE;
+			{
+				assetPopups::sNewAssetType = ASSET_TYPE_SCENE;
+				assetPopups::sAssetRename = "My_New_Scene";
+			}
 
 			ImGui::EndMenu();
 		}
 
-		ImGui::Spacing();
-		ImGui::Spacing();
-		ImGui::Spacing();
-		ImGui::Spacing();
-		ImGui::Spacing();
+		ImGui::SameLine(ImGui::GetWindowWidth() - 650);
 		ImGui::Text("Frametime: %.4fms FPS: %.3f", (float)gDeltaTime * 1000.0f, 1.0f / (float)gDeltaTime);
 
 		ImGui::EndMenuBar();
@@ -1672,8 +1834,7 @@ void editor::Render()
 	panels::Properties();
 	panels::Subproperties();
 
-	newAsset::NewAssetPopup();
-	newAsset::CreateNewAsset();
+	assetPopups::RenderPopups();
 	
 	windows::UpdateWindows();
 

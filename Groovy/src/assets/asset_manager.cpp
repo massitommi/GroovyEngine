@@ -95,7 +95,7 @@ void AssetManager::Init()
 			DEFAULT_MATERIAL->SetShader(DEFAULT_SHADER);
 			DEFAULT_MATERIAL->SetResources(DEFAULT_TEXTURE);
 		}
-		// default mesh
+		// default cube (mesh)
 		{
 			MeshVertex cubeVertexBuffer[] =
 			{
@@ -401,64 +401,46 @@ AssetHandle AssetManager::FindByPath(const std::string& filePath)
 
 #if WITH_EDITOR
 
-AssetHandle AssetManager::Editor_OnImport(const std::string& fileName, EAssetType type)
+AssetHandle AssetManager::Editor_Add(const std::string& name, EAssetType type, AssetInstance* instance)
 {
-	AssetUUID uuid = GenUUID();
+	AssetUUID newUUID = GenUUID();
 
-	AssetHandle handle;
-	handle.name = fileName;
-	handle.type = type;
-	handle.uuid = uuid;
-	handle.instance = InstantiateAsset(handle);
-	handle.instance->__internal_SetUUID(uuid);
-	
-	sAssets.push_back(handle);
-	sAssetRegistry[uuid] = handle;
+	AssetHandle newHandle;
+	newHandle.name = name;
+	newHandle.type = type;
+	newHandle.uuid = newUUID;
+	newHandle.instance = instance ? instance : InstantiateAsset(newHandle);
+	newHandle.instance->__internal_SetUUID(newUUID);
 
-	handle.instance->Load();
+	sAssets.push_back(newHandle);
+	sAssetRegistry[newUUID] = newHandle;
 
 	SaveRegistry();
 
-	return handle;
+	return newHandle;
 }
 
-AssetHandle AssetManager::Editor_OnAdd(const std::string& fileName, EAssetType type, AssetInstance* instance)
+void AssetManager::Editor_Remove(AssetHandle handle)
 {
-	AssetUUID uuid = GenUUID();
+	checkslow(handle.uuid);
 
-	AssetHandle handle;
-	handle.name = fileName;
-	handle.type = type;
-	handle.uuid = uuid;
-	handle.instance = instance;
-	handle.instance->__internal_SetUUID(uuid);
+	sAssetRegistry.erase(handle.uuid);
 
-	sAssets.push_back(handle);
-	sAssetRegistry[uuid] = handle;
+	sAssets.erase(std::find_if(sAssets.begin(), sAssets.end(), [=](AssetHandle& h) { return h.uuid == handle.uuid; }));
+
+	delete handle.instance;
 
 	SaveRegistry();
-
-	return handle;
 }
 
-void AssetManager::Editor_Delete(AssetUUID uuid)
+void AssetManager::Editor_Rename(AssetHandle handle, const std::string& newName)
 {
-	AssetHandle assetHandle = sAssetRegistry[uuid];
-	checkslowf(assetHandle.instance, "Asset with uuid: %i not found!", uuid);
-	
-	// remove from registry
-	sAssetRegistry.erase(uuid);
-	// remove from list
-	sAssets.erase(std::find_if(sAssets.begin(), sAssets.end(), [=](AssetHandle& handle) { return handle.uuid == uuid; }));
-	
-	// fix dependencies
-	for (AssetHandle& handle : sAssets)
-	{
-		handle.instance->Editor_FixDependencyDeletion(assetHandle);
-	}
+	checkslow(handle.uuid);
 
-	// delete instance
-	delete assetHandle.instance;
+	sAssetRegistry[handle.uuid].name = newName;
+
+	auto it = std::find_if(sAssets.begin(), sAssets.end(), [=](AssetHandle& h) { return h.uuid == handle.uuid; });
+	it->name = newName;
 
 	SaveRegistry();
 }

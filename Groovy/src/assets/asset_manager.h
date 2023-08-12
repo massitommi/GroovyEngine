@@ -27,9 +27,9 @@ public:
 
 #if WITH_EDITOR
 
-	static AssetHandle Editor_OnImport(const std::string& fileName, EAssetType type);
-	static AssetHandle Editor_OnAdd(const std::string& fileName, EAssetType type, AssetInstance* instance);
-	static void Editor_Delete(AssetUUID uuid);
+	static AssetHandle Editor_Add(const std::string& name, EAssetType type, AssetInstance* instance = nullptr);
+	static void Editor_Remove(AssetHandle handle);
+	static void Editor_Rename(AssetHandle handle, const std::string& newName);
 
 #endif
 };

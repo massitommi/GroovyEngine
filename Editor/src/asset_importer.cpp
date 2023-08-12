@@ -109,7 +109,7 @@ bool AssetImporter::ImportTexture(const std::string& originalFile, const std::st
         return false;
     }
 
-    AssetManager::Editor_OnImport(newFile, ASSET_TYPE_TEXTURE);
+    AssetManager::Editor_Add(newFile, ASSET_TYPE_TEXTURE);
     
     return true;
 }
@@ -223,9 +223,13 @@ bool AssetImporter::ImportMesh(const std::string& originalFile, const std::strin
     memcpy(finalFileData.data(), fileData.data(), fileData.size());
     memcpy(finalFileData.data() + fileData.size(), fileData2.data(), fileData2.used());
 
-    FileSystem::WriteFileBinary((gProj.GetAssetsPath() / newFile).string(), finalFileData);
+    if (FileSystem::WriteFileBinary((gProj.GetAssetsPath() / newFile).string(), finalFileData) != FILE_OPEN_RESULT_OK)
+    {
+        // log
+        return false;
+    }
     
-    AssetManager::Editor_OnImport(newFile, ASSET_TYPE_MESH);
+    AssetManager::Editor_Add(newFile, ASSET_TYPE_MESH);
 
     return true;
 }
