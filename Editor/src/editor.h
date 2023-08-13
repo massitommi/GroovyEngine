@@ -27,10 +27,7 @@ namespace editor
 
 	void OnBPUpdated(ActorBlueprint* bp);
 
-	namespace utils
-	{
-		const char* AssetTypeToStr(EAssetType type);
-	}
+	const char* AssetTypeToStr(EAssetType type);
 }
 
 #define EDITOR_SETTINGS_FILE "settings/settings"

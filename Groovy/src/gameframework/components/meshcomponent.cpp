@@ -25,6 +25,18 @@ void MeshComponent::Uninitialize()
 	GetOwner()->GetScene()->RemoveFromRenderQueue(this);
 }
 
+void MeshComponent::SetMesh(Mesh* mesh)
+{
+	if (mesh != mMesh)
+	{
+		mMaterialOverrides.clear();
+		if (mesh)
+			mMaterialOverrides.resize(mesh->GetMaterials().size(), nullptr);
+	}
+
+	mMesh = mesh;
+}
+
 #if WITH_EDITOR
 
 void MeshComponent::Editor_OnPropertyChanged(const GroovyProperty* prop)

@@ -11,6 +11,7 @@ public:
 	MeshComponent();
 
 	inline Mesh* GetMesh() const { return mMesh; }
+	void SetMesh(Mesh* mesh);
 
 	virtual void Initialize() override;
 	virtual void Uninitialize() override;

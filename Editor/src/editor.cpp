@@ -22,6 +22,7 @@
 #include "gameframework/blueprint.h"
 #include "gameframework/scene.h"
 #include "gameframework/components/cameracomponent.h"
+#include "gameframework/components/meshcomponent.h"
 #include "gameframework/blueprint.h"
 
 #include "classes/class_db.h"
@@ -242,6 +243,35 @@ void TravelToScene(Scene* scene)
 	sCurrentScene = &sEditScene;
 }
 
+void TryTravelToScene(Scene* scene)
+{
+	if (sEditorSceneState == EDITOR_SCENE_STATE_EDIT && sEditScene.scene != scene)
+	{
+		if (sEditScenePendingSave)
+		{
+			auto res = SysMessageBox::Show
+			(
+				"Changing scene without saving", "Do you want to save and travel to the new scene?",
+				MESSAGE_BOX_TYPE_WARNING, MESSAGE_BOX_OPTIONS_YESNOCANCEL
+			);
+
+			if (res == MESSAGE_BOX_RESPONSE_YES)
+			{
+				sEditScene.scene->Save();
+				TravelToScene(scene);
+			}
+			else if (res == MESSAGE_BOX_RESPONSE_NO)
+			{
+				TravelToScene(scene);
+			}
+		}
+		else
+		{
+			TravelToScene(scene);
+		}
+	}
+}
+
 void OnFilesDropped(const std::vector<std::string>& files)
 {
 	for (const std::string& file : files)
@@ -374,10 +404,13 @@ namespace assetPopups
 					break;
 			}
 
-			if (ImGui::BeginPopupModal("Delete asset"))
+			if (ImGui::BeginPopupModal("Delete asset", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
 			{
 				ImGui::Text("Are you sure you want to permanently delete \"%s\" ?", sAssetRename.c_str());
 				bool popupShouldClose = false;
+
+				ImGui::Spacing();
+				ImGui::Spacing();
 
 				if (ImGui::Button("Delete"))
 				{
@@ -401,10 +434,17 @@ namespace assetPopups
 						break;
 					}
 
+					// remove from registry
 					AssetManager::Editor_Remove(sAssetActionHandle);
 
+					// fix dependencies
+					for (const AssetHandle& h : AssetManager::GetAssets())
+						h.instance->Editor_FixDependencyDeletion(sAssetActionHandle);
+
+					// delete asset file
 					FileSystem::DeleteFile((gProj.GetAssetsPath() / sAssetActionHandle.name).string());
 
+					// close popup
 					popupShouldClose = true;
 				}
 
@@ -422,7 +462,7 @@ namespace assetPopups
 				ImGui::EndPopup();
 			}
 
-			if (ImGui::BeginPopupModal("Rename asset"))
+			if (ImGui::BeginPopupModal("Rename asset", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
 			{
 				bool validName = AssetNameInput(sAssetRename);
 				bool popupShouldClose = false;
@@ -695,16 +735,10 @@ namespace panels
 
 	void Assets()
 	{
-		enum EPanelAssetFlags
-		{
-			PANEL_ASSET_FLAG_IS_DEFAULT = BITFLAG(1)
-		};
-
 		struct PanelAsset
 		{
 			ImTextureID thumbnail;
 			uint32 typeNameIndex;
-			uint32 flags;
 		};
 
 		const std::vector<AssetHandle>& assets = AssetManager::GetAssets();
@@ -744,9 +778,6 @@ namespace panels
 				panelAssets[i].typeNameIndex = 6;
 				break;
 			}
-
-			if (assets[i].uuid <= 4)
-				panelAssets[i].flags |= PANEL_ASSET_FLAG_IS_DEFAULT;
 		}
 
 		ImGui::Begin("Content browser");
@@ -811,11 +842,16 @@ namespace panels
 			ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, { 3,3 });
 
 			ImGui::ImageButton(fileNameNoExt.c_str(), panelAsset.thumbnail, { gEditorSettings.mContentBrowserIconSize - 10, gEditorSettings.mContentBrowserIconSize - 5 }, { 0,0 }, { 1,1 }, { 1,1,1,1 });
-			if (ImGui::BeginPopupContextItem(fileNameNoExt.c_str(), ImGuiPopupFlags_MouseButtonRight))
+			if (ImGui::BeginDragDropSource())
+			{
+				ImGui::SetDragDropPayload("drag_and_drop_asset", &asset.uuid, sizeof(AssetUUID));
+				ImGui::EndDragDropSource();
+			}
+			else if (ImGui::BeginPopupContextItem(fileNameNoExt.c_str(), ImGuiPopupFlags_MouseButtonRight))
 			{
 				// rename
 				{
-					bool canRename = !(panelAsset.flags & PANEL_ASSET_FLAG_IS_DEFAULT);
+					bool canRename = asset.uuid > 4;
 
 					if (!canRename)
 						ImGui::BeginDisabled();
@@ -832,7 +868,7 @@ namespace panels
 				}
 				// delete
 				{
-					bool canDelete = sEditorSceneState == EDITOR_SCENE_STATE_EDIT && !(panelAsset.flags & PANEL_ASSET_FLAG_IS_DEFAULT);
+					bool canDelete = sEditorSceneState == EDITOR_SCENE_STATE_EDIT && asset.uuid > 4;
 
 					if (!canDelete)
 						ImGui::BeginDisabled();
@@ -852,60 +888,36 @@ namespace panels
 			}
 			else if (ImGui::IsItemActive() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
 			{
-				if (!(panelAsset.flags & PANEL_ASSET_FLAG_IS_DEFAULT))
+				if (asset.uuid > 4)
 				{
 					switch (asset.type)
 					{
-					case ASSET_TYPE_TEXTURE:
-						windows::AddWindow<TexturePreviewWindow>(asset.name, asset);
-						break;
+						case ASSET_TYPE_TEXTURE:
+							windows::AddWindow<TexturePreviewWindow>(asset.name, asset);
+							break;
 
-					case ASSET_TYPE_SHADER:
-						break;
+						case ASSET_TYPE_SHADER:
+							break;
 
-					case ASSET_TYPE_MATERIAL:
-						windows::AddWindow<EditMaterialWindow>(asset.name, asset);
-						break;
+						case ASSET_TYPE_MATERIAL:
+							windows::AddWindow<EditMaterialWindow>(asset.name, asset);
+							break;
 
-					case ASSET_TYPE_MESH:
-						windows::AddWindow<MeshPreviewWindow>(asset.name, asset);
-						break;
+						case ASSET_TYPE_MESH:
+							windows::AddWindow<MeshPreviewWindow>(asset.name, asset);
+							break;
 
-					case ASSET_TYPE_BLUEPRINT:
-						windows::AddWindow<ObjectBlueprintEditorWindow>(asset.name, asset);
-						break;
+						case ASSET_TYPE_BLUEPRINT:
+							windows::AddWindow<ObjectBlueprintEditorWindow>(asset.name, asset);
+							break;
 
-					case ASSET_TYPE_ACTOR_BLUEPRINT:
-						windows::AddWindow<ActorBlueprintEditorWindow>(asset.name, asset);
-						break;
+						case ASSET_TYPE_ACTOR_BLUEPRINT:
+							windows::AddWindow<ActorBlueprintEditorWindow>(asset.name, asset);
+							break;
 
-					case ASSET_TYPE_SCENE:
-						if (sEditorSceneState == EDITOR_SCENE_STATE_EDIT && sEditScene.scene != asset.instance)
-						{
-							if (sEditScenePendingSave)
-							{
-								auto res = SysMessageBox::Show
-								(
-									"Changing scene without saving", "Do you want to save and travel to the new scene?",
-									MESSAGE_BOX_TYPE_WARNING, MESSAGE_BOX_OPTIONS_YESNOCANCEL
-								);
-
-								if (res == MESSAGE_BOX_RESPONSE_YES)
-								{
-									sEditScene.scene->Save();
-									TravelToScene((Scene*)asset.instance);
-								}
-								else if (res == MESSAGE_BOX_RESPONSE_NO)
-								{
-									TravelToScene((Scene*)asset.instance);
-								}
-							}
-							else
-							{
-								TravelToScene((Scene*)asset.instance);
-							}
-						}
-						break;
+						case ASSET_TYPE_SCENE:
+							TryTravelToScene((Scene*)asset.instance);
+							break;
 					}
 				}
 			}
@@ -1452,6 +1464,7 @@ namespace panels
 	void GameViewport()
 	{
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, { 2, 2 });
+		ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0);
 
 		ImVec4 wndBorderCol = { 0.0f, 0.0f, 0.0f, 1.0f };
 		ImVec2 btnsSize = { 38.0f, 38.0f };
@@ -1504,7 +1517,54 @@ namespace panels
 
 			// draw framebuffer
 			gGroovyGuiRenderer->SetGroovyRenderState();
+
 			ImGui::Image(sGameViewportFrameBuffer->GetRendererID(0), wndSize);
+
+			if (sEditorSceneState == EDITOR_SCENE_STATE_EDIT)
+				if (ImGui::BeginDragDropTarget())
+				{
+					const ImGuiPayload* payload = ImGui::GetDragDropPayload();
+					AssetHandle asset = AssetManager::Get(*(AssetUUID*)payload->Data);
+
+					bool canAccept =
+						asset.type == ASSET_TYPE_SCENE ||
+						asset.type == ASSET_TYPE_MESH ||
+						asset.type == ASSET_TYPE_ACTOR_BLUEPRINT;
+
+					if (canAccept && ImGui::AcceptDragDropPayload("drag_and_drop_asset"))
+					{
+						switch (asset.type)
+						{
+							case ASSET_TYPE_SCENE:
+							{
+								TryTravelToScene((Scene*)asset.instance);
+							}
+							break;
+
+							case ASSET_TYPE_MESH:
+							{
+								MeshActor* meshActor = (MeshActor*)sEditScene.scene->Editor_AddActor(MeshActor::StaticClass(), nullptr);
+								meshActor->GetMesh()->SetMesh((Mesh*)asset.instance);
+								sEditScenePendingSave = true;
+							}
+							break;
+
+							case ASSET_TYPE_ACTOR_BLUEPRINT:
+							{
+								ActorBlueprint* bp = (ActorBlueprint*)asset.instance;
+								sEditScene.scene->Editor_AddActor(bp->GetActorClass(), bp);
+								sEditScenePendingSave = true;
+							}
+							break;
+						}
+
+						ImGui::SetWindowFocus();
+					}
+					
+
+					ImGui::EndDragDropTarget();
+				}
+
 			gGroovyGuiRenderer->SetImguiRenderState();
 
 			// on screen text
@@ -1512,7 +1572,7 @@ namespace panels
 			ImGui::SetCursorPosX(8);
 			ImGui::Text("Viewport %ix%i", sGameViewportFrameBuffer->GetSpecs().width, sGameViewportFrameBuffer->GetSpecs().height);
 
-			// play / pause / stop 
+			//// play / pause / stop 
 
 			ImVec2 btnsCursorPos = startCursorPos;
 			btnsCursorPos.y += 8;
@@ -1583,17 +1643,31 @@ namespace panels
 				// play , pause etc..
 				sEditorSceneState = newSceneState;
 			}
-
 		}
 		else
 		{
 			ImGui::NewLine();
 			ImGui::Text("No scene loaded");
+			ImGui::Image(0, ImGui::GetContentRegionAvail());
+			if (ImGui::BeginDragDropTarget())
+			{
+				const ImGuiPayload* payload = ImGui::GetDragDropPayload();
+				AssetHandle asset = AssetManager::Get(*(AssetUUID*)payload->Data);
+
+				if (asset.type == ASSET_TYPE_SCENE && ImGui::AcceptDragDropPayload("drag_and_drop_asset"))
+				{
+					TryTravelToScene((Scene*)asset.instance);
+					ImGui::SetWindowFocus();
+				}
+
+				ImGui::EndDragDropTarget();
+			}
+			
 		}
 
 		ImGui::End();
 
-		ImGui::PopStyleVar();
+		ImGui::PopStyleVar(2);
 		ImGui::PopStyleColor();
 	}
 }
@@ -1769,11 +1843,10 @@ void editor::Render()
 			if (ImGui::MenuItem("Save"))
 			{
 				if (sEditScene.scene)
-				{
 					sEditScene.scene->Save();
-					sEditScenePendingSave = false;
-					AssetManager::SaveRegistry();
-				}
+
+				sEditScenePendingSave = false;
+				AssetManager::SaveRegistry();
 			}
 
 			ImGui::EndMenu();
@@ -1867,7 +1940,7 @@ void editor::OnBPUpdated(ActorBlueprint* bp)
 		sEditScene.selectedSubobject = nullptr;
 }
 
-const char* editor::utils::AssetTypeToStr(EAssetType type)
+const char* editor::AssetTypeToStr(EAssetType type)
 {
 	switch (type)
 	{

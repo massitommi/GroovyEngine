@@ -19,11 +19,11 @@ workspace "GroovyEngine"
     rtti "Off"
 
     filter "configurations:Debug_Editor or Development_Editor"
-        debugargs { "test/TestProject/TestProj.groovyproj" }
+        debugargs "test/TestProject/TestProj.groovyproj"
     filter {}
 
     filter "configurations:Debug_Game or Shipping"
-        debugargs { "../Editor/test/TestProject/TestProj.groovyproj" }
+        debugargs "../Editor/test/TestProject/TestProj.groovyproj"
     filter {}
 
     filter "configurations:Debug_Editor or Development_Editor"
@@ -34,7 +34,12 @@ workspace "GroovyEngine"
         defines "BUILD_DEBUG"
     filter {}
 
+    filter "configurations:Development_Editor"
+        optimize "Speed"
+    filter {}
+
     filter "configurations:Shipping"
+        optimize "Speed"
         defines "BUILD_SHIPPING"
     filter {}
 

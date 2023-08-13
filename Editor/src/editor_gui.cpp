@@ -49,7 +49,7 @@ bool editorGui::AssetRef(const char* label, EAssetType type, void* data, bool al
 		ImGui::PushStyleColor(ImGuiCol_Text, { 1.0f, 0.0f, 0.0f, 1.0f });
 
 
-	bool click = false;
+	bool edited = false;
 
 	if (ImGui::BeginCombo(label, current.c_str()))
 	{
@@ -67,7 +67,7 @@ bool editorGui::AssetRef(const char* label, EAssetType type, void* data, bool al
 			if (*assetPtr != nullptr)
 			{
 				*assetPtr = nullptr;
-				click = true;
+				edited = true;
 			}
 		}
 
@@ -81,17 +81,32 @@ bool editorGui::AssetRef(const char* label, EAssetType type, void* data, bool al
 				if (*assetPtr != handle.instance)
 				{
 					*assetPtr = handle.instance;
-					click = true;
+					edited = true;
 				}
 			}
 		}
 		ImGui::EndCombo();
 	}
+	if (ImGui::IsItemHovered())
+		ImGui::SetTooltip("%s", editor::AssetTypeToStr(type));
+
+	if (ImGui::BeginDragDropTarget())
+	{
+		const ImGuiPayload* payload = ImGui::GetDragDropPayload();
+		AssetHandle handle = AssetManager::Get(*(AssetUUID*)payload->Data);
+
+		if (handle.type == type && ImGui::AcceptDragDropPayload("drag_and_drop_asset"))
+		{
+			*assetPtr = handle.instance;
+			edited = true;
+		}
+		ImGui::EndDragDropTarget();
+	}
 
 	if (!validAsset)
 		ImGui::PopStyleColor();
 
-	return click;
+	return edited;
 }
 
 bool editorGui::Transform(const char* label, void* data)
