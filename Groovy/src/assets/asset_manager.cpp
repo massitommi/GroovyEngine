@@ -428,6 +428,9 @@ void AssetManager::Editor_Remove(AssetHandle handle)
 
 	sAssets.erase(std::find_if(sAssets.begin(), sAssets.end(), [=](AssetHandle& h) { return h.uuid == handle.uuid; }));
 
+	for (const AssetHandle& a : sAssets)
+		a.instance->Editor_FixDependencyDeletion(handle);
+
 	delete handle.instance;
 
 	SaveRegistry();

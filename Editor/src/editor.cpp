@@ -434,17 +434,10 @@ namespace assetPopups
 						break;
 					}
 
-					// remove from registry
 					AssetManager::Editor_Remove(sAssetActionHandle);
 
-					// fix dependencies
-					for (const AssetHandle& h : AssetManager::GetAssets())
-						h.instance->Editor_FixDependencyDeletion(sAssetActionHandle);
-
-					// delete asset file
 					FileSystem::DeleteFile((gProj.GetAssetsPath() / sAssetActionHandle.name).string());
 
-					// close popup
 					popupShouldClose = true;
 				}
 
