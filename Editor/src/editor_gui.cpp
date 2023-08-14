@@ -13,7 +13,9 @@ bool editorGui::AssetRef(const char* label, EAssetType type, void* data, bool al
 	std::vector<AssetHandle> assets;
 	// filter stuff out
 
-	if ((type == ASSET_TYPE_BLUEPRINT || type == ASSET_TYPE_ACTOR_BLUEPRINT) && classFilter)
+	bool isBlueprint = type == ASSET_TYPE_BLUEPRINT || type == ASSET_TYPE_ACTOR_BLUEPRINT;
+
+	if (isBlueprint && classFilter)
 	{
 		for (const AssetHandle& handle : AssetManager::GetAssets())
 		{
@@ -95,7 +97,22 @@ bool editorGui::AssetRef(const char* label, EAssetType type, void* data, bool al
 		const ImGuiPayload* payload = ImGui::GetDragDropPayload();
 		AssetHandle handle = AssetManager::Get(*(AssetUUID*)payload->Data);
 
-		if (handle.type == type && ImGui::AcceptDragDropPayload("drag_and_drop_asset"))
+		bool canAccept = handle.type == type;
+
+		if (isBlueprint)
+		{
+			canAccept = handle.type == ASSET_TYPE_BLUEPRINT || handle.type == ASSET_TYPE_ACTOR_BLUEPRINT;
+
+			Blueprint* bp = (Blueprint*)handle.instance;
+
+			if (classFilter)
+			{
+				if (!GroovyClass_IsA(bp->GetClass(), classFilter))
+					canAccept = false;
+			}
+		}
+
+		if (canAccept && ImGui::AcceptDragDropPayload("drag_and_drop_asset"))
 		{
 			*assetPtr = handle.instance;
 			edited = true;

@@ -65,6 +65,8 @@ private:
 	float speed = 5.0f;
 
 	std::vector<Texture*> assetRefTest;
+
+	BlueprintRef<GroovyObject> bpFilter;
 	
 	float counter;
 };
@@ -73,6 +75,7 @@ GROOVY_CLASS_IMPL(TestActor)
 	GROOVY_REFLECT(speed)
 	GROOVY_REFLECT_EX(counter, PROPERTY_FLAG_NO_SERIALIZE)
 	GROOVY_REFLECT(assetRefTest)
+	GROOVY_REFLECT(bpFilter)
 GROOVY_CLASS_END()
 
 CLASS_LIST_BEGIN(GAME_CLASSES)

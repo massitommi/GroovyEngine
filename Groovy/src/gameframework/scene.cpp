@@ -132,13 +132,7 @@ bool Scene::Editor_FixDependencyDeletion(AssetHandle assetToBeDeleted)
 		}
 	}
 
-	if (removeList.size() || refs)
-	{
-		Save();
-		return true;
-	}
-	
-	return false;
+	return removeList.size() || refs;
 }
 
 Actor* Scene::Editor_AddActor(GroovyClass* actorClass, ActorBlueprint* bp)
