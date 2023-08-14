@@ -46,6 +46,9 @@ bool editorGui::AssetRef(const char* label, EAssetType type, void* data, bool al
 
 	if (*assetPtr == nullptr)
 		validAsset = allowNull;
+	else if (*assetPtr && isBlueprint && classFilter)
+		if (!GroovyClass_IsA(((Blueprint*)(*assetPtr))->GetClass(), classFilter))
+			validAsset = false;
 
 	if (!validAsset)
 		ImGui::PushStyleColor(ImGuiCol_Text, { 1.0f, 0.0f, 0.0f, 1.0f });
@@ -89,8 +92,13 @@ bool editorGui::AssetRef(const char* label, EAssetType type, void* data, bool al
 		}
 		ImGui::EndCombo();
 	}
+
+
 	if (ImGui::IsItemHovered())
-		ImGui::SetTooltip("%s", editor::AssetTypeToStr(type));
+		if (isBlueprint)
+			ImGui::SetTooltip("%s / %s", editor::AssetTypeToStr(ASSET_TYPE_BLUEPRINT), editor::AssetTypeToStr(ASSET_TYPE_ACTOR_BLUEPRINT));
+		else
+			ImGui::SetTooltip("%s", editor::AssetTypeToStr(type));
 
 	if (ImGui::BeginDragDropTarget())
 	{
