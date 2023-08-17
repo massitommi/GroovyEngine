@@ -250,7 +250,7 @@ public:
 	inline size_t size() const { return mSize; }
 	inline size_t used() const { return mCurrentPtr - mData; }
 	inline byte* current() { return mCurrentPtr; }
-	inline const byte* current() const { mCurrentPtr; }
+	inline const byte* current() const { return mCurrentPtr; }
 
 	template<typename T>
 	inline const T* current() const
