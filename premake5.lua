@@ -18,13 +18,7 @@ workspace "GroovyEngine"
 
     rtti "Off"
 
-    filter "configurations:Debug_Editor or Development_Editor"
-        debugargs "test/TestProject/TestProj.groovyproj"
-    filter {}
-
-    filter "configurations:Debug_Game or Shipping"
-        debugargs "../Editor/test/TestProject/TestProj.groovyproj"
-    filter {}
+    debugargs "../DemoProject/DemoProject.groovyproj"
 
     filter "configurations:Debug_Editor or Development_Editor"
         defines "WITH_EDITOR"

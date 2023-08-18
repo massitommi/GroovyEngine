@@ -25,6 +25,13 @@ void MeshComponent::Uninitialize()
 	GetOwner()->GetScene()->RemoveFromRenderQueue(this);
 }
 
+void MeshComponent::SetMaterialOverride(uint32 index, Material* mat)
+{
+	check(index < mMaterialOverrides.size());
+
+	mMaterialOverrides[index] = mat;
+}
+
 void MeshComponent::SetMesh(Mesh* mesh)
 {
 	if (mesh != mMesh)

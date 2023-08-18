@@ -100,9 +100,6 @@ extern double gDeltaTime;
 static FrameBuffer* sGameViewportFrameBuffer = nullptr;
 static bool sGameViewportFocused = false;
 static bool sGameVieportHovered = false;
-static ImVec2 sGameViewportSize = { 100, 100 };
-static ImVec2 sGameViewportStart = { 0, 0 };
-static ImVec2 sMousePos = { 0.0f, 0.0f };
 static std::string sEditSceneName;
 static bool sEditScenePendingSave = false;
 static EditorCamera sEditorCamera;
@@ -1225,6 +1222,7 @@ namespace panels
 			if (ImGui::Button("Rename"))
 			{
 				sActorToRename->Editor_NameRef() = sActorRename;
+				sEditScenePendingSave = true;
 				ImGui::CloseCurrentPopup();
 			}
 
@@ -1334,6 +1332,9 @@ namespace panels
 
 					if (ImGui::Selectable(name.c_str(), sCurrentScene->selectedSubobject == component))
 						sCurrentScene->selectedSubobject = component;
+					
+					if (ImGui::IsItemHovered())
+						ImGui::SetTooltip(component->GetClass()->name.c_str());
 
 					if (!isInherited && ImGui::BeginPopupContextItem(name.c_str(), ImGuiPopupFlags_MouseButtonRight))
 					{
@@ -1476,8 +1477,6 @@ namespace panels
 		ImVec2 startCursorPos = ImGui::GetCursorPos();
 
 		ImVec2 wndSize = ImGui::GetContentRegionAvail();
-		sGameViewportSize = wndSize;
-		sGameViewportStart = ImGui::GetWindowPos();
 
 		if (sCurrentScene->scene)
 		{
@@ -1631,11 +1630,34 @@ namespace panels
 				{
 					Stop();
 					gWindow->EnableCursor(true);
+					Input::Editor_BlockInput(false);
 				}
 
 				// play , pause etc..
 				sEditorSceneState = newSceneState;
 			}
+
+			if (sEditorSceneState == EDITOR_SCENE_STATE_PLAY)
+			{
+				if (!gWindow->IsCursorEnabled())
+				{
+					if (ImGui::IsKeyPressed(ImGuiKey_F1) && ImGui::IsKeyDown(ImGuiKey_LeftShift))
+					{
+						gWindow->EnableCursor(true);
+						Input::Editor_BlockInput(true);
+					}
+				}
+				else
+				{
+					if (ImGui::IsKeyPressed(ImGuiKey_MouseLeft) && ImGui::IsWindowHovered())
+					{
+						gWindow->SetCursorPos(wndSize.x / 2, wndSize.y / 2);
+						gWindow->EnableCursor(false);
+						Input::Editor_BlockInput(false);
+					}
+				}
+			}
+
 		}
 		else
 		{
@@ -1677,8 +1699,8 @@ void editor::Init()
 	gameViewportSpec.colorAttachments = { COLOR_FORMAT_R8G8B8A8_UNORM };
 	gameViewportSpec.hasDepthAttachment = true;
 	gameViewportSpec.swapchainTarget = false;
-	gameViewportSpec.width = sGameViewportSize.x = 100;
-	gameViewportSpec.height = sGameViewportSize.y = 100;
+	gameViewportSpec.width = 100;
+	gameViewportSpec.height = 100;
 
 	sGameViewportFrameBuffer = FrameBuffer::Create(gameViewportSpec);
 
@@ -1719,11 +1741,16 @@ void editor::Init()
 
 void editor::Update(float deltaTime)
 {
+	if (!sEditScene.scene)
+		return;
+
+	// tick scene
 	if (sEditorSceneState == EDITOR_SCENE_STATE_PLAY)
 	{
 		sPlayScene.scene->Tick(deltaTime);
 	}
 
+	// toggle between wireframe and solid fill mode
 	if (ImGui::IsKeyPressed(ImGuiKey_F3))
 	{
 		RasterizerState rasterState = RendererAPI::Get().GetRasterizerState();
@@ -1742,14 +1769,7 @@ void editor::Update(float deltaTime)
 		RendererAPI::Get().SetRasterizerState(rasterState);
 	}
 
-	int32 mouseDelta[2];
-	Input::GetRawMouseDelta(mouseDelta);
-	ImVec2 currentMousePos;
-	uint32 mousePos[2];
-	gWindow->GetCursorPos(mousePos);
-	currentMousePos.x = (float)mousePos[0];
-	currentMousePos.y = (float)mousePos[1];
-
+	// update editor camera
 	if (sEditorSceneState == EDITOR_SCENE_STATE_EDIT && sGameViewportFocused && sGameVieportHovered)
 	{
 		if (ImGui::IsKeyPressed(ImGuiKey_MouseRight))
@@ -1767,8 +1787,10 @@ void editor::Update(float deltaTime)
 			{
 				// camera rotation
 
-				sEditorCamera.rotation.y += (float)mouseDelta[0] * gEditorSettings.mCameraRotationSpeed;
-				sEditorCamera.rotation.x += (float)mouseDelta[1] * gEditorSettings.mCameraRotationSpeed;
+				MouseDelta mouseDelta = Input::GetMouseDelta();
+
+				sEditorCamera.rotation.y += mouseDelta.x * gEditorSettings.mCameraRotationSpeed;
+				sEditorCamera.rotation.x += mouseDelta.y * gEditorSettings.mCameraRotationSpeed;
 
 				// camera location
 
@@ -1804,7 +1826,6 @@ void editor::Update(float deltaTime)
 			}
 		}
 	}
-	sMousePos = currentMousePos;
 }
 
 void editor::Render()

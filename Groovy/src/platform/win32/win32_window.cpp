@@ -158,7 +158,7 @@ static LRESULT CALLBACK GroovyWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARA
 }
 
 Window::Window(const WindowProps& props)
-	: mProps(props), mHandle(nullptr), mWndCloseCallback(nullptr)
+	: mProps(props), mHandle(nullptr), mWndCloseCallback(nullptr), mCursorEnabled(true)
 {
 }
 
@@ -243,6 +243,8 @@ void Window::EnableCursor(bool enable)
 
 		while (::ShowCursor(false) >= 0);
 	}
+
+	mCursorEnabled = enable;
 }
 
 void Window::SetCursorPos(uint32 x, uint32 y)

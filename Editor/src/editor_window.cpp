@@ -436,6 +436,9 @@ void ActorBlueprintEditorWindow::RenderContent()
 				if (ImGui::Selectable(name.c_str(), mSelected == component))
 					mSelected = component;
 
+				if (ImGui::IsItemHovered())
+					ImGui::SetTooltip(component->GetClass()->name.c_str());
+
 				if (!isInherited && ImGui::BeginPopupContextItem(name.c_str(), ImGuiPopupFlags_MouseButtonRight))
 				{
 					if (ImGui::Selectable("Rename"))
@@ -712,4 +715,5 @@ void EditorSettingsWindow::RenderContent()
 void HelpWindow::RenderContent()
 {
 	ImGui::Text("- Press F3 to toggle wireframe view");
+	ImGui::Text("- Press Shift + F1 to enable cursor during PIE (Play In Editor)");
 }

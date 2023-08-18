@@ -17,13 +17,12 @@ void Spectator::Tick(float deltaTime)
 {
 	// Rotate camera
 
-	int32 mouseDelta[2];
-	Input::GetRawMouseDelta(mouseDelta);
+	MouseDelta mouseDelta = Input::GetMouseDelta();
 
 	Vec3 rotation = GetRotation();
 
-	rotation.y += (float)mouseDelta[0] * mCameraRotationSpeed;
-	rotation.x += (float)mouseDelta[1] * mCameraRotationSpeed;
+	rotation.y += mouseDelta.x * mCameraRotationSpeed;
+	rotation.x += mouseDelta.y * mCameraRotationSpeed;
 
 	SetRotation(rotation);
 

@@ -41,6 +41,7 @@ public:
 
 	inline const WindowProps& GetProps() const { return mProps; }
 	inline void* GetNativeHandle() const { return mHandle; }
+	inline bool IsCursorEnabled() const { return mCursorEnabled; }
 
 	inline void SubmitToWndResizeCallback(WindowEvent_OnResize proc) { mWndResizeCallabacks.push_back(proc); }
 	inline void SubmitToWndFilesDropCallbacks(WindowEvent_OnFilesDropped proc) { mWndFilesDropCallbacks.push_back(proc); }
@@ -51,6 +52,7 @@ public:
 private:
 	WindowProps mProps;
 	void* mHandle;
+	bool mCursorEnabled;
 
 	// window events
 	std::vector<WindowEvent_OnResize> mWndResizeCallabacks;

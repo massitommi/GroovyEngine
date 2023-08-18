@@ -16,6 +16,9 @@ public:
 	virtual void Initialize() override;
 	virtual void Uninitialize() override;
 
+	inline const std::vector<Material*> GetMaterialOverrides() const { return mMaterialOverrides; }
+	void SetMaterialOverride(uint32 index, Material* mat);
+
 #if WITH_EDITOR
 	void Editor_OnPropertyChanged(const GroovyProperty* prop) override;
 #endif

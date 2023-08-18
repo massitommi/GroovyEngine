@@ -261,7 +261,9 @@ bool editorGui::Property(const GroovyProperty& prop, void* propData)
 				for (uint32 i = 0; i < dataArrayCount; i++)
 				{
 					std::string labelName = "[" + std::to_string(i) + "]";
-					changed = PropertyInput(labelName, prop.type, (byte*)dataData + (propSize * i), readonly, lblColWidth, prop.param1, prop.param2);
+					if (PropertyInput(labelName, prop.type, (byte*)dataData + (propSize * i), readonly, lblColWidth, prop.param1, prop.param2))
+						changed = true;
+
 					ImGui::SameLine();
 					ImGui::PushID(i);
 					
@@ -272,12 +274,14 @@ bool editorGui::Property(const GroovyProperty& prop, void* propData)
 					{
 						postAction.action = REMOVE_AT;
 						postAction.param = i;
+						changed = true;
 					}
 					ImGui::SameLine();
 					if (ImGui::Button("+"))
 					{
 						postAction.action = INSERT_AT;
 						postAction.param = i;
+						changed = true;
 					}
 
 					if (readonly || cantResize)
@@ -328,7 +332,8 @@ bool editorGui::Property(const GroovyProperty& prop, void* propData)
 				for (uint32 i = 0; i < prop.arrayCount; i++)
 				{
 					std::string labelName = "[" + std::to_string(i) + "]";
-					changed = PropertyInput(labelName, prop.type, (byte*)propData + (propSize * i), readonly, lblColWidth, prop.param1, prop.param2);
+					if (PropertyInput(labelName, prop.type, (byte*)propData + (propSize * i), readonly, lblColWidth, prop.param1, prop.param2))
+						changed = true;
 				}
 			}
 		}

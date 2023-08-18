@@ -42,6 +42,11 @@ enum EKeyCode
 	KeyCodesEnd
 };
 
+struct MouseDelta
+{
+	float x, y;
+};
+
 class Input
 {
 public:
@@ -56,10 +61,16 @@ public:
 	// for internal use by the engine
 	static void OnMouseMove(int32 x, int32 y);
 
+#if WITH_EDITOR
+	static void Editor_BlockInput(bool block);
+	static bool Editor_IsInputBlocked();
+#endif
+
 	// Application API
 
 	static bool IsKeyDown(EKeyCode key);
 	static bool IsKeyPressed(EKeyCode key);
 	static bool IsKeyReleased(EKeyCode key);
 	static void GetRawMouseDelta(int32* xy);
+	static MouseDelta GetMouseDelta();
 };

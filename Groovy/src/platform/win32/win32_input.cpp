@@ -60,11 +60,21 @@ void Input::OnMouseMove(int32 x, int32 y)
 	sMouseDelta[1] += y;
 }
 
-void Input::GetRawMouseDelta(int32* xy)
+#if WITH_EDITOR
+
+static bool sInputBlocked = false;
+
+void Input::Editor_BlockInput(bool block)
 {
-	xy[0] = sMouseDelta[0];
-	xy[1] = sMouseDelta[1];
+	sInputBlocked = block;
 }
+
+bool Input::Editor_IsInputBlocked()
+{
+	return sInputBlocked;
+}
+
+#endif
 
 void Input::Clear()
 {
@@ -91,11 +101,21 @@ void Input::Shutdown()
 
 bool Input::IsKeyDown(EKeyCode key)
 {
+#if WITH_EDITOR
+	if (sInputBlocked)
+		return false;
+#endif
+
 	return sKeyboardState[sPlatformKeyCodes[key]];
 }
 
 bool Input::IsKeyPressed(EKeyCode key)
 {
+#if WITH_EDITOR
+	if (sInputBlocked)
+		return false;
+#endif
+
 	bool currentlyPressed = sKeyboardState[sPlatformKeyCodes[key]];
 	bool wasntPressedLastFrame = !sPrevKeyboardState[sPlatformKeyCodes[key]];
 	return currentlyPressed && wasntPressedLastFrame;
@@ -103,9 +123,39 @@ bool Input::IsKeyPressed(EKeyCode key)
 
 bool Input::IsKeyReleased(EKeyCode key)
 {
+#if WITH_EDITOR
+	if (sInputBlocked)
+		return false;
+#endif
+
 	bool wasPressedLastFrame = sPrevKeyboardState[sPlatformKeyCodes[key]];
 	bool currentlyNotPressed = !sKeyboardState[sPlatformKeyCodes[key]];
 	return wasPressedLastFrame && currentlyNotPressed;
+}
+
+void Input::GetRawMouseDelta(int32* xy)
+{
+#if WITH_EDITOR
+	if (sInputBlocked)
+	{
+		xy[0] = xy[1] = 0;
+		return;
+	}
+#endif
+
+	xy[0] = sMouseDelta[0];
+	xy[1] = sMouseDelta[1];
+}
+
+MouseDelta Input::GetMouseDelta()
+{
+#if WITH_EDITOR
+	if (sInputBlocked)
+		return { 0.0f , 0.0f };
+#endif
+
+	return { (float)sMouseDelta[0], (float)sMouseDelta[1] };
+
 }
 
 #endif
