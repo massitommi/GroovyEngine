@@ -86,6 +86,7 @@ Actor* Scene::SpawnActor(GroovyClass* actorClass, ActorBlueprint* bp)
 	Actor* newActor = ConstructActor(actorClass, bp);
 	newActor->InitializeComponents();
 	newActor->BeginPlay();
+	newActor->BeginPlayComponents();
 
 	if (newActor->mShouldTick)
 		mActorTickQueue.push_back(newActor);
