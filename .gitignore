@@ -356,4 +356,4 @@ MigrationBackup/
 Editor/settings/settings
 bin
 bin-int
-*.scproj
+*.csproj
