@@ -59,14 +59,14 @@ void D3D11FrameBuffer::Resize(uint32 width, uint32 height)
 void D3D11FrameBuffer::ClearColorAttachment(uint32 colorIndex, ClearColor clearColor)
 {
 	check(colorIndex <= mRenderTargets.size());
-	d3dUtils::gContext->ClearRenderTargetView(mRenderTargets[colorIndex], &clearColor.r);
+	d3dUtils::gContext->ClearRenderTargetView(mRenderTargets[colorIndex], (float*)&clearColor);
 }
 
 void D3D11FrameBuffer::ClearColorAttachments(ClearColor clearColor)
 {
 	for (auto renderTarget : mRenderTargets)
 	{
-		d3dUtils::gContext->ClearRenderTargetView(renderTarget, &clearColor.r);
+		d3dUtils::gContext->ClearRenderTargetView(renderTarget, (float*)&clearColor);
 	}
 }
 

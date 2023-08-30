@@ -1,3 +1,5 @@
+#include "editor.h"
+
 #include "asset_importer.h"
 #include "platform/filesystem.h"
 #include "platform/messagebox.h"
@@ -26,8 +28,6 @@ const char* MESH_IMPORTABLE_EXT[] =
 {
     ".obj"
 };
-
-extern GroovyProject gProj;
 
 EAssetType AssetImporter::GetTypeFromFilename(const std::string& filename)
 {

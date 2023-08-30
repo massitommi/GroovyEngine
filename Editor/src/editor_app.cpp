@@ -1,4 +1,5 @@
-#include "engine/application.h"
+#include "editor.h"
+#include "editor_app.h"
 #include <Windows.h>
 #include "vendor/imgui/imgui.h"
 #include "vendor/imgui/backends/imgui_impl_win32.h"
@@ -11,18 +12,18 @@
 
 IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
-LRESULT Win32_EditorWndProcCallback(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
-{
-	return ImGui_ImplWin32_WndProcHandler(hWnd, uMsg, wParam, lParam);
-}
+extern CORE_API LRESULT(*EditorWndProcCallback)(HWND, UINT, WPARAM, LPARAM);
 
 ImGuiRenderer* gGroovyGuiRenderer = nullptr;
 
-extern FrameBuffer* gScreenFrameBuffer;
-extern Shader* DEFAULT_SHADER;
+extern CORE_API Shader* DEFAULT_SHADER;
 
-void Application::Init()
+Application* GetApplication() { return new EditorApplication(); }
+
+void EditorApplication::Init()
 {
+	EditorWndProcCallback = ImGui_ImplWin32_WndProcHandler;
+
 	ImGui::CreateContext();
 	ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 	ImGui::StyleColorsDark();
@@ -33,12 +34,12 @@ void Application::Init()
 	editor::Init();
 }
 
-void Application::Update(float deltaTime)
+void EditorApplication::Update(float deltaTime)
 {
 	editor::Update(deltaTime);
 }
 
-void Application::Render()
+void EditorApplication::Render()
 {
 	gGroovyGuiRenderer->NewFrame();
 	
@@ -53,7 +54,7 @@ void Application::Render()
 	gGroovyGuiRenderer->RenderDrawData();
 }
 
-void Application::Shutdown()
+void EditorApplication::Shutdown()
 {
 	editor::Shutdown();
 
@@ -64,7 +65,7 @@ void Application::Shutdown()
 	ImGui::DestroyContext();
 }
 
-void Application::Travel(Scene* scene)
+void EditorApplication::Travel(Scene* scene)
 {
 	SysMessageBox::Show_Warning("Can't travel in the editor", "Traveling in the editor isn't currently supported");
 }

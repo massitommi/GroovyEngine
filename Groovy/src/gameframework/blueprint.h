@@ -4,13 +4,13 @@
 #include "classes/object_serializer.h"
 #include "gameframework/actor_serializer.h"
 
-class Blueprint : public AssetInstance
+class CORE_API Blueprint : public AssetInstance
 {
 public:
     virtual GroovyClass* GetClass() const = 0;
 };
 
-class ObjectBlueprint : public Blueprint
+class CORE_API ObjectBlueprint : public Blueprint
 {
 public:
     ObjectBlueprint();
@@ -53,7 +53,7 @@ private:
     bool mLoaded;
 };
 
-class ActorBlueprint : public Blueprint
+class CORE_API ActorBlueprint : public Blueprint
 {
 public:
     ActorBlueprint();

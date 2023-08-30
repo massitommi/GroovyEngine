@@ -1,6 +1,6 @@
 #pragma once
 
-#include <stdlib.h>
+#include "coreminimal.h"
 
 #if _MSC_VER
 	#define DEBUG_BREAK() __debugbreak()
@@ -32,7 +32,7 @@
 	#define GET_CURRENT_PROC() GVY_EXPAND_MACRO(__FUNCTION__)
 #endif
 
-void DisplayAssertError(const char* condition, const char* file, int line, const char* proc, const char* msg, ...);
+CORE_API void DisplayAssertError(const char* condition, const char* file, int line, const char* proc, const char* msg, ...);
 
 #define ASSERT_SHOW_MSG(Condition, Msg, ...) DisplayAssertError(#Condition, __FILE__, __LINE__, GET_CURRENT_PROC(), Msg, __VA_ARGS__ )
 

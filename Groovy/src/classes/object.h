@@ -3,7 +3,7 @@
 #include "class.h"
 
 GROOVY_CLASS_DECL(GroovyObject)
-class GroovyObject
+class CORE_API GroovyObject
 {
 public:
 	GroovyObject();

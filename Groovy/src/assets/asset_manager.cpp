@@ -27,10 +27,10 @@ static AssetUUID GenUUID()
 }
 
 extern GroovyProject gProj;
-Texture* DEFAULT_TEXTURE = nullptr;
-Shader* DEFAULT_SHADER = nullptr;
-Material* DEFAULT_MATERIAL = nullptr;
-Mesh* DEFAULT_CUBE = nullptr;
+CORE_API Texture* DEFAULT_TEXTURE = nullptr;
+CORE_API Shader* DEFAULT_SHADER = nullptr;
+CORE_API Material* DEFAULT_MATERIAL = nullptr;
+CORE_API Mesh* DEFAULT_CUBE = nullptr;
 
 static AssetInstance* InstantiateAsset(const AssetHandle& handle)
 {
@@ -79,15 +79,15 @@ void AssetManager::Init()
 		}
 		// default shader
 		{
-			std::string shaderFile = "default_shader";
+			std::string shaderFile;
 			switch (RendererAPI::GetAPI())
 			{
 				case RENDERER_API_D3D11:
-					shaderFile += ".hlsl";
+					shaderFile = "default_shader.hlsl";
 					break;
 			}
 
-			DEFAULT_SHADER = AssetLoader::LoadShader((gProj.GetAssetsPath() / "default" / shaderFile).string());
+			DEFAULT_SHADER = AssetLoader::LoadShader((std::filesystem::path("shaders") / shaderFile).string());
 		}
 		// default material
 		{

@@ -280,11 +280,11 @@ struct PropertyPack
 	DynamicBuffer data;
 };
 
-size_t GroovyProperty_GetSize(EPropertyType type);
-DynamicArrayPtr GroovyProperty_GetDynamicArrayPtr(EPropertyType type);
+CORE_API size_t GroovyProperty_GetSize(EPropertyType type);
+CORE_API DynamicArrayPtr GroovyProperty_GetDynamicArrayPtr(EPropertyType type);
 
-GroovyObject* GroovyClass_DynamicCast(GroovyObject* obj, const GroovyClass* gClass);
-bool GroovyClass_IsA(const GroovyClass* c1, const GroovyClass* c2);
+CORE_API GroovyObject* GroovyClass_DynamicCast(GroovyObject* obj, const GroovyClass* gClass);
+CORE_API bool GroovyClass_IsA(const GroovyClass* c1, const GroovyClass* c2);
 
 /*
 	How to create a groovy class:

@@ -1,5 +1,5 @@
 project "Game"
-    kind "StaticLib"
+    kind "SharedLib"
     language "C++"
     cppdialect "C++17"
 
@@ -13,4 +13,9 @@ project "Game"
     {
         "src",
         "%{wks.location}/Groovy/src"
+    }
+
+    links 
+    {
+        "Groovy"
     }

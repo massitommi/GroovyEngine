@@ -3,7 +3,7 @@
 #include "class.h"
 #include <map>
 
-class ClassDB
+class CORE_API ClassDB
 {
 public:
 	ClassDB();

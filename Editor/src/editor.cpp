@@ -1,3 +1,5 @@
+#include "editor.h"
+
 #include "engine/application.h"
 
 #include "vendor/imgui/imgui.h"
@@ -5,7 +7,6 @@
 #include "vendor/imgui/backends/imgui_impl_dx11.h"
 #include "vendor/imgui/misc/cpp/imgui_stdlib.h"
 
-#include "editor.h"
 #include "editor_window.h"
 
 #include "imgui_renderer/imgui_renderer.h"
@@ -88,14 +89,6 @@ struct EditorCamera
 	Vec3 location = { 0.0f, 0.0f, -3.0f };
 	Vec3 rotation = { 0.0f, 0.0f, 0.0f };
 };
-
-extern ClearColor gScreenClearColor;
-extern Window* gWindow;
-extern GroovyProject gProj;
-extern std::vector<GroovyClass*> ENGINE_CLASSES;
-extern std::vector<GroovyClass*> GAME_CLASSES;
-extern ClassDB gClassDB;
-extern double gDeltaTime;
 
 static FrameBuffer* sGameViewportFrameBuffer = nullptr;
 static bool sGameViewportFocused = false;

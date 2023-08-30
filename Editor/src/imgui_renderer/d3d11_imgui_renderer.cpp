@@ -1,3 +1,5 @@
+#include "editor.h"
+
 #include "imgui_renderer.h"
 
 #include "vendor/imgui/imgui.h"
@@ -6,8 +8,6 @@
 
 #include "platform/window.h"
 #include "renderer/api/d3d11/d3d11_utils.h"
-
-extern Window* gWindow;
 
 static ID3D11BlendState* imguiBlendState;
 static float imguiBlendFactor[4];

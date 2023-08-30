@@ -97,7 +97,10 @@ void ActorSerializer::DeserializeActorPack(BufferView& fileData, ActorPack& outP
 	GroovyClass* actorClass = gClassDB[actorClassName];
 	
 	if (!actorClass || !GroovyClass_IsA(actorClass, Actor::StaticClass()))
+	{
 		fileData.advance(actorFileSize);
+		return;
+	}
 
 	outPack.actorClass = actorClass;
 	ObjectSerializer::DeserializePropertyPack(actorClass, fileData, outPack.actorProperties);
@@ -110,7 +113,10 @@ void ActorSerializer::DeserializeActorPack(BufferView& fileData, ActorPack& outP
 		GroovyClass* componentClass = gClassDB[componentClassName];
 
 		if (!componentClass || !GroovyClass_IsA(componentClass, ActorComponent::StaticClass()))
+		{
 			fileData.advance(componentSubfileSize);
+			continue;
+		}
 
 		ComponentPack& compPack = outPack.actorComponents.emplace_back();
 		compPack.componentClass = componentClass;

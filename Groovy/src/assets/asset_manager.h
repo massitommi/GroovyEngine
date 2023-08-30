@@ -3,7 +3,7 @@
 #include "asset.h"
 #include <map>
 
-class AssetManager
+class CORE_API AssetManager
 {
 public:
 	static void Init();

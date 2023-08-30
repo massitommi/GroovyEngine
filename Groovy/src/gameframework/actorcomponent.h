@@ -15,7 +15,7 @@ class Actor;
 class Scene;
 
 GROOVY_CLASS_DECL(ActorComponent)
-class ActorComponent : public GroovyObject
+class CORE_API ActorComponent : public GroovyObject
 {
 	GROOVY_CLASS_BODY(ActorComponent, GroovyObject)
 
@@ -44,7 +44,7 @@ private:
 };
 
 GROOVY_CLASS_DECL(SceneComponent)
-class SceneComponent : public ActorComponent
+class CORE_API SceneComponent : public ActorComponent
 {
 	GROOVY_CLASS_BODY(SceneComponent, ActorComponent)
 

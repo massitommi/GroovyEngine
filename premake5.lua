@@ -18,6 +18,11 @@ workspace "GroovyEngine"
 
     rtti "Off"
 
+    outputdir = "%{cfg.buildcfg}-%{cfg.system}-%{cfg.architecture}"
+
+    targetdir ("%{wks.location}/bin/" .. outputdir .. "/%{prj.name}")
+    objdir ("%{wks.location}/bin-int/" .. outputdir .. "/%{prj.name}")
+
     debugargs "../DemoProject/DemoProject.groovyproj"
 
     filter "configurations:Debug_Editor or Development_Editor"
@@ -41,3 +46,4 @@ include "Groovy"
 include "Editor"
 include "Sandbox"
 include "Game"
+include "Project"

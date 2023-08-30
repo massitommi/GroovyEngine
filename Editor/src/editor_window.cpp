@@ -380,7 +380,6 @@ void ActorBlueprintEditorWindow::RenderContent()
 				if (!mCanRenameOrAddComp)
 					ImGui::BeginDisabled();
 
-				extern ClassDB gClassDB;
 				for (const GroovyClass* gClass : gClassDB.GetClasses())
 				{
 					if (GroovyClass_IsA(gClass, ActorComponent::StaticClass()))
@@ -607,8 +606,6 @@ void ActorBlueprintEditorWindow::Save()
 	mBlueprint->Save();
 	AssetEditorWindow::Save();
 }
-
-extern GroovyProject gProj;
 
 ProjectSettingsWindow::ProjectSettingsWindow()
 	: EditorWindow()

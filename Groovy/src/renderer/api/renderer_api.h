@@ -33,7 +33,7 @@ struct RasterizerState
 	ERasterizerCullMode cullMode;
 };
 
-class RendererAPI
+class CORE_API RendererAPI
 {
 public:
 	virtual ~RendererAPI() = default;

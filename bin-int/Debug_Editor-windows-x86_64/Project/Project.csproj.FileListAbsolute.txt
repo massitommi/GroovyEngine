@@ -1,0 +1,8 @@
+C:\Dev\GroovyEngine\bin-int\Debug_Editor-windows-x86_64\Project\Project.csproj.AssemblyReference.cache
+C:\Dev\GroovyEngine\bin-int\Debug_Editor-windows-x86_64\Project\Project.csproj.CoreCompileInputs.cache
+C:\Dev\GroovyEngine\bin\Debug_Editor-windows-x86_64\Project\Project.exe
+C:\Dev\GroovyEngine\bin\Debug_Editor-windows-x86_64\Project\Project.pdb
+C:\Dev\GroovyEngine\bin-int\Debug_Editor-windows-x86_64\Project\Project.exe
+C:\Dev\GroovyEngine\bin-int\Debug_Editor-windows-x86_64\Project\Project.pdb
+C:\Dev\GroovyEngine\bin-int\Debug_Editor-windows-x86_64\Project\Project.forms.NewProject.resources
+C:\Dev\GroovyEngine\bin-int\Debug_Editor-windows-x86_64\Project\Project.csproj.GenerateResource.cache

@@ -13,7 +13,7 @@ typedef bool(*WindowEvent_OnClose)();
 typedef void(*WindowEvent_OnResize)(uint32, uint32);
 typedef void(*WindowEvent_OnFilesDropped)(const std::vector<std::string>&);
 
-class Window
+class CORE_API Window
 {
 public:
 	Window(const WindowProps& props);

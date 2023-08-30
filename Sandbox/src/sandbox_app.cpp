@@ -1,3 +1,4 @@
+#include "engine/engine.h"
 #include "engine/application.h"
 #include "gameframework/scene.h"
 #include "project/project.h"
@@ -8,10 +9,6 @@
 #include "gameframework/components/cameracomponent.h"
 #include "platform/input.h"
 #include "renderer/api/renderer_api.h"
-
-extern bool gEngineShouldRun;
-extern GroovyProject gProj;
-extern Window* gWindow;
 
 static Scene* sScene = nullptr;
 static float sAspectRatio = 0.0f;

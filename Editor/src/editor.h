@@ -1,7 +1,6 @@
 #pragma once
 
-#include "core/core.h"
-#include "classes/object.h"
+#include "engine/engine.h"
 
 namespace editorGui
 {

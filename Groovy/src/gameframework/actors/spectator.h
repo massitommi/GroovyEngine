@@ -3,7 +3,7 @@
 #include "gameframework/actor.h"
 
 GROOVY_CLASS_DECL(Spectator)
-class Spectator : public Actor
+class CORE_API Spectator : public Actor
 {
 	GROOVY_CLASS_BODY(Spectator, Actor)
 

@@ -4,7 +4,7 @@
 #include "actorcomponent.h"
 #include "blueprint.h"
 
-class Scene : public AssetInstance
+class CORE_API Scene : public AssetInstance
 {
 public:
 	Scene();

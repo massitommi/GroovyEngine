@@ -20,7 +20,7 @@ struct SubmeshData
 	uint32 indexCount;
 };
 
-class Mesh : public AssetInstance
+class CORE_API Mesh : public AssetInstance
 {
 	friend class Renderer;
 
@@ -68,7 +68,7 @@ private:
 };
 
 GROOVY_CLASS_DECL(MeshAssetFile)
-class MeshAssetFile : public GroovyObject
+class CORE_API MeshAssetFile : public GroovyObject
 {
 	GROOVY_CLASS_BODY(MeshAssetFile, GroovyObject)
 

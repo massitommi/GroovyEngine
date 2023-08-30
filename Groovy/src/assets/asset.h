@@ -36,7 +36,7 @@ struct AssetHandle
     class AssetInstance* instance = nullptr;
 };
 
-class AssetInstance
+class CORE_API AssetInstance
 {
 public:
     virtual ~AssetInstance() {}

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "generic.h"
+#include "core/api.h"
 
 #define VEC_TO_RAD(v) { math::DegToRad(v.x), math::DegToRad(v.y), math::DegToRad(v.z) }
 #define VEC_TO_XVEC(v) { v.x, v.y, v.z, 1.0f }
@@ -244,10 +245,10 @@ struct Transform
 
 namespace math
 {
-	Vec3 GetForwardVector(Vec3 rotation);
-	Vec3 GetRightVector(Vec3 rotation);
-	Vec3 GetUpVector(Vec3 rotation);
+	CORE_API Vec3 GetForwardVector(Vec3 rotation);
+	CORE_API Vec3 GetRightVector(Vec3 rotation);
+	CORE_API Vec3 GetUpVector(Vec3 rotation);
 
-	float Magnitude(Vec3 v);
-	Vec3 Normalize(Vec3 v);
+	CORE_API float Magnitude(Vec3 v);
+	CORE_API Vec3 Normalize(Vec3 v);
 }

@@ -1,7 +1,9 @@
 project "Groovy"
-    kind "StaticLib"
+    kind "SharedLib"
     language "C++"
     cppdialect "C++17"
+
+    defines "BUILD_GROOVY_CORE"
 
     files
     {
@@ -14,7 +16,7 @@ project "Groovy"
         "src"
     }
 
-    links
+    postbuildcommands
     {
-        "Game"
+        "{COPYDIR} %{cfg.buildtarget.directory}" .. " %{wks.location}bin/" .. outputdir .. "/Editor/"
     }

@@ -2,7 +2,7 @@
 
 #include "core/core.h"
 
-class VertexBuffer
+class CORE_API VertexBuffer
 {
 public:
 	virtual ~VertexBuffer() = default;
@@ -13,7 +13,7 @@ public:
 	static VertexBuffer* Create(size_t size, void* data, uint32 stride);
 };
 
-class IndexBuffer
+class CORE_API IndexBuffer
 {
 public:
 	virtual ~IndexBuffer() = default;
@@ -24,7 +24,7 @@ public:
 	static IndexBuffer* Create(size_t size, void* data);
 };
 
-class ConstBuffer
+class CORE_API ConstBuffer
 {
 public:
 	virtual ~ConstBuffer() = default;

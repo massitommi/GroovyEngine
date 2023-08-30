@@ -3,7 +3,7 @@
 #include "gameframework/actor.h"
 
 GROOVY_CLASS_DECL(MeshActor)
-class MeshActor : public Actor
+class CORE_API MeshActor : public Actor
 {
 	GROOVY_CLASS_BODY(MeshActor, Actor)
 public:

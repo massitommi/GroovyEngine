@@ -13,7 +13,7 @@ struct MaterialResource
 	uint32 slot;
 };
 
-class Material : public AssetInstance
+class CORE_API Material : public AssetInstance
 {
 	friend class Renderer;
 
@@ -60,7 +60,7 @@ private:
 };
 
 GROOVY_CLASS_DECL(MaterialAssetFile)
-class MaterialAssetFile : public GroovyObject
+class CORE_API MaterialAssetFile : public GroovyObject
 {
 	GROOVY_CLASS_BODY(MaterialAssetFile, GroovyObject)
 

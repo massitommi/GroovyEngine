@@ -4,7 +4,7 @@
 #include <filesystem>
 
 GROOVY_CLASS_DECL(GroovyProject)
-class GroovyProject : public GroovyObject
+class CORE_API GroovyProject : public GroovyObject
 {
 	GROOVY_CLASS_BODY(GroovyProject, GroovyObject)
 

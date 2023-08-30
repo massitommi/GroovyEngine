@@ -1,6 +1,8 @@
 #pragma once
 
-class TickTimer
+#include "core/api.h"
+
+class CORE_API TickTimer
 {
 public:
 

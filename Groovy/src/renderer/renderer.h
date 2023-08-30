@@ -6,7 +6,7 @@
 #define VIEW_PROJECTION_BUFFER_INDEX 0
 #define MODEL_BUFFER_INDEX 1
 
-class Renderer
+class CORE_API Renderer
 {
 public:
 	static void Init();

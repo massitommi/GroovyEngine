@@ -3,7 +3,7 @@
 #include "gameframework/actorcomponent.h"
 
 GROOVY_CLASS_DECL(CameraComponent)
-class CameraComponent : public SceneComponent
+class CORE_API CameraComponent : public SceneComponent
 {
 	GROOVY_CLASS_BODY(CameraComponent, SceneComponent)
 
