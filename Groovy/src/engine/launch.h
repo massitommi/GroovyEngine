@@ -21,8 +21,6 @@ void OnWndResizeCallback(uint32 width, uint32 height)
 	}
 }
 
-class Application* GetApplication();
-
 int32 GroovyEntryPoint(const char* args)
 {
 	if (!args[0])
@@ -94,9 +92,7 @@ int32 GroovyEntryPoint(const char* args)
 
 	gProj.Load(); // we need to initalize the assetManager in order to deserialize the startup scene
 
-	Application* app = GetApplication();
-
-	app->Init();
+	Application::Init();
 
 	gScreenFrameBuffer->Bind();
 	Renderer::Init();
@@ -113,14 +109,14 @@ int32 GroovyEntryPoint(const char* args)
 		gDeltaTime = currentTime - gTime;
 		gTime = currentTime;
 
-		app->Update((float)gDeltaTime);
+		Application::Update((float)gDeltaTime);
 
 		Input::Clear();
 
 		gScreenFrameBuffer->ClearColorAttachment(0, gScreenClearColor);
 		gScreenFrameBuffer->ClearDepthAttachment();
 
-		app->Render();
+		Application::Render();
 
 		RendererAPI::Get().Present();
 	}
@@ -129,7 +125,7 @@ int32 GroovyEntryPoint(const char* args)
 
 	Renderer::Shutdown();
 
-	app->Shutdown();
+	Application::Shutdown();
 
 	gProj.Save();
 
@@ -139,8 +135,6 @@ int32 GroovyEntryPoint(const char* args)
 	
 	delete gScreenFrameBuffer;
 	RendererAPI::Destroy();
-
-	delete app;
 
 #if !BUILD_MONOLITHIC
 

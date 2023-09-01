@@ -19,6 +19,12 @@ void D3D11_ImGuiRenderer::Init()
 	ImGui_ImplDX11_Init(d3dUtils::gDevice, d3dUtils::gContext);
 }
 
+void D3D11_ImGuiRenderer::Shutdown()
+{
+	ImGui_ImplDX11_Shutdown();
+	ImGui_ImplWin32_Shutdown();
+}
+
 void D3D11_ImGuiRenderer::NewFrame()
 {
 	ImGui_ImplWin32_NewFrame();

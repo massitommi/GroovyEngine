@@ -1,4 +1,4 @@
-#include "sandbox_app.h"
+#include "engine/application.h"
 #include "engine/engine.h"
 #include "gameframework/scene.h"
 #include "project/project.h"
@@ -10,8 +10,6 @@
 #include "platform/input.h"
 #include "renderer/api/renderer_api.h"
 
-Application* GetApplication() { return new SandboxApplication(); }
-
 static Scene* sScene = nullptr;
 static float sAspectRatio = 0.0f;
 
@@ -20,7 +18,7 @@ void OnWndResize(uint32 width, uint32 height)
 	sAspectRatio = (float)width / (float)height;
 }
 
-void SandboxApplication::Init()
+void Application::Init()
 {
 	sAspectRatio = (float)gWindow->GetProps().width / (float)gWindow->GetProps().height;
 	gWindow->SubmitToWndResizeCallback(OnWndResize);
@@ -50,7 +48,7 @@ void SandboxApplication::Init()
 	sScene->BeginPlay();
 }
 
-void SandboxApplication::Update(float deltaTime)
+void Application::Update(float deltaTime)
 {
 #if !BUILD_SHIPPING // debug stuff
 	if (Input::IsKeyPressed(EKeyCode::F3))
@@ -80,7 +78,7 @@ void SandboxApplication::Update(float deltaTime)
 	sScene->Tick(deltaTime);
 }
 
-void SandboxApplication::Render()
+void Application::Render()
 {
 	if (sScene->mCamera && sAspectRatio > 0.0f)
 	{
@@ -89,13 +87,13 @@ void SandboxApplication::Render()
 	}
 }
 
-void SandboxApplication::Shutdown()
+void Application::Shutdown()
 {
 	if (sScene)
 		sScene->Unload();
 }
 
-void SandboxApplication::Travel(Scene* scene)
+void Application::Travel(Scene* scene)
 {
 	sScene->Unload();
 
