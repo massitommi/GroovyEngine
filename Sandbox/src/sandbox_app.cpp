@@ -72,6 +72,11 @@ void SandboxApplication::Update(float deltaTime)
 	}
 #endif
 
+	if (Input::IsKeyPressed(EKeyCode::F11))
+	{
+		gWindow->SetFullscreen(!gWindow->GetProps().fullscreen);
+	}
+
 	sScene->Tick(deltaTime);
 }
 

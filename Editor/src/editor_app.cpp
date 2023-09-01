@@ -9,6 +9,7 @@
 #include "renderer/api/framebuffer.h"
 #include "platform/messagebox.h"
 #include "renderer/api/shader.h"
+#include "platform/window.h"
 
 IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
@@ -23,6 +24,8 @@ Application* GetApplication() { return new EditorApplication(); }
 void EditorApplication::Init()
 {
 	EditorWndProcCallback = ImGui_ImplWin32_WndProcHandler;
+
+	gWindow->SetTitle("Groovy Editor - " + gProj.GetProjectName());
 
 	ImGui::CreateContext();
 	ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_DockingEnable;

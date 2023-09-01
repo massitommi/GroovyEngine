@@ -60,9 +60,9 @@ int32 GroovyEntryPoint(const char* args)
 	// windowing system
 	WindowProps wndProps =
 	{
-		"Groovy",			// title
-		1600, 900,			// resolution
-		false				// fullscreen
+		gProj.GetProjectName(),	// title
+		1600, 900,				// resolution
+		false					// fullscreen
 	};
 
 	Window::InitSystem();
