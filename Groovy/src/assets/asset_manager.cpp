@@ -415,6 +415,9 @@ AssetHandle AssetManager::Editor_Add(const std::string& name, EAssetType type, A
 	sAssets.push_back(newHandle);
 	sAssetRegistry[newUUID] = newHandle;
 
+	if (!instance)
+		newHandle.instance->Load();
+
 	SaveRegistry();
 
 	return newHandle;
