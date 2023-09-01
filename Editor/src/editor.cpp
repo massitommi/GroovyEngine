@@ -1743,6 +1743,16 @@ void editor::Update(float deltaTime)
 		sPlayScene.scene->Tick(deltaTime);
 	}
 
+	// save
+	if (ImGui::IsKeyDown(ImGuiKey_LeftCtrl) && ImGui::IsKeyPressed(ImGuiKey_S))
+	{
+		if (sEditScene.scene)
+			sEditScene.scene->Save();
+
+		sEditScenePendingSave = false;
+		AssetManager::SaveRegistry();
+	}
+
 	// toggle between wireframe and solid fill mode
 	if (ImGui::IsKeyPressed(ImGuiKey_F3))
 	{

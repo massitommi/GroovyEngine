@@ -16,7 +16,10 @@ project "Groovy"
         "src"
     }
 
-    postbuildcommands
-    {
-        "{COPYDIR} %{cfg.buildtarget.directory}" .. " %{wks.location}bin/" .. outputdir .. "/Editor/"
-    }
+    filter "configurations:Debug_Editor or Development_Editor"
+        postbuildcommands ("{COPYDIR} %{cfg.buildtarget.directory}" .. " %{wks.location}bin/" .. outputdir .. "/Editor/")
+    filter {}
+
+    filter "configurations:Debug_Game or Shipping"
+        postbuildcommands ("{COPYDIR} %{cfg.buildtarget.directory}" .. " %{wks.location}bin/" .. outputdir .. "/Sandbox/")
+    filter {}

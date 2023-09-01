@@ -610,31 +610,22 @@ void ActorBlueprintEditorWindow::Save()
 ProjectSettingsWindow::ProjectSettingsWindow()
 	: EditorWindow()
 {
-	mProjName = gProj.GetName();
 	mStartupScene = gProj.GetStartupScene();
 }
 
 void ProjectSettingsWindow::RenderContent()
 {
 	float colWidth = ImGui::GetContentRegionAvail().x / 100 * 30;
-	editorGui::PropertyInput("Project name", PROPERTY_TYPE_STRING, &mProjName, false, colWidth);
 	editorGui::PropertyInput("Startup scene", PROPERTY_TYPE_ASSET_REF, &mStartupScene, false, colWidth, ASSET_TYPE_SCENE);
 
-	bool invalidName = mProjName.empty() || std::count(mProjName.begin(), mProjName.end(), ' ') == mProjName.length();
-
-	if (invalidName)
-		ImGui::BeginDisabled();
-
 	ImGui::Spacing();
 	ImGui::Spacing();
+	ImGui::Spacing();
+
 	if (ImGui::Button("Save settings"))
 	{
-		gProj.__internal_Editor_Rename(mProjName);
 		gProj.SetStartupScene(mStartupScene);
 	}
-
-	if (invalidName)
-		ImGui::EndDisabled();
 }
 
 void EditorSettingsWindow::RenderContent()

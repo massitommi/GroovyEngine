@@ -265,6 +265,11 @@ void Window::GetCursorPos(uint32* xy)
 	xy[1] = p.y;
 }
 
+void Window::Maximize()
+{
+	ShowWindow((HWND)mHandle, SW_SHOWMAXIMIZED);
+}
+
 void Window::SetMaxSize()
 {
 	HMONITOR monitor = MonitorFromWindow((HWND)mHandle, MONITOR_DEFAULTTOPRIMARY);

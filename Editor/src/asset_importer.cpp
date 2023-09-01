@@ -114,6 +114,9 @@ bool AssetImporter::ImportTexture(const std::string& originalFile, const std::st
     return true;
 }
 
+
+extern CORE_API Material* DEFAULT_MATERIAL;
+
 bool AssetImporter::ImportMesh(const std::string& originalFile, const std::string& newFile)
 {
     tinyobj::attrib_t attrib;
@@ -160,7 +163,8 @@ bool AssetImporter::ImportMesh(const std::string& originalFile, const std::strin
     MeshAssetFile asset;
     asset.submeshes.resize(submeshCount);
     asset.materials.resize(submeshCount);
-    memset(asset.materials.data(), 0, sizeof(Material*) * asset.materials.size());
+    for (Material*& m : asset.materials)
+        m = DEFAULT_MATERIAL;
 
     for (uint32 i = 0; i < shapes.size(); i++)
     {

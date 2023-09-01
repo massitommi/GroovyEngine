@@ -32,6 +32,8 @@ public:
 	void SetCursorPos(uint32 x, uint32 y);
 	void GetCursorPos(uint32* xy);
 
+	void Maximize();
+
 	void SetMaxSize();
 
 	bool OnClose();

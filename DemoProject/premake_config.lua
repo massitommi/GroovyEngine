@@ -1,0 +1,2 @@
+PROJECT_NAME = "DemoProject"
+ENGINE_LOCATION = "../"

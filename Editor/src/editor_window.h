@@ -141,7 +141,6 @@ public:
 	virtual void RenderContent() override;
 
 private:
-	std::string mProjName;
 	Scene* mStartupScene;
 };
 

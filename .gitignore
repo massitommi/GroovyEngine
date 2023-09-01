@@ -357,3 +357,4 @@ Editor/settings/settings
 bin
 bin-int
 *.csproj
+*.resx

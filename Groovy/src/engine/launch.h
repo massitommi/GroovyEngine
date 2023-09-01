@@ -39,7 +39,7 @@ int32 GroovyEntryPoint(const char* args)
 #if !BUILD_MONOLITHIC
 
 	// load game dll and fill GAME_CLASSES
-	std::string gameDllPath = (gProj.GetProjectFilePath().parent_path() / "bin" / "Game.dll").string();
+	std::string gameDllPath = (gProj.GetProjectFilePath().parent_path() / "bin" / LINKER_OUTPUT_DIR / gProj.GetProjectName() / (gProj.GetProjectName() + ".dll")).string();
 	
 	void* gameDll = Lib::LoadDll(gameDllPath);
 	checkslowf(gameDll, "Game dll not found, path: %s", gameDllPath.c_str());
