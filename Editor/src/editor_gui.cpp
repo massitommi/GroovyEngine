@@ -134,13 +134,107 @@ bool editorGui::AssetRef(const char* label, EAssetType type, void* data, bool al
 	return edited;
 }
 
+namespace ImGui
+{
+	void PushMultiItemsWidths(int components, float w_full);
+}
+
+static bool Vec3Control(const char* label, void* data)
+{
+	// stolen ui code for Vector3 control, thanks Cherno
+
+	ImGui::PushID(data);
+
+	ImGui::PushStyleColor(ImGuiCol_::ImGuiCol_Separator, { 0,0,0,0 });
+
+	ImFont* boldFont = ImGui::GetIO().Fonts[0].Fonts[1];
+
+	ImGui::Columns(2);
+	ImGui::SetColumnWidth(0, 100.0f);
+	ImGui::Text(label);
+	ImGui::NextColumn();
+
+	ImGui::PushMultiItemsWidths(3, ImGui::CalcItemWidth());
+	ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2{ 0, 0 });
+
+	float lineHeight = ImGui::GetFont()->FontSize + ImGui::GetStyle().FramePadding.y * 2.0f;
+	ImVec2 buttonSize = { lineHeight + 3.0f, lineHeight };
+	bool changed = false;
+
+	ImGui::PushStyleColor(ImGuiCol_Button, ImVec4{ 0.8f, 0.1f, 0.15f, 1.0f });
+	ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4{ 0.9f, 0.2f, 0.2f, 1.0f });
+	ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4{ 0.8f, 0.1f, 0.15f, 1.0f });
+	ImGui::PushFont(boldFont);
+	if (ImGui::Button("X", buttonSize))
+	{
+
+	}
+	ImGui::PopFont();
+	ImGui::PopStyleColor(3);
+
+	ImGui::SameLine();
+
+	if (ImGui::DragFloat("##X", &((Vec3*)data)->x, 0.01f, 0.0f, 0.0f))
+		changed = true;
+
+	ImGui::PopItemWidth();
+	ImGui::SameLine();
+
+	ImGui::PushStyleColor(ImGuiCol_Button, ImVec4{ 0.2f, 0.7f, 0.2f, 1.0f });
+	ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4{ 0.3f, 0.8f, 0.3f, 1.0f });
+	ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4{ 0.2f, 0.7f, 0.2f, 1.0f });
+	ImGui::PushFont(boldFont);
+	if (ImGui::Button("Y", buttonSize))
+	{
+
+	}
+	ImGui::PopFont();
+	ImGui::PopStyleColor(3);
+
+	ImGui::SameLine();
+
+	if (ImGui::DragFloat("##Y", &((Vec3*)data)->y, 0.01f, 0.0f, 0.0f))
+		changed = true;
+
+	ImGui::PopItemWidth();
+	ImGui::SameLine();
+
+	ImGui::PushStyleColor(ImGuiCol_Button, ImVec4{ 0.1f, 0.25f, 0.8f, 1.0f });
+	ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4{ 0.2f, 0.35f, 0.9f, 1.0f });
+	ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4{ 0.1f, 0.25f, 0.8f, 1.0f });
+	ImGui::PushFont(boldFont);
+	if (ImGui::Button("Z", buttonSize))
+	{
+
+	}
+	ImGui::PopFont();
+	ImGui::PopStyleColor(3);
+
+	ImGui::SameLine();
+
+	if (ImGui::DragFloat("##Z", &((Vec3*)data)->z, 0.01f, 0.0f, 0.0f))
+		changed = true;
+
+	ImGui::PopItemWidth();
+
+	ImGui::PopStyleVar();
+
+	ImGui::Columns(1);
+
+	ImGui::PopStyleColor();
+	
+	ImGui::PopID();
+
+	return changed;
+}
+
 bool editorGui::Transform(const char* label, void* data)
 {
 	struct Transform* t = (struct Transform*)data;
 	ImGui::NewLine();
-	bool loc = ImGui::DragFloat3("Location", &t->location.x, 0.05f);
-	bool rot = ImGui::DragFloat3("Rotation", &t->rotation.x, 0.5f);
-	bool scale = ImGui::DragFloat3("Scale", &t->scale.x, 0.05f);
+	bool loc = Vec3Control("Location", &t->location);
+	bool rot = Vec3Control("Rotation", &t->rotation);
+	bool scale = Vec3Control("Scale", &t->scale);
 	return loc || rot || scale;
 }
 
@@ -177,7 +271,7 @@ bool editorGui::PropertyInput(const std::string& label, EPropertyType type, void
 			click = ImGui::InputScalar(lblVal.c_str(), ImGuiDataType_U64, data, 0, 0, 0);
 			break;
 		case PROPERTY_TYPE_FLOAT:
-			click = ImGui::DragFloat(lblVal.c_str(), (float*)data, 0.01f, 0.0f, 0.0f, "%.3f");
+			click = ImGui::DragFloat(lblVal.c_str(), (float*)data, 0.01f, 0.0f, 0.0f);
 			break;
 		case PROPERTY_TYPE_BOOL:
 			click = ImGui::Checkbox(lblVal.c_str(), (bool*)data);
