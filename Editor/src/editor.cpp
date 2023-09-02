@@ -134,15 +134,15 @@ namespace res
 
 	void Load()
 	{
-		sShaderAssetIcon = LoadEditorIcon("res/shader_asset_icon.png");
-		sMaterialAssetIcon = LoadEditorIcon("res/material_asset_icon.png");
-		sMeshAssetIcon = LoadEditorIcon("res/mesh_asset_icon.png");
-		sClassAssetIcon = LoadEditorIcon("res/class_asset_icon.png");
-		sBlueprintAssetIcon = LoadEditorIcon("res/blueprint_asset_icon.png");
-		sSceneAssetIcon = LoadEditorIcon("res/scene_asset_icon.png");
-		sPlayBtnIcon = LoadEditorIcon("res/play_btn_icon.png");
-		sPauseBtnIcon = LoadEditorIcon("res/pause_btn_icon.png");
-		sStopBtnIcon = LoadEditorIcon("res/stop_btn_icon.png");
+		sShaderAssetIcon = LoadEditorIcon("res/icons/shader_asset_icon.png");
+		sMaterialAssetIcon = LoadEditorIcon("res/icons/material_asset_icon.png");
+		sMeshAssetIcon = LoadEditorIcon("res/icons/mesh_asset_icon.png");
+		sClassAssetIcon = LoadEditorIcon("res/icons/class_asset_icon.png");
+		sBlueprintAssetIcon = LoadEditorIcon("res/icons/blueprint_asset_icon.png");
+		sSceneAssetIcon = LoadEditorIcon("res/icons/scene_asset_icon.png");
+		sPlayBtnIcon = LoadEditorIcon("res/icons/play_btn_icon.png");
+		sPauseBtnIcon = LoadEditorIcon("res/icons/pause_btn_icon.png");
+		sStopBtnIcon = LoadEditorIcon("res/icons/stop_btn_icon.png");
 	}
 
 	void Unload()
@@ -1737,6 +1737,11 @@ void editor::Init()
 			TravelToScene(newEmptyScene);
 		}
 	}
+
+	ImFont* regularFont = ImGui::GetIO().Fonts->AddFontFromFileTTF("res/fonts/Open_Sans/OpenSans-VariableFont_wdth,wght.ttf", 18);
+	ImFont* boldFont = ImGui::GetIO().Fonts->AddFontFromFileTTF("res/fonts/Open_Sans/static/OpenSans-Bold.ttf", 18);
+
+	ImGui::GetIO().FontDefault = regularFont;
 }
 
 void editor::Update(float deltaTime)
