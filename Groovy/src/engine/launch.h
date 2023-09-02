@@ -48,6 +48,11 @@ int32 GroovyEntryPoint(const char* args)
 	std::vector<GroovyClass*>* gameClassesListVec = (std::vector<GroovyClass*>*)gameClassesList;
 	GAME_CLASSES = *gameClassesListVec;
 
+#else
+
+	extern std::vector<GroovyClass*> GAME_CLASSES_LIST;
+	GAME_CLASSES = GAME_CLASSES_LIST;
+
 #endif
 
 	for (GroovyClass* c : GAME_CLASSES)
