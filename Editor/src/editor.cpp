@@ -1488,17 +1488,20 @@ namespace panels
 
 			float aspectRatio = (float)wndSize.x / (float)wndSize.y;
 
-			if (sEditorSceneState == EDITOR_SCENE_STATE_PLAY && sCurrentScene->scene->mCamera)
+			if (okSize)
 			{
-				CameraComponent* cam = sCurrentScene->scene->mCamera;
-				SceneRenderer::BeginScene(cam, aspectRatio);
-			}
-			else
-			{
-				SceneRenderer::BeginScene(sEditorCamera.location, sEditorCamera.rotation, gEditorSettings.mCameraFOV, aspectRatio);
-			}
+				if (sEditorSceneState == EDITOR_SCENE_STATE_PLAY && sCurrentScene->scene->mCamera)
+				{
+					CameraComponent* cam = sCurrentScene->scene->mCamera;
+					SceneRenderer::BeginScene(cam, aspectRatio);
+				}
+				else
+				{
+					SceneRenderer::BeginScene(sEditorCamera.location, sEditorCamera.rotation, gEditorSettings.mCameraFOV, aspectRatio);
+				}
 
-			SceneRenderer::RenderScene(sCurrentScene->scene);
+				SceneRenderer::RenderScene(sCurrentScene->scene);
+			}
 
 			// draw framebuffer
 			gGroovyGuiRenderer->SetGroovyRenderState();

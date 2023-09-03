@@ -224,20 +224,23 @@ void MeshPreviewWindow::RenderContent()
 	mPreviewFrameBuffer->ClearDepthAttachment();
 	mPreviewFrameBuffer->Bind();
 
-	Mat4 camera =
-		math::GetViewMatrix({ 0, 0, mCameraZoom }, { 0,0,0 })
-		*
-		math::GetPerspectiveMatrix(wndSize.x / wndSize.y, 60.0f, 0.01f, 1000.0f);
+	if (okSize)
+	{
+		Mat4 camera =
+			math::GetViewMatrix({ 0, 0, mCameraZoom }, { 0,0,0 })
+			*
+			math::GetPerspectiveMatrix(wndSize.x / wndSize.y, 60.0f, 0.01f, 1000.0f);
 
-	Mat4 model = math::GetModelMatrix(mModelTransform.location, mModelTransform.rotation, mModelTransform.scale);
+		Mat4 model = math::GetModelMatrix(mModelTransform.location, mModelTransform.rotation, mModelTransform.scale);
 
-	camera = math::GetMatrixTransposed(camera);
-	model = math::GetMatrixTransposed(model);
+		camera = math::GetMatrixTransposed(camera);
+		model = math::GetMatrixTransposed(model);
 
-	Renderer::SetCamera(camera);
-	Renderer::SetModel(model);
+		Renderer::SetCamera(camera);
+		Renderer::SetModel(model);
 
-	Renderer::RenderMesh(mMesh, mMeshMats);
+		Renderer::RenderMesh(mMesh, mMeshMats);
+	}
 
 	gGroovyGuiRenderer->SetGroovyRenderState();
 	ImGui::Image(mPreviewFrameBuffer->GetRendererID(0), wndSize);
@@ -549,8 +552,11 @@ void ActorBlueprintEditorWindow::RenderContent()
 		mPreviewFrameBuffer->ClearDepthAttachment();
 		mPreviewFrameBuffer->Bind();
 
-		SceneRenderer::BeginScene({ 0.0f, 0.0f, mCameraZoom }, { 0.0f, 0.0f, 0.0f }, 60.0f, wndSize.x / wndSize.y);
-		SceneRenderer::RenderScene(&mLiveScene);
+		if (okSize)
+		{
+			SceneRenderer::BeginScene({ 0.0f, 0.0f, mCameraZoom }, { 0.0f, 0.0f, 0.0f }, 60.0f, wndSize.x / wndSize.y);
+			SceneRenderer::RenderScene(&mLiveScene);
+		}
 
 		gGroovyGuiRenderer->SetGroovyRenderState();
 		ImGui::Image(mPreviewFrameBuffer->GetRendererID(0), wndSize);
