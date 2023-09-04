@@ -1,4 +1,6 @@
 workspace "GroovyEngine"
+    architecture "x86_64"
+
     configurations
     {
         "Debug_Editor",
@@ -7,18 +9,18 @@ workspace "GroovyEngine"
         "Shipping"
     }
 
-    platforms
-    {
-        "Win64"
-    }
-
     startproject "Editor"
+    debugargs "../DemoProject/DemoProject.groovyproj"
 
-    defines "PLATFORM_WIN32"
+    outputdir = "%{cfg.buildcfg}-%{cfg.system}-%{cfg.architecture}"
+    targetdir ("%{wks.location}/bin/" .. outputdir .. "/%{prj.name}")
+	objdir ("%{wks.location}/bin-int/" .. outputdir .. "/%{prj.name}")
 
     rtti "Off"
 
-    debugargs "../DemoProject/DemoProject.groovyproj"
+    filter "system:windows"
+        defines "PLATFORM_WIN32"
+    filter {}
 
     filter "configurations:Debug_Editor or Development_Editor"
         defines "WITH_EDITOR"
@@ -29,11 +31,11 @@ workspace "GroovyEngine"
     filter {}
 
     filter "configurations:Development_Editor"
-        optimize "Speed"
+        optimize "On"
     filter {}
 
     filter "configurations:Shipping"
-        optimize "Speed"
+        optimize "On"
         defines "BUILD_SHIPPING"
     filter {}
 
