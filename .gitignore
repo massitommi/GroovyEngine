@@ -354,7 +354,7 @@ MigrationBackup/
 *.filters
 *.vcxproj
 Editor/settings/settings
-bin
-bin-int
+bin/
+bin-int/
 *.csproj
 *.resx
