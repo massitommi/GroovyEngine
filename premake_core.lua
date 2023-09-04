@@ -16,6 +16,8 @@
 
     defines ("LINKER_OUTPUT_DIR=\"" .. outputdir .. "\"")
 
+    disablewarnings "4251"
+
     filter "configurations:Debug_Editor or Development_Editor"
         defines "WITH_EDITOR"
     filter {}
