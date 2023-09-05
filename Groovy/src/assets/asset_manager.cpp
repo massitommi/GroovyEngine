@@ -79,15 +79,15 @@ void AssetManager::Init()
 		}
 		// default shader
 		{
-			std::string shaderFile = "default_shader";
+			std::string shaderFile;
 			switch (RendererAPI::GetAPI())
 			{
 				case RENDERER_API_D3D11:
-					shaderFile += ".hlsl";
+					shaderFile = "default_shader.hlsl";
 					break;
 			}
 
-			DEFAULT_SHADER = AssetLoader::LoadShader((gProj.GetAssetsPath() / "default" / shaderFile).string());
+			DEFAULT_SHADER = AssetLoader::LoadShader((std::filesystem::path("shaders") / shaderFile).string());
 		}
 		// default material
 		{
