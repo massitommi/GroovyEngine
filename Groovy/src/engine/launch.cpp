@@ -9,6 +9,7 @@
 #include "renderer/renderer.h"
 #include "gameframework/scene.h"
 #include "runtime/object_allocator.h"
+#include "audio/audio.h"
 
 bool gEngineShouldRun = true;
 Window* gWindow = nullptr;
@@ -86,6 +87,8 @@ int32 GroovyEntryPoint(const char* args)
 
 	gProj.BuildPaths(args);
 
+	Audio::Init();
+
 	AssetManager::Init();
 
 	gProj.Load(); // we need to initalize the assetManager in order to deserialize the startup scene
@@ -93,10 +96,9 @@ int32 GroovyEntryPoint(const char* args)
 	Application::Init();
 
 	gScreenFrameBuffer->Bind();
+
 	Renderer::Init();
-
 	Input::Init();
-
 	TickTimer::Init();
 
 	while (gEngineShouldRun)
@@ -106,6 +108,8 @@ int32 GroovyEntryPoint(const char* args)
 		double currentTime = TickTimer::GetTimeSeconds();
 		gDeltaTime = currentTime - gTime;
 		gTime = currentTime;
+
+		Audio::Update();
 
 		Application::Update((float)gDeltaTime);
 
@@ -120,9 +124,8 @@ int32 GroovyEntryPoint(const char* args)
 	}
 
 	Input::Shutdown();
-
+	Audio::Shutdown();
 	Renderer::Shutdown();
-
 	Application::Shutdown();
 
 	gProj.Save();
@@ -141,6 +144,15 @@ int32 GroovyEntryPoint(const char* args)
 		(
 			"Dear engine programmer",
 			"Some groovy objects are still alive after shutdown, how is that?"
+		);
+	}
+
+	if (Audio::GetClipsCount())
+	{
+		SysMessageBox::Show_Warning
+		(
+			"Dear engine programmer",
+			"Some audio clips are still in ram after shutdown, how is that?"
 		);
 	}
 #endif

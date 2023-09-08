@@ -10,6 +10,7 @@
 #include "renderer/mesh.h"
 #include "gameframework/blueprint.h"
 #include "gameframework/scene.h"
+#include "audio/audio_clip.h"
 #include "utils/string/string_utils.h"
 
 static std::map<AssetUUID, AssetHandle> sAssetRegistry;
@@ -58,6 +59,9 @@ static AssetInstance* InstantiateAsset(const AssetHandle& handle)
 
 		case ASSET_TYPE_SCENE:
 			return new Scene();
+
+		case ASSET_TYPE_AUDIO_CLIP:
+			return new AudioClip();
 	}
 
 	checkslowf(0, "Trying to instantiate an unknown type asset??!?!?");

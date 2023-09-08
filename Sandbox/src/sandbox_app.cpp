@@ -8,6 +8,7 @@
 #include "gameframework/components/cameracomponent.h"
 #include "platform/input.h"
 #include "renderer/api/renderer_api.h"
+#include "audio/audio.h"
 
 extern bool gEngineShouldRun;
 extern GroovyProject gProj;
@@ -99,6 +100,7 @@ void Application::Shutdown()
 void Application::Travel(Scene* scene)
 {
 	sScene->Unload();
+	Audio::StopEverything();
 
 	sScene = scene;
 

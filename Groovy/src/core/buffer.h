@@ -345,6 +345,13 @@ public:
 		return str;
 	}
 
+	byte* read_to_end()
+	{
+		byte* ptr = mCurrentPtr;
+		advance(remaining());
+		return ptr;
+	}
+
 	void advance(size_t bytes)
 	{
 		check(mBytesLeft >= bytes);

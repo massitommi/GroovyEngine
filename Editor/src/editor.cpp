@@ -39,6 +39,8 @@
 
 #include "utils/string/string_utils.h"
 
+#include "audio/audio.h"
+
 void EditorSettings::Load()
 {
 	Buffer settingsFile;
@@ -115,6 +117,7 @@ EditorSettings gEditorSettings;
 namespace res
 {
 	static Texture* sShaderAssetIcon = nullptr;
+	static Texture* sAudioAssetIcon = nullptr;
 	static Texture* sMaterialAssetIcon = nullptr;
 	static Texture* sMeshAssetIcon = nullptr;
 	static Texture* sClassAssetIcon = nullptr;
@@ -135,6 +138,7 @@ namespace res
 	void Load()
 	{
 		sShaderAssetIcon = LoadEditorIcon("res/icons/shader_asset_icon.png");
+		sAudioAssetIcon = LoadEditorIcon("res/icons/audio_asset_icon.png");
 		sMaterialAssetIcon = LoadEditorIcon("res/icons/material_asset_icon.png");
 		sMeshAssetIcon = LoadEditorIcon("res/icons/mesh_asset_icon.png");
 		sClassAssetIcon = LoadEditorIcon("res/icons/class_asset_icon.png");
@@ -148,6 +152,7 @@ namespace res
 	void Unload()
 	{
 		delete sShaderAssetIcon;
+		delete sAudioAssetIcon;
 		delete sMaterialAssetIcon;
 		delete sMeshAssetIcon;
 		delete sClassAssetIcon;
@@ -276,15 +281,25 @@ void OnFilesDropped(const std::vector<std::string>& files)
 		std::string newFileName = std::filesystem::path(file).replace_extension(GROOVY_ASSET_EXT).filename().string();
 		EAssetType assetType = AssetImporter::GetTypeFromFilename(file);
 
+		if (AssetManager::FindByPath(newFileName).instance)
+		{
+			SysMessageBox::Show_Error("Can't import file", "Can't import file, a file with the same name is already in the assets folder!");
+			return;
+		}
+
 		switch (assetType)
 		{
-		case ASSET_TYPE_TEXTURE:
-			AssetImporter::ImportTexture(file, newFileName);
-			break;
+			case ASSET_TYPE_TEXTURE:
+				AssetImporter::ImportTexture(file, newFileName);
+				break;
 
-		case ASSET_TYPE_MESH:
-			AssetImporter::ImportMesh(file, newFileName);
-			break;
+			case ASSET_TYPE_MESH:
+				AssetImporter::ImportMesh(file, newFileName);
+				break;
+
+			case ASSET_TYPE_AUDIO_CLIP:
+				AssetImporter::ImportAudio(file, newFileName);
+				break;
 		}
 	}
 }
@@ -330,6 +345,8 @@ void Stop()
 	sPlayScene.scene->Clear();
 
 	sCurrentScene = &sEditScene;
+
+	Audio::StopEverything();
 }
 
 namespace assetPopups
@@ -720,7 +737,8 @@ namespace panels
 		"MESH",
 		"BLUEPRINT",
 		"ACTOR BLUEPRINT",
-		"SCENE"
+		"SCENE",
+		"AUDIO CLIP"
 	};
 
 	void Assets()
@@ -762,10 +780,13 @@ namespace panels
 				panelAssets[i].thumbnail = res::sBlueprintAssetIcon->GetRendererID();
 				panelAssets[i].typeNameIndex = 5;
 				break;
-
 			case ASSET_TYPE_SCENE:
 				panelAssets[i].thumbnail = res::sSceneAssetIcon->GetRendererID();
 				panelAssets[i].typeNameIndex = 6;
+				break;
+			case ASSET_TYPE_AUDIO_CLIP:
+				panelAssets[i].thumbnail = res::sAudioAssetIcon->GetRendererID();
+				panelAssets[i].typeNameIndex = 7;
 				break;
 			}
 		}
@@ -907,6 +928,10 @@ namespace panels
 
 						case ASSET_TYPE_SCENE:
 							TryTravelToScene((Scene*)asset.instance);
+							break;
+
+						case ASSET_TYPE_AUDIO_CLIP:
+							windows::AddWindow<AudioClipInfoWindow>(asset.name, asset);
 							break;
 					}
 				}
@@ -1992,6 +2017,8 @@ const char* editor::AssetTypeToStr(EAssetType type)
 			return "ACTOR BLUEPRINT";
 		case ASSET_TYPE_SCENE:
 			return "SCENE";
+		case ASSET_TYPE_AUDIO_CLIP:
+			return "AUDIO CLIP";
 	}
 	return "UNKNOWN ASSET TYPE ?!?";
 }

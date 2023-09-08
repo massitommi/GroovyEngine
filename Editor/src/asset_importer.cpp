@@ -27,6 +27,11 @@ const char* MESH_IMPORTABLE_EXT[] =
     ".obj"
 };
 
+const char* AUDIO_IMPORTABLE_EXT[] =
+{
+    ".wav"
+};
+
 extern GroovyProject gProj;
 
 EAssetType AssetImporter::GetTypeFromFilename(const std::string& filename)
@@ -40,6 +45,10 @@ EAssetType AssetImporter::GetTypeFromFilename(const std::string& filename)
     for (auto ext : MESH_IMPORTABLE_EXT)
         if (fileExt == ext)
             return ASSET_TYPE_MESH;
+    // check audio files
+    for (auto ext : AUDIO_IMPORTABLE_EXT)
+        if (fileExt == ext)
+            return ASSET_TYPE_AUDIO_CLIP;
     // nothing to do
     return ASSET_TYPE_NONE;
 }
@@ -233,6 +242,16 @@ bool AssetImporter::ImportMesh(const std::string& originalFile, const std::strin
     }
     
     AssetManager::Editor_Add(newFile, ASSET_TYPE_MESH);
+
+    return true;
+}
+
+bool AssetImporter::ImportAudio(const std::string& originalFile, const std::string& newFile)
+{
+    if (!FileSystem::Copy(originalFile, (gProj.GetAssetsPath() / newFile).string()))
+        return false;
+
+    AssetManager::Editor_Add(newFile, ASSET_TYPE_AUDIO_CLIP);
 
     return true;
 }

@@ -11,10 +11,23 @@ project "Groovy"
 
     includedirs
     {
-        "src"
+        "src",
+        "%{wks.location}/vendor"
+    }
+
+    libdirs
+    {
+        "%{wks.location}/vendor/fmod/bin"
     }
 
     links
     {
-        "Game"
+        "Game",
+        "fmod"
+    }
+
+    postbuildcommands
+    {
+        ("{COPYDIR} %{wks.location}/vendor/fmod/bin/" .. " %{wks.location}bin/" .. outputdir .. "/Editor/"),
+        ("{COPYDIR} %{wks.location}/vendor/fmod/bin/" .. " %{wks.location}bin/" .. outputdir .. "/Sandbox/")
     }

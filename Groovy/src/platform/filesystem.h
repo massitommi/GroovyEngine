@@ -23,6 +23,7 @@ public:
 	static EFileOpenResult DeleteFile(const std::string& path);
 	static bool FileExists(const std::string& path);
 	static bool Rename(const std::string& path, const std::string& newPath);
+	static bool Copy(const std::string& path, const std::string& newPath);
 
 	inline static EFileOpenResult WriteFileBinary(const std::string& path, const Buffer& data)
 	{
