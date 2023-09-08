@@ -10,7 +10,8 @@ I wanted to recreate that system and so I did.
 # Game engine stuff
 - Rendering: the renderer is really bare bone, just meshes with albedo textures. No lighting, no shadows, no fancy rendering technique. 
 - Assets: you can easily import textures and meshes with a drag and drop, they will be converted in a custom binary format and ready to use.
-- Missing stuff: Audio and Physics
+- Audio: you can play audio clips, thats all.
+- Missing stuff: Physics
 
 # How to build
 The engine is structured to support multiple platforms but currently only Windows is implemented.
@@ -24,3 +25,4 @@ Important note: If you change your build configuration from Editor to Shipping/D
 - Dear ImGui
 - stbi
 - tinyobj
+- FMOD
