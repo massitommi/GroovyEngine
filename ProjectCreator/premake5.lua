@@ -16,3 +16,8 @@ project "ProjectCreator"
         "System.Drawing",
         "System.Xml"
     }
+
+    postbuildcommands
+    {
+        ("{COPYDIR} %{prj.location}/res/" .. " %{wks.location}bin/" .. outputdir .. "/ProjectCreator/res/")
+    }

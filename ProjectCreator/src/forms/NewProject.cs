@@ -44,9 +44,7 @@ namespace ProjectCreator.forms
         {
             NewProjectFolderTxt.Text = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
             NewProjectNameTxt.Text = "MyNewProject";
-
-            if(File.Exists(Path.Combine("res", "settings_icon.png")))
-                SettingsBtn.Image = Image.FromFile(Path.Combine("res", "settings_icon.png"));
+            SettingsBtn.Image = Image.FromFile(Path.Combine("res", "settings_icon.png"));
 
             OnEngineLocationUpdated();
         }

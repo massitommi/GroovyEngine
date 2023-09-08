@@ -41,7 +41,7 @@
             this.SetEngineLocationBtn.Name = "SetEngineLocationBtn";
             this.SetEngineLocationBtn.Size = new System.Drawing.Size(128, 47);
             this.SetEngineLocationBtn.TabIndex = 25;
-            this.SetEngineLocationBtn.Text = "Create";
+            this.SetEngineLocationBtn.Text = "Set";
             this.SetEngineLocationBtn.UseVisualStyleBackColor = true;
             this.SetEngineLocationBtn.Click += new System.EventHandler(this.SetEngineLocationBtn_Click);
             // 
