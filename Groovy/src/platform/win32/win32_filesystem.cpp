@@ -153,4 +153,9 @@ bool FileSystem::Rename(const std::string& path, const std::string& newPath)
 	return rename(path.c_str(), newPath.c_str()) == 0;
 }
 
+bool FileSystem::Copy(const std::string& path, const std::string& newPath)
+{
+	return CopyFileA(path.c_str(), newPath.c_str(), true);
+}
+
 #endif

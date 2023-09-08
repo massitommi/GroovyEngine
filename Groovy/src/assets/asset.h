@@ -11,6 +11,7 @@ enum EAssetType
     
     ASSET_TYPE_TEXTURE = 1,
     ASSET_TYPE_SHADER = 2,
+    ASSET_TYPE_AUDIO_CLIP = 8,
     
     // complex assets that reference other assets and stuff
     

@@ -5,6 +5,7 @@
 #include "classes/class.h"
 #include "renderer/material.h"
 #include "gameframework/scene.h"
+#include "audio/audio_clip.h"
 
 class EditorWindow
 {
@@ -154,4 +155,18 @@ class HelpWindow : public EditorWindow
 {
 public:
 	virtual void RenderContent() override;
+};
+
+class AudioClipInfoWindow : public AssetEditorWindow
+{
+public:
+	AudioClipInfoWindow(const AssetHandle& asset);
+	~AudioClipInfoWindow();
+
+	virtual void RenderContent() override;
+	virtual void Save() override;
+
+private:
+	AudioClip* mClip;
+	AudioClipInfo mClipInfo;
 };

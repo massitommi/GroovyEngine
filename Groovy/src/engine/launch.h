@@ -9,6 +9,7 @@
 #include "renderer/renderer.h"
 #include "gameframework/scene.h"
 #include "runtime/object_allocator.h"
+#include "audio/audio.h"
 
 void OnWndResizeCallback(uint32 width, uint32 height)
 {
@@ -93,6 +94,8 @@ int32 GroovyEntryPoint(const char* args)
 
 	wnd.SubmitToWndResizeCallback(OnWndResizeCallback);
 
+	Audio::Init();
+
 	AssetManager::Init();
 
 	gProj.Load(); // we need to initalize the assetManager in order to deserialize the startup scene
@@ -114,6 +117,8 @@ int32 GroovyEntryPoint(const char* args)
 		gDeltaTime = currentTime - gTime;
 		gTime = currentTime;
 
+		Audio::Update();
+
 		Application::Update((float)gDeltaTime);
 
 		Input::Clear();
@@ -127,9 +132,8 @@ int32 GroovyEntryPoint(const char* args)
 	}
 
 	Input::Shutdown();
-
+	Audio::Shutdown();
 	Renderer::Shutdown();
-
 	Application::Shutdown();
 
 	gProj.Save();

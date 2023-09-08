@@ -711,3 +711,54 @@ void HelpWindow::RenderContent()
 	ImGui::Text("- Press F3 to toggle wireframe view");
 	ImGui::Text("- Press Shift + F1 to enable cursor during PIE (Play In Editor)");
 }
+
+AudioClipInfoWindow::AudioClipInfoWindow(const AssetHandle& asset)
+	: AssetEditorWindow(asset), mClip((AudioClip*)asset.instance)
+{
+	checkslow(asset.type == ASSET_TYPE_AUDIO_CLIP);
+
+	mClipInfo = mClip->GetInfo();
+}
+
+AudioClipInfoWindow::~AudioClipInfoWindow()
+{
+}
+
+void AudioClipInfoWindow::RenderContent()
+{
+	ImGui::Text("Duration: %.2f seconds", (float)mClipInfo.durationMilliseconds / 1000.0f);
+	ImGui::Text("Num channels: %i", mClipInfo.channels);
+	const char* audioFormat = "UNKNOWN";
+	switch (mClipInfo.format)
+	{
+		case AUDIO_CLIP_FORMAT_PCM8:
+			audioFormat = "PCM8";
+			break;
+
+		case AUDIO_CLIP_FORMAT_PCM16:
+			audioFormat = "PCM16";
+			break;
+
+		case AUDIO_CLIP_FORMAT_PCM24:
+			audioFormat = "PCM24";
+			break;
+
+		case AUDIO_CLIP_FORMAT_PCM32:
+			audioFormat = "PCM32";
+			break;
+
+		case AUDIO_CLIP_FORMAT_PCMFLOAT:
+			audioFormat = "PCMFLOAT";
+			break;
+
+		case AUDIO_CLIP_FORMAT_BITSTREAM:
+			audioFormat = "BITSTREAM";
+			break;
+	}
+
+	ImGui::Text("Format: %s", audioFormat);
+}
+
+void AudioClipInfoWindow::Save()
+{
+}
