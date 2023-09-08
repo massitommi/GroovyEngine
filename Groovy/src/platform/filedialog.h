@@ -12,7 +12,7 @@ struct ExtensionFilter
 
 typedef std::vector<ExtensionFilter> ExtensionFilters;
 
-class FileDialog
+class CORE_API FileDialog
 {
 public:
 	static std::string OpenFileDialog(const std::string& titleBar, const ExtensionFilters& filters);

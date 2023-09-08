@@ -2,7 +2,7 @@
 
 #include "classes/class.h"
 
-class ObjectAllocator
+class CORE_API ObjectAllocator
 {
 public:
 

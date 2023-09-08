@@ -68,26 +68,26 @@ AudioClipInfo Audio::GetClipInfo(AudioClipHandle clip)
 
 	switch (format)
 	{
-		case FMOD_SOUND_FORMAT_PCM8:
-			info.format = AUDIO_CLIP_FORMAT_PCM8;
-			break;
-		case FMOD_SOUND_FORMAT_PCM16:
-			info.format = AUDIO_CLIP_FORMAT_PCM16;
-			break;
-		case FMOD_SOUND_FORMAT_PCM24:
-			info.format = AUDIO_CLIP_FORMAT_PCM24;
-			break;
-		case FMOD_SOUND_FORMAT_PCM32:
-			info.format = AUDIO_CLIP_FORMAT_PCM32;
-			break;
-		case FMOD_SOUND_FORMAT_PCMFLOAT:
-			info.format = AUDIO_CLIP_FORMAT_PCMFLOAT;
-			break;
-		case FMOD_SOUND_FORMAT_BITSTREAM:
-			info.format = AUDIO_CLIP_FORMAT_BITSTREAM;
-			break;
+	case FMOD_SOUND_FORMAT_PCM8:
+		info.format = AUDIO_CLIP_FORMAT_PCM8;
+		break;
+	case FMOD_SOUND_FORMAT_PCM16:
+		info.format = AUDIO_CLIP_FORMAT_PCM16;
+		break;
+	case FMOD_SOUND_FORMAT_PCM24:
+		info.format = AUDIO_CLIP_FORMAT_PCM24;
+		break;
+	case FMOD_SOUND_FORMAT_PCM32:
+		info.format = AUDIO_CLIP_FORMAT_PCM32;
+		break;
+	case FMOD_SOUND_FORMAT_PCMFLOAT:
+		info.format = AUDIO_CLIP_FORMAT_PCMFLOAT;
+		break;
+	case FMOD_SOUND_FORMAT_BITSTREAM:
+		info.format = AUDIO_CLIP_FORMAT_BITSTREAM;
+		break;
 	}
-	
+
 	return info;
 }
 
@@ -116,7 +116,7 @@ void Audio::StopEverything()
 		if (numPlaying)
 			FMOD_SoundGroup_Stop(soundGroup);
 	}
-}	
+}
 
 uint32 Audio::GetClipsCount()
 {

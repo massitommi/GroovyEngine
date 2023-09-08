@@ -12,6 +12,7 @@
 #include "gameframework/scene.h"
 #include "audio/audio_clip.h"
 #include "utils/string/string_utils.h"
+#include "audio/audio_clip.h"
 
 static std::map<AssetUUID, AssetHandle> sAssetRegistry;
 static std::vector<AssetHandle> sAssets;
@@ -28,10 +29,10 @@ static AssetUUID GenUUID()
 }
 
 extern GroovyProject gProj;
-Texture* DEFAULT_TEXTURE = nullptr;
-Shader* DEFAULT_SHADER = nullptr;
-Material* DEFAULT_MATERIAL = nullptr;
-Mesh* DEFAULT_CUBE = nullptr;
+CORE_API Texture* DEFAULT_TEXTURE = nullptr;
+CORE_API Shader* DEFAULT_SHADER = nullptr;
+CORE_API Material* DEFAULT_MATERIAL = nullptr;
+CORE_API Mesh* DEFAULT_CUBE = nullptr;
 
 static AssetInstance* InstantiateAsset(const AssetHandle& handle)
 {

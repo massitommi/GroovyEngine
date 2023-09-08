@@ -24,7 +24,7 @@ enum EMessageBoxResponse
 	MESSAGE_BOX_RESPONSE_CANCEL
 };
 
-class SysMessageBox
+class CORE_API SysMessageBox
 {
 public:
 	static EMessageBoxResponse Show(const std::string& caption, const std::string& msg, EMessageBoxType type, EMessageBoxOptions options);

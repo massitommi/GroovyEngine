@@ -3,7 +3,7 @@
 #include "audio.h"
 #include "assets/asset.h"
 
-class AudioClip : public AssetInstance
+class CORE_API AudioClip : public AssetInstance
 {
 public:
     AudioClip();

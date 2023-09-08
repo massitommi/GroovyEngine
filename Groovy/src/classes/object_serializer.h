@@ -2,7 +2,7 @@
 
 #include "object.h"
 
-class ObjectSerializer
+class CORE_API ObjectSerializer
 {
 public:
 	static void CreatePropertyPack(GroovyObject* obj, GroovyObject* cdo, PropertyPack& outPack);

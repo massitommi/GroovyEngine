@@ -6,3 +6,4 @@
 #include "window.h"
 #include "input.h"
 #include "tick.h"
+#include "lib.h"

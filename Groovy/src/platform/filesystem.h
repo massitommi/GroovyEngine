@@ -10,7 +10,7 @@ enum EFileOpenResult
 	FILE_OPEN_RESULT_OK
 };
 
-class FileSystem
+class CORE_API FileSystem
 {
 public:
 	FileSystem() = delete;

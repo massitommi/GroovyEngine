@@ -34,7 +34,7 @@ struct ShaderResTexture
 	uint32 bindSlot;
 };
 
-class Shader : public AssetInstance
+class CORE_API Shader : public AssetInstance
 {
 public:
 

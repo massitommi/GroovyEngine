@@ -7,7 +7,7 @@ class ActorBlueprint;
 class Scene;
 
 GROOVY_CLASS_DECL(Actor)
-class Actor : public GroovyObject
+class CORE_API Actor : public GroovyObject
 {
 	GROOVY_CLASS_BODY(Actor, GroovyObject)
 public:

@@ -10,7 +10,7 @@ struct TextureSpec
 	EColorFormat format;
 };
 
-class Texture : public AssetInstance
+class CORE_API Texture : public AssetInstance
 {
 public:
 

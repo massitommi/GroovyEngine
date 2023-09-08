@@ -13,7 +13,7 @@ typedef bool(*WindowEvent_OnClose)();
 typedef void(*WindowEvent_OnResize)(uint32, uint32);
 typedef void(*WindowEvent_OnFilesDropped)(const std::vector<std::string>&);
 
-class Window
+class CORE_API Window
 {
 public:
 	Window(const WindowProps& props);
@@ -31,6 +31,8 @@ public:
 	void EnableCursor(bool enable);
 	void SetCursorPos(uint32 x, uint32 y);
 	void GetCursorPos(uint32* xy);
+
+	void Maximize();
 
 	void SetMaxSize();
 

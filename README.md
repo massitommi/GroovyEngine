@@ -15,8 +15,13 @@ I wanted to recreate that system and so I did.
 
 # How to build
 The engine is structured to support multiple platforms but currently only Windows is implemented.
-To build the Visual Studio 2022 solution just run "GenWinProjects.bat", open the .sln file, build and run!
-Important note: If you change your build configuration from Editor to Shipping/DebugGame and vice versa you'll have to also change the startup project.
+To build the Visual Studio 2022 solution just run "GenWinProjects.bat", open the .sln file, and build!
+Note: Make sure you build the right project with the right configuration (dont' build Sandbox with Editor_ configurations).
+
+# How to run
+The engine in order to run needs a project and the game code (If you build for shipping everything is statically linked, game code included; needs some setup).
+If you just want to try out the engine you should build the DemoProject because your IDE will launch the engine with that one.
+If for some strange, obscure, dumb reason you want to make a game with it, you can create your projects with the ProjectCreator tool and start the engine with the .bat files inside your project folder.
 
 # Prerequisites
 - DirectX stuff

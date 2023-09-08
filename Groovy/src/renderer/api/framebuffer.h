@@ -11,12 +11,9 @@ struct FrameBufferSpec
 	bool hasDepthAttachment, swapchainTarget;
 };
 
-struct ClearColor
-{
-	float r, g, b, a;
-};
+typedef Vec4 ClearColor;
 
-class FrameBuffer
+class CORE_API FrameBuffer
 {
 public:
 	virtual ~FrameBuffer() = default;

@@ -1,3 +1,5 @@
+#include "editor.h"
+
 #include "asset_importer.h"
 #include "platform/filesystem.h"
 #include "platform/messagebox.h"
@@ -31,8 +33,6 @@ const char* AUDIO_IMPORTABLE_EXT[] =
 {
     ".wav"
 };
-
-extern GroovyProject gProj;
 
 EAssetType AssetImporter::GetTypeFromFilename(const std::string& filename)
 {
@@ -123,7 +123,8 @@ bool AssetImporter::ImportTexture(const std::string& originalFile, const std::st
     return true;
 }
 
-extern Material* DEFAULT_MATERIAL;
+
+extern CORE_API Material* DEFAULT_MATERIAL;
 
 bool AssetImporter::ImportMesh(const std::string& originalFile, const std::string& newFile)
 {

@@ -1,3 +1,5 @@
+#include "editor.h"
+
 #include "engine/application.h"
 
 #include "vendor/imgui/imgui.h"
@@ -5,7 +7,6 @@
 #include "vendor/imgui/backends/imgui_impl_dx11.h"
 #include "vendor/imgui/misc/cpp/imgui_stdlib.h"
 
-#include "editor.h"
 #include "editor_window.h"
 
 #include "imgui_renderer/imgui_renderer.h"
@@ -35,11 +36,11 @@
 #include "renderer/material.h"
 #include "renderer/scene_renderer.h"
 
+#include "audio/audio.h"
+
 #include "math/math.h"
 
 #include "utils/string/string_utils.h"
-
-#include "audio/audio.h"
 
 void EditorSettings::Load()
 {
@@ -90,14 +91,6 @@ struct EditorCamera
 	Vec3 location = { 0.0f, 0.0f, -3.0f };
 	Vec3 rotation = { 0.0f, 0.0f, 0.0f };
 };
-
-extern ClearColor gScreenClearColor;
-extern Window* gWindow;
-extern GroovyProject gProj;
-extern std::vector<GroovyClass*> ENGINE_CLASSES;
-extern std::vector<GroovyClass*> GAME_CLASSES;
-extern ClassDB gClassDB;
-extern double gDeltaTime;
 
 static FrameBuffer* sGameViewportFrameBuffer = nullptr;
 static bool sGameViewportFocused = false;
@@ -279,7 +272,6 @@ void OnFilesDropped(const std::vector<std::string>& files)
 	for (const std::string& file : files)
 	{
 		std::string newFileName = std::filesystem::path(file).replace_extension(GROOVY_ASSET_EXT).filename().string();
-		EAssetType assetType = AssetImporter::GetTypeFromFilename(file);
 
 		if (AssetManager::FindByPath(newFileName).instance)
 		{
@@ -287,6 +279,7 @@ void OnFilesDropped(const std::vector<std::string>& files)
 			return;
 		}
 
+		EAssetType assetType = AssetImporter::GetTypeFromFilename(file);
 		switch (assetType)
 		{
 			case ASSET_TYPE_TEXTURE:
@@ -756,38 +749,45 @@ namespace panels
 		{
 			switch (assets[i].type)
 			{
-			case ASSET_TYPE_TEXTURE:
-				panelAssets[i].thumbnail = ((Texture*)assets[i].instance)->GetRendererID();
-				panelAssets[i].typeNameIndex = 0;
-				break;
-			case ASSET_TYPE_SHADER:
-				panelAssets[i].thumbnail = res::sShaderAssetIcon->GetRendererID();
-				panelAssets[i].typeNameIndex = 1;
-				break;
-			case ASSET_TYPE_MATERIAL:
-				panelAssets[i].thumbnail = res::sMaterialAssetIcon->GetRendererID();
-				panelAssets[i].typeNameIndex = 2;
-				break;
-			case ASSET_TYPE_MESH:
-				panelAssets[i].thumbnail = res::sMeshAssetIcon->GetRendererID();
-				panelAssets[i].typeNameIndex = 3;
-				break;
-			case ASSET_TYPE_BLUEPRINT:
-				panelAssets[i].thumbnail = res::sBlueprintAssetIcon->GetRendererID();
-				panelAssets[i].typeNameIndex = 4;
-				break;
-			case ASSET_TYPE_ACTOR_BLUEPRINT:
-				panelAssets[i].thumbnail = res::sBlueprintAssetIcon->GetRendererID();
-				panelAssets[i].typeNameIndex = 5;
-				break;
-			case ASSET_TYPE_SCENE:
-				panelAssets[i].thumbnail = res::sSceneAssetIcon->GetRendererID();
-				panelAssets[i].typeNameIndex = 6;
-				break;
-			case ASSET_TYPE_AUDIO_CLIP:
-				panelAssets[i].thumbnail = res::sAudioAssetIcon->GetRendererID();
-				panelAssets[i].typeNameIndex = 7;
-				break;
+				case ASSET_TYPE_TEXTURE:
+					panelAssets[i].thumbnail = ((Texture*)assets[i].instance)->GetRendererID();
+					panelAssets[i].typeNameIndex = 0;
+					break;
+
+				case ASSET_TYPE_SHADER:
+					panelAssets[i].thumbnail = res::sShaderAssetIcon->GetRendererID();
+					panelAssets[i].typeNameIndex = 1;
+					break;
+
+				case ASSET_TYPE_MATERIAL:
+					panelAssets[i].thumbnail = res::sMaterialAssetIcon->GetRendererID();
+					panelAssets[i].typeNameIndex = 2;
+					break;
+
+				case ASSET_TYPE_MESH:
+					panelAssets[i].thumbnail = res::sMeshAssetIcon->GetRendererID();
+					panelAssets[i].typeNameIndex = 3;
+					break;
+
+				case ASSET_TYPE_BLUEPRINT:
+					panelAssets[i].thumbnail = res::sBlueprintAssetIcon->GetRendererID();
+					panelAssets[i].typeNameIndex = 4;
+					break;
+
+				case ASSET_TYPE_ACTOR_BLUEPRINT:
+					panelAssets[i].thumbnail = res::sBlueprintAssetIcon->GetRendererID();
+					panelAssets[i].typeNameIndex = 5;
+					break;
+
+				case ASSET_TYPE_SCENE:
+					panelAssets[i].thumbnail = res::sSceneAssetIcon->GetRendererID();
+					panelAssets[i].typeNameIndex = 6;
+					break;
+
+				case ASSET_TYPE_AUDIO_CLIP:
+					panelAssets[i].thumbnail = res::sAudioAssetIcon->GetRendererID();
+					panelAssets[i].typeNameIndex = 7;
+					break;
 			}
 		}
 

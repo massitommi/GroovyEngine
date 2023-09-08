@@ -129,6 +129,7 @@ class AudioClip;
 class Material;
 class Mesh;
 class Scene;
+class AudioClip;
 
 IMPL_PROPERTY_TYPE_EX(Texture*, PROPERTY_TYPE_ASSET_REF, PROPERTY_FLAG_IS_COMPLEX, ASSET_TYPE_TEXTURE, 0)
 IMPL_PROPERTY_TYPE_EX(Shader*, PROPERTY_TYPE_ASSET_REF, PROPERTY_FLAG_IS_COMPLEX, ASSET_TYPE_SHADER, 0)
@@ -282,11 +283,11 @@ struct PropertyPack
 	DynamicBuffer data;
 };
 
-size_t GroovyProperty_GetSize(EPropertyType type);
-DynamicArrayPtr GroovyProperty_GetDynamicArrayPtr(EPropertyType type);
+CORE_API size_t GroovyProperty_GetSize(EPropertyType type);
+CORE_API DynamicArrayPtr GroovyProperty_GetDynamicArrayPtr(EPropertyType type);
 
-GroovyObject* GroovyClass_DynamicCast(GroovyObject* obj, const GroovyClass* gClass);
-bool GroovyClass_IsA(const GroovyClass* c1, const GroovyClass* c2);
+CORE_API GroovyObject* GroovyClass_DynamicCast(GroovyObject* obj, const GroovyClass* gClass);
+CORE_API bool GroovyClass_IsA(const GroovyClass* c1, const GroovyClass* c2);
 
 /*
 	How to create a groovy class:

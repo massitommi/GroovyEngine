@@ -383,7 +383,6 @@ void ActorBlueprintEditorWindow::RenderContent()
 				if (!mCanRenameOrAddComp)
 					ImGui::BeginDisabled();
 
-				extern ClassDB gClassDB;
 				for (const GroovyClass* gClass : gClassDB.GetClasses())
 				{
 					if (GroovyClass_IsA(gClass, ActorComponent::StaticClass()))
@@ -614,36 +613,25 @@ void ActorBlueprintEditorWindow::Save()
 	AssetEditorWindow::Save();
 }
 
-extern GroovyProject gProj;
-
 ProjectSettingsWindow::ProjectSettingsWindow()
 	: EditorWindow()
 {
-	mProjName = gProj.GetName();
 	mStartupScene = gProj.GetStartupScene();
 }
 
 void ProjectSettingsWindow::RenderContent()
 {
 	float colWidth = ImGui::GetContentRegionAvail().x / 100 * 30;
-	editorGui::PropertyInput("Project name", PROPERTY_TYPE_STRING, &mProjName, false, colWidth);
 	editorGui::PropertyInput("Startup scene", PROPERTY_TYPE_ASSET_REF, &mStartupScene, false, colWidth, ASSET_TYPE_SCENE);
 
-	bool invalidName = mProjName.empty() || std::count(mProjName.begin(), mProjName.end(), ' ') == mProjName.length();
-
-	if (invalidName)
-		ImGui::BeginDisabled();
-
 	ImGui::Spacing();
 	ImGui::Spacing();
+	ImGui::Spacing();
+
 	if (ImGui::Button("Save settings"))
 	{
-		gProj.__internal_Editor_Rename(mProjName);
 		gProj.SetStartupScene(mStartupScene);
 	}
-
-	if (invalidName)
-		ImGui::EndDisabled();
 }
 
 void EditorSettingsWindow::RenderContent()
@@ -746,18 +734,23 @@ void AudioClipInfoWindow::RenderContent()
 		case AUDIO_CLIP_FORMAT_PCM8:
 			audioFormat = "PCM8";
 			break;
+
 		case AUDIO_CLIP_FORMAT_PCM16:
-			audioFormat =  "PCM16";
+			audioFormat = "PCM16";
 			break;
+
 		case AUDIO_CLIP_FORMAT_PCM24:
 			audioFormat = "PCM24";
 			break;
+
 		case AUDIO_CLIP_FORMAT_PCM32:
 			audioFormat = "PCM32";
 			break;
+
 		case AUDIO_CLIP_FORMAT_PCMFLOAT:
 			audioFormat = "PCMFLOAT";
 			break;
+
 		case AUDIO_CLIP_FORMAT_BITSTREAM:
 			audioFormat = "BITSTREAM";
 			break;

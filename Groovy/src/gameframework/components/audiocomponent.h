@@ -3,7 +3,7 @@
 #include "gameframework/actorcomponent.h"
 
 GROOVY_CLASS_DECL(AudioComponent)
-class AudioComponent : public ActorComponent
+class CORE_API AudioComponent : public ActorComponent
 {
 	GROOVY_CLASS_BODY(AudioComponent, ActorComponent)
 

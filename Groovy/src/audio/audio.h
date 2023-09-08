@@ -23,7 +23,7 @@ struct AudioClipInfo
 	byte bitsPerChannel;
 };
 
-class Audio
+class CORE_API Audio
 {
 public:
 	static void Init();

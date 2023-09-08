@@ -6,9 +6,9 @@
 
 namespace d3dUtils
 {
-	extern IDXGISwapChain* gSwapChain;
-	extern ID3D11Device* gDevice;
-	extern ID3D11DeviceContext* gContext;
+	extern CORE_API IDXGISwapChain* gSwapChain;
+	extern CORE_API ID3D11Device* gDevice;
+	extern CORE_API ID3D11DeviceContext* gContext;
 
 	void ResizeBackBuffer(uint32 width, uint32 height);
 	ID3D11Texture2D* GetBackBuffer();

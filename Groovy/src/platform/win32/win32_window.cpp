@@ -20,8 +20,6 @@ static const char* sWndClassName = "groovyWnd";
 
 extern bool gEngineShouldRun;
 
-LRESULT Win32_EditorWndProcCallback(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
-
 static std::vector<std::string> GetDroppedFiles(HDROP boh)
 {
 	std::vector<std::string> result;
@@ -42,10 +40,17 @@ static std::vector<std::string> GetDroppedFiles(HDROP boh)
 #define HID_USAGE_PAGE_GENERIC         ((USHORT) 0x01)
 #define HID_USAGE_GENERIC_MOUSE        ((USHORT) 0x02)
 
+#if WITH_EDITOR
+
+CORE_API LRESULT (*EditorWndProcCallback)(HWND, UINT, WPARAM, LPARAM) = nullptr;
+
+#endif
+
 static LRESULT CALLBACK GroovyWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
 #if WITH_EDITOR
-	Win32_EditorWndProcCallback(hWnd, uMsg, wParam, lParam);
+	if(EditorWndProcCallback)
+		EditorWndProcCallback(hWnd, uMsg, wParam, lParam);
 #endif
 
 	switch (uMsg)
@@ -258,6 +263,11 @@ void Window::GetCursorPos(uint32* xy)
 	::GetCursorPos(&p);
 	xy[0] = p.x;
 	xy[1] = p.y;
+}
+
+void Window::Maximize()
+{
+	ShowWindow((HWND)mHandle, SW_SHOWMAXIMIZED);
 }
 
 void Window::SetMaxSize()

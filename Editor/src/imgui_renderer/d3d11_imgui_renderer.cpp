@@ -1,3 +1,5 @@
+#include "editor.h"
+
 #include "imgui_renderer.h"
 
 #include "vendor/imgui/imgui.h"
@@ -7,8 +9,6 @@
 #include "platform/window.h"
 #include "renderer/api/d3d11/d3d11_utils.h"
 
-extern Window* gWindow;
-
 static ID3D11BlendState* imguiBlendState;
 static float imguiBlendFactor[4];
 static uint32 imguiBlendMask;
@@ -17,6 +17,12 @@ void D3D11_ImGuiRenderer::Init()
 {
 	ImGui_ImplWin32_Init(gWindow->GetNativeHandle());
 	ImGui_ImplDX11_Init(d3dUtils::gDevice, d3dUtils::gContext);
+}
+
+void D3D11_ImGuiRenderer::Shutdown()
+{
+	ImGui_ImplDX11_Shutdown();
+	ImGui_ImplWin32_Shutdown();
 }
 
 void D3D11_ImGuiRenderer::NewFrame()

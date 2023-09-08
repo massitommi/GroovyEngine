@@ -1,7 +1,9 @@
 project "Groovy"
-    kind "StaticLib"
+    kind "SharedLib"
     language "C++"
     cppdialect "C++17"
+
+    defines "BUILD_GROOVY_CORE"
 
     files
     {
@@ -22,12 +24,21 @@ project "Groovy"
 
     links
     {
-        "Game",
         "fmod"
     }
 
-    postbuildcommands
-    {
-        ("{COPYDIR} %{wks.location}/vendor/fmod/bin/" .. " %{wks.location}bin/" .. outputdir .. "/Editor/"),
-        ("{COPYDIR} %{wks.location}/vendor/fmod/bin/" .. " %{wks.location}bin/" .. outputdir .. "/Sandbox/")
-    }
+    filter "configurations:Debug_Editor or Development_Editor"
+        postbuildcommands
+        {
+            ("{COPYDIR} %{cfg.buildtarget.directory}" .. " %{wks.location}bin/" .. outputdir .. "/Editor/"),
+            ("{COPYDIR} %{wks.location}/vendor/fmod/bin/" .. " %{wks.location}bin/" .. outputdir .. "/Editor/")
+        }
+    filter {}
+
+    filter "configurations:Debug_Game or Shipping"
+        postbuildcommands
+        {
+            ("{COPYDIR} %{cfg.buildtarget.directory}" .. " %{wks.location}bin/" .. outputdir .. "/Sandbox/"),
+            ("{COPYDIR} %{wks.location}/vendor/fmod/bin/" .. " %{wks.location}bin/" .. outputdir .. "/Sandbox/")
+        }
+    filter {}

@@ -16,3 +16,5 @@ typedef uint8		byte;
 typedef int8		sbyte;
 
 #define BITFLAG(x) 1 << x
+
+#include "api.h"

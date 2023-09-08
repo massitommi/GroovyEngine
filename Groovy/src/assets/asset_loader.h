@@ -3,7 +3,7 @@
 #include "asset.h"
 
 // raw asset loader
-class AssetLoader
+class CORE_API AssetLoader
 {
 public:
 

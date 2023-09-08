@@ -5,9 +5,16 @@
 *.vcxproj
 *.user
 .vs/
+*.csproj
+*.resx
 
 # Groovy stuff
 
 Editor/settings/settings
 /bin/
 /bin-int/
+
+# Demo project
+
+DemoProject/bin/
+DemoProject/bin-int/

@@ -47,7 +47,7 @@ struct MouseDelta
 	float x, y;
 };
 
-class Input
+class CORE_API Input
 {
 public:
 	static void Init();

@@ -18,7 +18,7 @@ struct ActorPack
 	std::vector<ComponentPack> actorComponents;
 };
 
-class ActorSerializer
+class CORE_API ActorSerializer
 {
 public:
 	static void CreateActorPack(Actor* actor, ActorPack& outPack);

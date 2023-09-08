@@ -13,6 +13,7 @@
 #include "gameframework/actors/meshactor.h"
 #include "gameframework/actors/spectator.h"
 
+CORE_API
 CLASS_LIST_BEGIN(ENGINE_CLASSES)
 {
 	CLASS_LIST_ADD(GroovyObject),
