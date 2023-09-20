@@ -41,13 +41,19 @@ int32 GroovyEntryPoint(const char* args)
 	std::string gameDllPath = (gProj.GetProjectFilePath().parent_path() / "bin" / LINKER_OUTPUT_DIR / gProj.GetProjectName() / (gProj.GetProjectName() + ".dll")).string();
 	
 	void* gameDll = Lib::LoadDll(gameDllPath);
-	checkslowf(gameDll, "Game dll not found, path: %s", gameDllPath.c_str());
-	
-	void* gameClassesList = Lib::GetSymbol(gameDll, "GAME_CLASSES_LIST");
-	checkslowf(gameClassesList, "Game classes list not found in game dll");
 
-	std::vector<GroovyClass*>* gameClassesListVec = (std::vector<GroovyClass*>*)gameClassesList;
-	GAME_CLASSES = *gameClassesListVec;
+	if (!gameDll)
+	{
+		SysMessageBox::Show_Warning("Game dll not found!", "Unable to load game code: " + gameDllPath + ", starting without game code...");
+	}
+	else
+	{
+		void* gameClassesList = Lib::GetSymbol(gameDll, "GAME_CLASSES_LIST");
+		checkslowf(gameClassesList, "Game classes list not found in game dll");
+
+		std::vector<GroovyClass*>* gameClassesListVec = (std::vector<GroovyClass*>*)gameClassesList;
+		GAME_CLASSES = *gameClassesListVec;
+	}
 
 #else
 
@@ -147,7 +153,8 @@ int32 GroovyEntryPoint(const char* args)
 
 #if !BUILD_MONOLITHIC
 
-	Lib::UnloadDll(gameDll);
+	if(gameDll)
+		Lib::UnloadDll(gameDll);
 
 #endif
 
