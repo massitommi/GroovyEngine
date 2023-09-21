@@ -708,8 +708,10 @@ void EditorSettingsWindow::RenderContent()
 
 void HelpWindow::RenderContent()
 {
-	ImGui::Text("- Press F3 to toggle wireframe view");
+	ImGui::Text("- Hold down the right mouse button to look around");
+	ImGui::Text("- While holding down the right mouse button, use WASD to move around");
 	ImGui::Text("- Press Shift + F1 to enable cursor during PIE (Play In Editor)");
+	ImGui::Text("- Press F3 to toggle wireframe view");
 }
 
 AudioClipInfoWindow::AudioClipInfoWindow(const AssetHandle& asset)
