@@ -115,9 +115,9 @@ namespace ProjectCreator.forms
             {
                 StreamWriter quickLaunchBat = new StreamWriter(Path.Combine(fullPath, "LaunchEditor.bat"), false);
                 quickLaunchBat.Write(string.Format(launchBatTemplate,
-                    Path.Combine(Settings.GetEngineLocation(), "Editor"),                                                       // working dir
-                    Path.Combine(Settings.GetEngineLocation(), "bin", "Debug_Editor-windows-x86_64", "Editor", "Editor.exe"),   // exe
-                    Path.Combine(fullPath, NewProjectNameTxt.Text + ".groovyproj")                                              // args
+                    Path.Combine(Settings.GetEngineLocation(), "Editor"),                                                           // working dir
+                    Path.Combine(Settings.GetEngineLocation(), "bin", "Development-windows-x86_64", "Editor", "Editor.exe"),        // exe
+                    Path.Combine(fullPath, NewProjectNameTxt.Text + ".groovyproj")                                                  // args
                     ));
                 quickLaunchBat.Close();
             }
@@ -125,9 +125,9 @@ namespace ProjectCreator.forms
             {
                 StreamWriter quickLaunchBat = new StreamWriter(Path.Combine(fullPath, "LaunchSandxbox.bat"), false);
                 quickLaunchBat.Write(string.Format(launchBatTemplate,
-                    Path.Combine(Settings.GetEngineLocation(), "Sandbox"),                                                      // working dir
-                    Path.Combine(Settings.GetEngineLocation(), "bin", "Debug_Game-windows-x86_64", "Sandbox", "Sandbox.exe"),   // exe
-                    Path.Combine(fullPath, NewProjectNameTxt.Text + ".groovyproj")                                              // args
+                    Path.Combine(Settings.GetEngineLocation(), "Sandbox"),                                                          // working dir
+                    Path.Combine(Settings.GetEngineLocation(), "bin", "Development-windows-x86_64", "Sandbox", "Sandbox.exe"),      // exe
+                    Path.Combine(fullPath, NewProjectNameTxt.Text + ".groovyproj")                                                  // args
                     ));
                 quickLaunchBat.Close();
             }

@@ -4,13 +4,6 @@
 
 #if _MSC_VER
 	#define DEBUG_BREAK() __debugbreak()
-/*
-* other compilers:
-
-#else
-	#define DEBUG_BREAK() compilerBreak()
-
-*/
 #else
 	#define DEBUG_BREAK()
 #endif
@@ -32,11 +25,16 @@
 	#define GET_CURRENT_PROC() GVY_EXPAND_MACRO(__FUNCTION__)
 #endif
 
-CORE_API void DisplayAssertError(const char* condition, const char* file, int line, const char* proc, const char* msg, ...);
+CORE_API void DisplayAssertError(const char* condition, const char* file, int line, const char* proc, const char* msg);
 
-#define ASSERT_SHOW_MSG(Condition, Msg, ...) DisplayAssertError(#Condition, __FILE__, __LINE__, GET_CURRENT_PROC(), Msg, __VA_ARGS__ )
-
-#define	CORE_ASSERT(Condition, Msg, ...) { bool assertResult = (Condition); if(!assertResult) { ASSERT_SHOW_MSG(Condition, Msg, __VA_ARGS__); ASSERT_FAIL_BREAK(); } }
+#define	CORE_ASSERT(Condition, Msg)														\
+{																						\
+	if(!(Condition))																	\
+	{																					\
+		DisplayAssertError(#Condition, __FILE__, __LINE__, GET_CURRENT_PROC(), Msg);	\
+		ASSERT_FAIL_BREAK();															\
+	}																					\
+}
 
 /* Asserts guide:
 * - checkslow : Evaluates and checks the condition ALL THE TIME IN EVERY BUILD CONFIGURATION
@@ -44,16 +42,16 @@ CORE_API void DisplayAssertError(const char* condition, const char* file, int li
 * - check : In debug mode evaluates and checks the condition, in shipping the code is stripped out
 */
 
-#define checkslowf(Condition, Msg, ...) CORE_ASSERT(Condition, Msg, __VA_ARGS__)
-
 #if !BUILD_SHIPPING
-	#define verifyf(Condition, Msg, ...) CORE_ASSERT(Condition, Msg, __VA_ARGS__)
-	#define checkf(Condition, Msg, ...) CORE_ASSERT(Condition, Msg, __VA_ARGS__)
+	#define checkf(Condition, Msg)	CORE_ASSERT(Condition, Msg)
+	#define verifyf(Condition, Msg)	CORE_ASSERT(Condition, Msg)
 #else
-	#define verifyf(Condition, Msg, ...) { bool assertResult = (Condition);  }
-	#define checkf(Condition, Msg, ...)  {}
+	#define checkf(Condition, Msg)
+	#define verifyf(Condition, Msg)	{ bool verifyRes = (Condition); }
 #endif
 
-#define verify(Condition) verifyf(Condition, "")
-#define check(Condition) checkf(Condition, "")
-#define checkslow(Condition) checkslowf(Condition, "")
+#define checkslowf(Condition, Msg)	CORE_ASSERT(Condition, Msg)
+
+#define check(Condition)			checkf(Condition, "")
+#define verify(Condition)			verifyf(Condition, "")
+#define checkslow(Condition)		checkslowf(Condition, "")

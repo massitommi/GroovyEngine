@@ -139,7 +139,7 @@ namespace ImGui
 	void PushMultiItemsWidths(int components, float w_full);
 }
 
-static bool Vec3Control(const char* label, void* data)
+static bool Vec3Control(const char* label, void* data, float speed)
 {
 	// stolen ui code for Vector3 control, thanks Cherno
 
@@ -174,7 +174,7 @@ static bool Vec3Control(const char* label, void* data)
 
 	ImGui::SameLine();
 
-	if (ImGui::DragFloat("##X", &((Vec3*)data)->x, 0.01f, 0.0f, 0.0f))
+	if (ImGui::DragFloat("##X", &((Vec3*)data)->x, speed, 0.0f, 0.0f))
 		changed = true;
 
 	ImGui::PopItemWidth();
@@ -193,7 +193,7 @@ static bool Vec3Control(const char* label, void* data)
 
 	ImGui::SameLine();
 
-	if (ImGui::DragFloat("##Y", &((Vec3*)data)->y, 0.01f, 0.0f, 0.0f))
+	if (ImGui::DragFloat("##Y", &((Vec3*)data)->y, speed, 0.0f, 0.0f))
 		changed = true;
 
 	ImGui::PopItemWidth();
@@ -212,7 +212,7 @@ static bool Vec3Control(const char* label, void* data)
 
 	ImGui::SameLine();
 
-	if (ImGui::DragFloat("##Z", &((Vec3*)data)->z, 0.01f, 0.0f, 0.0f))
+	if (ImGui::DragFloat("##Z", &((Vec3*)data)->z, speed, 0.0f, 0.0f))
 		changed = true;
 
 	ImGui::PopItemWidth();
@@ -232,9 +232,9 @@ bool editorGui::Transform(const char* label, void* data)
 {
 	struct Transform* t = (struct Transform*)data;
 	ImGui::NewLine();
-	bool loc = Vec3Control("Location", &t->location);
-	bool rot = Vec3Control("Rotation", &t->rotation);
-	bool scale = Vec3Control("Scale", &t->scale);
+	bool loc = Vec3Control("Location", &t->location, 0.01f);
+	bool rot = Vec3Control("Rotation", &t->rotation, 0.1f);
+	bool scale = Vec3Control("Scale", &t->scale, 0.01f);
 	return loc || rot || scale;
 }
 

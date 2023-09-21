@@ -1921,7 +1921,9 @@ void editor::Render()
 
 		if (ImGui::BeginMenu("Help"))
 		{
-			windows::AddWindow<HelpWindow>("Help window");
+			if(ImGui::MenuItem("Help"))
+				windows::AddWindow<HelpWindow>("Help window");
+			
 			ImGui::EndMenu();
 		}
 

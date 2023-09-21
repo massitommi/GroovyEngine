@@ -2,9 +2,8 @@
     
     configurations
     {
-        "Debug_Editor",
-        "Development_Editor",
-        "Debug_Game",
+        "Debug",
+        "Development",
         "Shipping"
     }
 
@@ -18,16 +17,14 @@
 
     disablewarnings "4251"
 
-    filter "configurations:Debug_Editor or Development_Editor"
-        defines "WITH_EDITOR"
+    filter "configurations:Debug"
+        optimize "Off"
+        defines { "BUILD_DEBUG", "WITH_EDITOR" }
     filter {}
 
-    filter "configurations:Debug_Editor or Debug_Game"
-        defines "BUILD_DEBUG"
-    filter {}
-
-    filter "configurations:Development_Editor"
+    filter "configurations:Development"
         optimize "On"
+        defines { "BUILD_DEVELOPMENT", "WITH_EDITOR" }
     filter {}
 
     filter "configurations:Shipping"

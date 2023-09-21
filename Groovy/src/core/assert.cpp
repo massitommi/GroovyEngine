@@ -1,37 +1,32 @@
 #include "assert.h"
+#include "core.h"
 #include "platform/messagebox.h"
+#include "utils/string/string_utils.h"
 
-#include <cstdarg>
-#include <string.h>
-#include <stdio.h>
+constexpr const char* ASSERT_ERROR_MESSAGE =
+"Assertion failed!\n\n"
+"Condition: %s\n"
+"File: %s\n"
+"Line: %i\n"
+"Proc: %s\n\n"
+"%s";
 
-const char* ASSERTION_FAILED_TEMPLATE_MSG =
-"Assertion failed: %s \n"
-"[File: %s] [Line: %i] [Proc: %s] \n"
-"Message: %s"
-;
+constexpr const char* ASSERT_ERROR_NOMSG =
+"Assertion failed!\n\n"
+"Condition: %s\n"
+"File: %s\n"
+"Line: %i\n"
+"Proc: %s\n\n";
 
-const char* ASSERTION_FAILED_TEMPLATE_NOMSG =
-"Assertion failed: %s \n"
-"[File: %s] [Line: %i] [Proc: %s]"
-;
-
-void DisplayAssertError(const char* condition, const char* file, int line, const char* proc, const char* msg, ...)
+void DisplayAssertError(const char* condition, const char* file, int line, const char* proc, const char* msg)
 {
-	char* userMsg = (char*)malloc(256);
-	memset(userMsg, 0, 256);
+	char* errorMsg = (char*)malloc(512);
+	memset(errorMsg, 0, 512);
+	
+	if(msg)
+		sprintf_s(errorMsg, 512, ASSERT_ERROR_MESSAGE, condition, file, line, proc, msg);
+	else
+		sprintf_s(errorMsg, 512, ASSERT_ERROR_NOMSG, condition, file, line, proc);
 
-	va_list args;
-	va_start(args, msg);
-	vsnprintf(userMsg, 256, msg, args);
-	va_end(args);
-
-	char* finalMsgBuffer = (char*)malloc(1024);
-	memset(finalMsgBuffer, 0, 1024);
-
-	const char* msgTemplate = strlen(msg) ? ASSERTION_FAILED_TEMPLATE_MSG : ASSERTION_FAILED_TEMPLATE_NOMSG;
-
-	snprintf(finalMsgBuffer, 1024, msgTemplate, condition, file, line, proc, userMsg);
-
-	SysMessageBox::Show("Fatal error!", finalMsgBuffer, MESSAGE_BOX_TYPE_ERROR, MESSAGE_BOX_OPTIONS_OK);
+	SysMessageBox::Show("Fatal error!", errorMsg, MESSAGE_BOX_TYPE_ERROR, MESSAGE_BOX_OPTIONS_OK);
 }

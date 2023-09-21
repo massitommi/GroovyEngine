@@ -13,3 +13,24 @@ bool stringUtils::EqualsCaseInsensitive(const std::string& str1, const std::stri
 
 	return true;
 }
+
+bool stringUtils::Replace(std::string& str, std::string_view find, std::string_view replace)
+{
+	size_t pos = str.find(find);
+	if (pos != std::string::npos)
+	{
+		str.replace(pos, find.length(), replace);
+		return true;
+	}
+	return false;
+}
+
+uint32 stringUtils::ReplaceAll(std::string& str, std::string_view find, std::string_view replace)
+{
+	uint32 replaceCount = 0;
+
+	while (Replace(str, find, replace))
+		replaceCount++;
+	
+	return replaceCount;
+}
