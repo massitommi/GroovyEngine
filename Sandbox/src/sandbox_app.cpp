@@ -6,7 +6,7 @@
 #include "platform/messagebox.h"
 #include "renderer/scene_renderer.h"
 #include "platform/window.h"
-#include "gameframework/components/cameracomponent.h"
+#include "gameframework/components/camera_component.h"
 #include "platform/input.h"
 #include "renderer/api/renderer_api.h"
 #include "audio/audio.h"
@@ -17,6 +17,11 @@ static float sAspectRatio = 0.0f;
 void OnWndResize(uint32 width, uint32 height)
 {
 	sAspectRatio = (float)width / (float)height;
+}
+
+void Application::PreInit()
+{
+
 }
 
 void Application::Init()
@@ -92,22 +97,4 @@ void Application::Shutdown()
 {
 	if (sScene)
 		sScene->Unload();
-}
-
-void Application::Travel(Scene* scene)
-{
-	sScene->Unload();
-	Audio::StopEverything();
-
-	sScene = scene;
-
-	if (scene)
-	{
-		scene->Load();
-		scene->BeginPlay();
-	}
-	else
-	{
-		gEngineShouldRun = false;
-	}
 }

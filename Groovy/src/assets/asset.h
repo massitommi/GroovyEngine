@@ -47,6 +47,8 @@ public:
 
     virtual AssetUUID GetUUID() const = 0;
 
+    std::string GetAssetName() const;
+
     virtual bool IsLoaded() const = 0;
     virtual void Load() = 0;
     virtual void Save() = 0;

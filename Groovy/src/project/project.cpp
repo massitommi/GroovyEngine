@@ -18,10 +18,14 @@ void GroovyProject::Load()
 {
 	Buffer fileData;
 	FileSystem::ReadFileBinary(mProjFilePath.string(), fileData);
-	PropertyPack pack;
-	BufferView fileDataView(fileData);
-	ObjectSerializer::DeserializePropertyPack(GroovyProject::StaticClass(), fileDataView, pack);
-	ObjectSerializer::DeserializePropertyPackData(pack, this);
+
+	if (fileData.size())
+	{
+		PropertyPack pack;
+		BufferView fileDataView(fileData);
+		ObjectSerializer::DeserializePropertyPack(GroovyProject::StaticClass(), fileDataView, pack);
+		ObjectSerializer::DeserializePropertyPackData(pack, this);
+	}
 }
 
 void GroovyProject::Save()

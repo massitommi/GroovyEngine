@@ -4,7 +4,7 @@
 #include "assets/asset_loader.h"
 #include "assets/asset_serializer.h"
 #include "assets/asset_manager.h"
-#include "components/meshcomponent.h"
+#include "components/mesh_component.h"
 #include "utils/reflection/reflection_utils.h"
 #include "classes/class_db.h"
 

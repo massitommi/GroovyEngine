@@ -1,6 +1,6 @@
 #pragma once
 
-#include "coreminimal.h"
+#include "api.h"
 
 #if _MSC_VER
 	#define DEBUG_BREAK() __debugbreak()

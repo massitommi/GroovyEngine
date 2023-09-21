@@ -5,12 +5,12 @@ static FMOD_SYSTEM* sFMODSystem = nullptr;
 static constexpr uint32 FMOD_MAX_CHANNELS = 32;
 static std::vector<AudioClipHandle> sClips;
 
-#define FMOD_ASSERT(FMOD_CALL, Msg) { FMOD_RESULT fmod_res = FMOD_CALL; CORE_ASSERT(fmod_res == FMOD_OK, Msg ", FMOD error code: %i", fmod_res); }
+#define FMOD_ASSERT(FMOD_CALL, Msg) CORE_ASSERT((FMOD_CALL) == FMOD_OK, Msg)
 
 void Audio::Init()
 {
 	FMOD_ASSERT(FMOD_System_Create(&sFMODSystem, FMOD_VERSION), "Unable to create FMOD system");
-	FMOD_ASSERT(FMOD_System_Init(sFMODSystem, FMOD_MAX_CHANNELS, FMOD_INIT_NORMAL, nullptr));
+	FMOD_ASSERT(FMOD_System_Init(sFMODSystem, FMOD_MAX_CHANNELS, FMOD_INIT_NORMAL, nullptr), "Unable to init FMOD system");
 }
 
 void Audio::Shutdown()

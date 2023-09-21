@@ -198,7 +198,10 @@ void ObjectSerializer::DeserializePropertyPack(GroovyClass* gClass, BufferView& 
 	checkslow(gClass);
 
 	if (!fileData.remaining())
+	{
+		GROOVY_LOG_WARN("ObjectSerializer::DeserializePropertyPack file is empty, skipping deserialization");
 		return;
+	}
 
 	uint32 propCount = fileData.read<uint32>();
 
@@ -232,7 +235,7 @@ void ObjectSerializer::DeserializePropertyPack(GroovyClass* gClass, BufferView& 
 		}
 		else
 		{
-			// TODO: Warning: property not found, class changed, please sanitize blueprint!
+			GROOVY_LOG_WARN("ObjectSerializer::DeserializePropertyPack property '%s' not found in class '%s', please sanitize asset", name.c_str(), gClass->name.c_str());
 		}
 
 		fileData.advance(sizeBytes);

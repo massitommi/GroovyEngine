@@ -24,13 +24,21 @@ void OnWndResizeCallback(uint32 width, uint32 height)
 
 int32 GroovyEntryPoint(const char* args)
 {
+	Application::PreInit();
+
 	if (!args[0])
 	{
-		SysMessageBox::Show_Error("Project not found!", "Project not found!");
+		SysMessageBox::Show_Error("Can't launch without a project!", "Can't launch without a project!");
 		return -1;
 	}
 
 	gProj.BuildPaths(args);
+
+	if (!FileSystem::FileExists(gProj.GetProjectFilePath().string()))
+	{
+		SysMessageBox::Show_Error("Project not found!", "Can't find " + std::string(args));
+		return -1;
+	}
 
 	for (GroovyClass* c : ENGINE_CLASSES)
 		gClassDB.Register(c);

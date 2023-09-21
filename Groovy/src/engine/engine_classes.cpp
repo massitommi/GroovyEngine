@@ -6,11 +6,11 @@
 #include "renderer/mesh.h"
 
 #include "gameframework/actor.h"
-#include "gameframework/actorcomponent.h"
-#include "gameframework/components/meshcomponent.h"
-#include "gameframework/components/cameracomponent.h"
-#include "gameframework/components/audiocomponent.h"
-#include "gameframework/actors/meshactor.h"
+#include "gameframework/actor_component.h"
+#include "gameframework/components/mesh_component.h"
+#include "gameframework/components/camera_component.h"
+#include "gameframework/components/audio_component.h"
+#include "gameframework/actors/mesh_actor.h"
 #include "gameframework/actors/spectator.h"
 
 CORE_API

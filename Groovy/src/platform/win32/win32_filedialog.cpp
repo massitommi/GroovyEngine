@@ -14,6 +14,10 @@ static std::string GetNativeFilters(const ExtensionFilters& filters)
 	for (const ExtensionFilter& filter : filters)
 	{
 		finalFilter.append(filter.description);
+
+		for (const std::string& e : filter.extensions)
+			finalFilter.append(" (" + e + ")");
+
 		finalFilter.append("\0", 1);
 		for (const std::string& extension : filter.extensions)
 		{

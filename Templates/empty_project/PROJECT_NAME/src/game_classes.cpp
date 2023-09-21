@@ -1,15 +1,29 @@
-#include "game.h"
+#include "game_api.h"
 #include "classes/class.h"
 
-// Add your game classes here
+/*
+	Include your classes here...
+
+	#include "myclass1.h"
+	#include "myclass2.h"
+	#include "myclass3.h"
+
+
+*/
 
 
 GAME_CLASS_LIST_BEGIN {
-
 GAME_API CLASS_LIST_BEGIN(GAME_CLASSES_LIST)
 {
-	
-}
-CLASS_LIST_END()
+	/*
+		Add your classes here...
 
+
+		CLASS_LIST_ADD(MyClass1),
+		CLASS_LIST_ADD(MyClass2),
+		CLASS_LIST_ADD(MyClass3)
+
+	
+	*/
 }
+CLASS_LIST_END() }

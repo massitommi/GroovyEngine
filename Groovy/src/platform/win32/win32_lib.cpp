@@ -5,12 +5,22 @@
 
 void* Lib::LoadDll(const std::string& path)
 {
-	return LoadLibraryA(path.c_str());
+	HMODULE lib = LoadLibraryA(path.c_str());
+	if (!lib)
+	{
+		GROOVY_LOG_ERR("Lib::LoadDll Unable to load dll");
+	}
+	return lib;
 }
 
 void Lib::UnloadDll(void* dll)
 {
-	check(FreeLibrary((HMODULE)dll));
+	check(dll);
+
+	if (!FreeLibrary((HMODULE)dll))
+	{
+		GROOVY_LOG_ERR("Lib::UnloadDll Unable to unload dll");
+	}
 }
 
 void* Lib::GetSymbol(void* program, const std::string& symbolName)

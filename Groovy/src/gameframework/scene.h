@@ -1,7 +1,7 @@
 #pragma once
 
 #include "actor.h"
-#include "actorcomponent.h"
+#include "actor_component.h"
 #include "blueprint.h"
 
 class CORE_API Scene : public AssetInstance

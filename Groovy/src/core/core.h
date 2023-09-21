@@ -7,3 +7,4 @@
 
 #include "assert.h"
 #include "buffer.h"
+#include "log.h"

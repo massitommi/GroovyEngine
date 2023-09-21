@@ -30,7 +30,7 @@ void ObjectBlueprint::Serialize(DynamicBuffer& fileData) const
 {
 	if (!mGroovyClass)
 	{
-		// TODO: Warning: This blueprint cannot be serialized because the class is not set
+		GROOVY_LOG_WARN("%s Serialization skipped, class is NULL", GetAssetName().c_str());
 		return;
 	}
 
@@ -42,7 +42,7 @@ void ObjectBlueprint::Deserialize(BufferView fileData)
 {
 	if (!fileData.remaining())
 	{
-		// TODO: Warning: Empty blueprint file
+		GROOVY_LOG_WARN("%s file is empty, deserialization skipped", GetAssetName().c_str());
 		return;
 	}
 
@@ -57,14 +57,17 @@ void ObjectBlueprint::Deserialize(BufferView fileData)
 	}
 	else
 	{
-		// TODO: Warning: This Class does not exist anymore
+		GROOVY_LOG_WARN("%s class '%s' not found in class DB", GetAssetName().c_str(), className.c_str());
 	}
 }
 
 void ObjectBlueprint::CopyProperties(GroovyObject* obj)
 {
 	if (!mGroovyClass)
+	{
+		GROOVY_LOG_WARN("%s CopyProperties skipped, class is NULL", GetAssetName().c_str());
 		return;
+	}
 
 	check(obj);
 	check(obj->GetClass() == mGroovyClass);
@@ -162,7 +165,7 @@ void ActorBlueprint::Serialize(DynamicBuffer& fileData) const
 {
 	if (!mActorPack.actorClass)
 	{
-		// TODO: Warning: This blueprint cannot be serialized because the Actor class is not set
+		GROOVY_LOG_WARN("%s Serialization skipped, actor class is NULL", GetAssetName().c_str());
 		return;
 	}
 
@@ -173,14 +176,17 @@ void ActorBlueprint::Deserialize(BufferView fileData)
 {
 	if (!fileData.remaining())
 	{
-		// TODO: Warning: Empty blueprint file
+		GROOVY_LOG_WARN("%s file is empty, deserialization skipped", GetAssetName().c_str());
 		return;
 	}
 
 	ActorSerializer::DeserializeActorPack(fileData, mActorPack);
 
 	if (!mActorPack.actorClass)
+	{
+		GROOVY_LOG_WARN("%s actor class is NULL, skipping deserialization", GetAssetName().c_str());
 		return;
+	}
 
 	mDefaultActor = ObjectAllocator::Instantiate<Actor>(mActorPack.actorClass);
 	ActorSerializer::DeserializeActorPackData(mActorPack, mDefaultActor);
@@ -193,6 +199,10 @@ void ActorBlueprint::CopyProperties(Actor* actor)
 	if (mActorPack.actorClass)
 	{
 		ActorSerializer::DeserializeActorPackData(mActorPack, actor);
+	}
+	else
+	{
+		GROOVY_LOG_WARN("%s actor class is NULL, CopyProperties skipped", GetAssetName().c_str());
 	}
 }
 

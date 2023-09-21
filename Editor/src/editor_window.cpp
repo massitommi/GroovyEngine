@@ -12,7 +12,7 @@
 #include "gameframework/blueprint.h"
 #include "runtime/object_allocator.h"
 #include "gameframework/actor.h"
-#include "gameframework/actorcomponent.h"
+#include "gameframework/actor_component.h"
 #include "editor.h"
 #include "renderer/api/framebuffer.h"
 #include "renderer/renderer.h"

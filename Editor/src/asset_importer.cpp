@@ -15,41 +15,61 @@
 #include "renderer/mesh.h"
 #include "classes/object_serializer.h"
 
+#include "utils/string/string_utils.h"
+
 #define DEFAULT_IMAGE_IMPORT_CHANNELS 4
 
-const char* TEXTURE_IMPORTABLE_EXT[] =
+const std::vector<SupportedImport> sSupportedImports =
 {
-    ".jpg",
-    ".jpeg",
-    ".png"
-};
+    // textures
+    {
+        {
+            "Texture",
 
-const char* MESH_IMPORTABLE_EXT[] =
-{
-    ".obj"
-};
+            {
+                "*.jpg",
+                "*.jpeg",
+                "*.png"
+            }
+        },
 
-const char* AUDIO_IMPORTABLE_EXT[] =
-{
-    ".wav"
+        ASSET_TYPE_TEXTURE
+    },
+    // 3d models
+    {
+        {
+            "3D Model",
+
+            {
+                "*.obj"
+            }
+        },
+
+        ASSET_TYPE_MESH
+    },
+    // audio files
+    {
+        {
+            "Audio file",
+
+            {
+                "*.wav"
+            }
+        },
+
+        ASSET_TYPE_AUDIO_CLIP
+    },
 };
 
 EAssetType AssetImporter::GetTypeFromFilename(const std::string& filename)
 {
     std::string fileExt = std::filesystem::path(filename).extension().string();
-    // check for textures
-    for (auto ext : TEXTURE_IMPORTABLE_EXT)
-        if (fileExt == ext)
-            return ASSET_TYPE_TEXTURE;
-    // check for 3d meshes
-    for (auto ext : MESH_IMPORTABLE_EXT)
-        if (fileExt == ext)
-            return ASSET_TYPE_MESH;
-    // check audio files
-    for (auto ext : AUDIO_IMPORTABLE_EXT)
-        if (fileExt == ext)
-            return ASSET_TYPE_AUDIO_CLIP;
-    // nothing to do
+
+    for (const SupportedImport& import : sSupportedImports)
+        for (const std::string& ext : import.extensions.extensions)
+            if (stringUtils::EqualsCaseInsensitive(ext.c_str() + 1, fileExt))
+                return import.type;
+
     return ASSET_TYPE_NONE;
 }
 
@@ -58,7 +78,6 @@ bool AssetImporter::GetRawTexture(const std::string& compressedFile, Buffer& out
     Buffer imgCompressed;
     if (FileSystem::ReadFileBinary(compressedFile, imgCompressed) != FILE_OPEN_RESULT_OK)
     {
-        // todo log -> file not found or something
         return false;
     }
 
@@ -67,7 +86,7 @@ bool AssetImporter::GetRawTexture(const std::string& compressedFile, Buffer& out
     stbi_uc* imgData = stbi_load_from_memory(imgCompressed.data(), imgCompressed.size(), &imgWidth, &imgHeight, &imgChannels, DEFAULT_IMAGE_IMPORT_CHANNELS);
     if (!imgData)
     {
-        // todo: log this -> stbi_failure_reason()
+        GROOVY_LOG_ERR("Unable to stbi_load_from_memory, error: %s", stbi_failure_reason());
         return false;
     }
     outBuffer.resize(imgWidth * imgHeight * imgChannels);
@@ -79,13 +98,57 @@ bool AssetImporter::GetRawTexture(const std::string& compressedFile, Buffer& out
     return true;
 }
 
+void AssetImporter::TryImportAsset(const std::string& file)
+{
+    std::string newFileName = std::filesystem::path(file).replace_extension(GROOVY_ASSET_EXT).filename().string();
+
+    if (AssetManager::FindByPath(newFileName).instance)
+    {
+        SysMessageBox::Show_Error("Can't import file", "Can't import file, a file with the same name is already in the assets folder!");
+        return;
+    }
+
+    EAssetType assetType = AssetImporter::GetTypeFromFilename(file);
+
+    if (assetType == ASSET_TYPE_NONE)
+    {
+        SysMessageBox::Show_Error("Unable to import asset", "Asset type not supported!");
+        return;
+    }
+
+    bool importedSuccessfully = false;
+    switch (assetType)
+    {
+    case ASSET_TYPE_TEXTURE:
+        importedSuccessfully = AssetImporter::ImportTexture(file, newFileName);
+        break;
+
+    case ASSET_TYPE_MESH:
+        importedSuccessfully = AssetImporter::ImportMesh(file, newFileName);
+        break;
+
+    case ASSET_TYPE_AUDIO_CLIP:
+        importedSuccessfully = AssetImporter::ImportAudio(file, newFileName);
+        break;
+    }
+
+    if (importedSuccessfully)
+        SysMessageBox::Show_Info("Asset imported successfully!", "Asset imported successfully!");
+    else
+        SysMessageBox::Show_Error("Asset import failed!", "Unable to import asset :(");
+}
+
+const std::vector<SupportedImport>& AssetImporter::GetSupportedImports()
+{
+    return sSupportedImports;
+}
+
 bool AssetImporter::ImportTexture(const std::string& originalFile, const std::string& newFile)
 {
     // load the compressed file
     Buffer imgCompressed;
     if (FileSystem::ReadFileBinary(originalFile, imgCompressed) != FILE_OPEN_RESULT_OK)
     {
-        // todo log -> file not found or something
         return false;
     }
 
@@ -95,7 +158,7 @@ bool AssetImporter::ImportTexture(const std::string& originalFile, const std::st
     stbi_uc* imgData = stbi_load_from_memory(imgCompressed.data(), imgCompressed.size(), &imgWidth, &imgHeight, &imgChannels, DEFAULT_IMAGE_IMPORT_CHANNELS);
     if (!imgData)
     {
-        // todo: log this -> stbi_failure_reason()
+        GROOVY_LOG_ERR("Unable to stbi_load_from_memory, error: %s", stbi_failure_reason());
         return false;
     }
 
@@ -114,7 +177,6 @@ bool AssetImporter::ImportTexture(const std::string& originalFile, const std::st
 
     if (FileSystem::WriteFileBinary((gProj.GetAssetsPath() / newFile).string(), groovyTexture) != FILE_OPEN_RESULT_OK)
     {
-        // log
         return false;
     }
 
@@ -140,7 +202,9 @@ bool AssetImporter::ImportMesh(const std::string& originalFile, const std::strin
     }
 
     if (!warn.empty())
-        SysMessageBox::Show_Warning("Import model warn", warn);
+    {
+        GROOVY_LOG_WARN("tinyobj LoadObj warning: %s", warn.c_str());
+    }
 
     Buffer fileData;
     size_t vertexBufferSize = 0;
@@ -238,7 +302,6 @@ bool AssetImporter::ImportMesh(const std::string& originalFile, const std::strin
 
     if (FileSystem::WriteFileBinary((gProj.GetAssetsPath() / newFile).string(), finalFileData) != FILE_OPEN_RESULT_OK)
     {
-        // log
         return false;
     }
     

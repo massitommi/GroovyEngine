@@ -321,6 +321,7 @@ void AssetManager::Init()
 	{
 		if (!FileSystem::FileExists((gProj.GetAssetsPath() / registry[i].name).string()))
 		{
+			GROOVY_LOG_ERR("Registry asset '%s' not found on disk", registry[i].name.c_str());
 			registry.erase(registry.begin() + i);
 			i--;
 		}

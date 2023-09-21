@@ -2,8 +2,8 @@
 #include "renderer.h"
 #include "math/math.h"
 #include "gameframework/scene.h"
-#include "gameframework/components/cameracomponent.h"
-#include "gameframework/components/meshcomponent.h"
+#include "gameframework/components/camera_component.h"
+#include "gameframework/components/mesh_component.h"
 
 void SceneRenderer::BeginScene(CameraComponent* camera, float aspectRatio)
 {	

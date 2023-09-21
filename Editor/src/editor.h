@@ -21,6 +21,8 @@ namespace editor
 	void Render();
 	void Shutdown();
 
+	void ConsoleLog(ELogSeverity severity, const char* msg);
+
 	Scene* GetEditScene();
 	void FlagEditScenePendingSave();
 

@@ -1,6 +1,6 @@
 #include "string_utils.h"
 
-bool stringUtils::EqualsCaseInsensitive(const std::string& str1, const std::string& str2)
+bool stringUtils::EqualsCaseInsensitive(std::string_view str1, std::string_view str2)
 {
 	if (str1.length() != str2.length())
 		return false;
@@ -33,4 +33,31 @@ uint32 stringUtils::ReplaceAll(std::string& str, std::string_view find, std::str
 		replaceCount++;
 	
 	return replaceCount;
+}
+
+std::string stringUtils::ToString(Vec2 vec)
+{
+	const char* format = "X= %4.3f   Y= %4.3f";
+	char buffer[64];
+	sprintf_s(buffer, 64, format, vec.x, vec.y);
+
+	return buffer;
+}
+
+std::string stringUtils::ToString(Vec3 vec)
+{
+	const char* format = "X= %4.3f   Y= %4.3f   Z= %4.3f";
+	char buffer[96];
+	sprintf_s(buffer, 96, format, vec.x, vec.y, vec.z);
+
+	return buffer;
+}
+
+std::string stringUtils::ToString(Vec4 vec)
+{
+	const char* format = "X= %4.3f   Y= %4.3f   Z= %4.3f   W= %4.3f";
+	char buffer[128];
+	sprintf_s(buffer, 128, format, vec.x, vec.y, vec.z, vec.w);
+
+	return buffer;
 }

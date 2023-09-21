@@ -1,5 +1,5 @@
 #include "spectator.h"
-#include "gameframework/components/cameracomponent.h"
+#include "gameframework/components/camera_component.h"
 #include "platform/input.h"
 
 GROOVY_CLASS_IMPL(Spectator)

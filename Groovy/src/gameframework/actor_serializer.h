@@ -1,7 +1,7 @@
 #pragma once
 
 #include "actor.h"
-#include "actorcomponent.h"
+#include "actor_component.h"
 
 struct ComponentPack
 {

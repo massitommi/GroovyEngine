@@ -57,7 +57,10 @@ EFileOpenResult FileSystem::ReadFileBinary(const std::string& path, void* outBuf
 	HANDLE handle = CreateFileA(path.c_str(), GENERIC_READ, 0, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
 
 	if (handle == INVALID_HANDLE_VALUE)
+	{
+		GROOVY_LOG_ERR("FileSystem::ReadFileBinary Unable to open file %s", path.c_str());
 		return FILE_OPEN_RESULT_UNKNOWN_ERROR;
+	}
 
 	DWORD fileSize = ::GetFileSize(handle, 0);
 	DWORD bytesToRead = bufferSize < fileSize ? bufferSize : fileSize;
@@ -81,7 +84,10 @@ EFileOpenResult FileSystem::ReadFileBinary(const std::string& path, Buffer& outB
 	HANDLE handle = CreateFileA(path.c_str(), GENERIC_READ, 0, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
 
 	if (handle == INVALID_HANDLE_VALUE)
+	{
+		GROOVY_LOG_ERR("FileSystem::ReadFileBinary Unable to open file %s", path.c_str());
 		return FILE_OPEN_RESULT_UNKNOWN_ERROR;
+	}
 
 	DWORD fileSize = GetFileSize(handle, 0);
 	DWORD bytesToRead = fileSize;
@@ -105,7 +111,7 @@ EFileOpenResult FileSystem::WriteFileBinary(const std::string& path, const void*
 	HANDLE handle = CreateFileA(path.c_str(), GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
 	if (handle == INVALID_HANDLE_VALUE)
 	{
-		// todo log something
+		GROOVY_LOG_ERR("FileSystem::WriteFileBinary Unable to write file %s", path.c_str());
 		return FILE_OPEN_RESULT_UNKNOWN_ERROR;
 	}
 
@@ -120,7 +126,7 @@ EFileOpenResult FileSystem::OverwriteFileBinary(const std::string& path, const v
 	HANDLE handle = CreateFileA(path.c_str(), GENERIC_WRITE, 0, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
 	if (handle == INVALID_HANDLE_VALUE)
 	{
-		// todo log something
+		GROOVY_LOG_ERR("FileSystem::OverwriteFileBinary Unable to overwrite file %s", path.c_str());
 		return FILE_OPEN_RESULT_UNKNOWN_ERROR;
 	}
 
@@ -140,6 +146,8 @@ EFileOpenResult FileSystem::DeleteFile(const std::string& path)
 {
 	if (DeleteFileA(path.c_str()))
 		return FILE_OPEN_RESULT_OK;
+
+	GROOVY_LOG_ERR("FileSystem::DeleteFile Unable to delete file %s", path.c_str());
 	return FILE_OPEN_RESULT_UNKNOWN_ERROR;
 }
 

@@ -17,13 +17,13 @@
 #include "asset_importer.h"
 
 #include "gameframework/actor.h"
-#include "gameframework/actors/meshactor.h"
+#include "gameframework/actors/mesh_actor.h"
 #include "gameframework/actors/spectator.h"
-#include "gameframework/actorcomponent.h"
+#include "gameframework/actor_component.h"
 #include "gameframework/blueprint.h"
 #include "gameframework/scene.h"
-#include "gameframework/components/cameracomponent.h"
-#include "gameframework/components/meshcomponent.h"
+#include "gameframework/components/camera_component.h"
+#include "gameframework/components/mesh_component.h"
 #include "gameframework/blueprint.h"
 
 #include "classes/class_db.h"
@@ -271,29 +271,7 @@ void OnFilesDropped(const std::vector<std::string>& files)
 {
 	for (const std::string& file : files)
 	{
-		std::string newFileName = std::filesystem::path(file).replace_extension(GROOVY_ASSET_EXT).filename().string();
-
-		if (AssetManager::FindByPath(newFileName).instance)
-		{
-			SysMessageBox::Show_Error("Can't import file", "Can't import file, a file with the same name is already in the assets folder!");
-			return;
-		}
-
-		EAssetType assetType = AssetImporter::GetTypeFromFilename(file);
-		switch (assetType)
-		{
-			case ASSET_TYPE_TEXTURE:
-				AssetImporter::ImportTexture(file, newFileName);
-				break;
-
-			case ASSET_TYPE_MESH:
-				AssetImporter::ImportMesh(file, newFileName);
-				break;
-
-			case ASSET_TYPE_AUDIO_CLIP:
-				AssetImporter::ImportAudio(file, newFileName);
-				break;
-		}
+		AssetImporter::TryImportAsset(file);
 	}
 }
 
@@ -713,6 +691,12 @@ namespace assetPopups
 	}
 }
 
+struct LogDesc
+{
+	uint32 length;
+	ELogSeverity severity;
+};
+
 namespace panels
 {
 	static Actor* sActorToRename = nullptr;
@@ -721,6 +705,10 @@ namespace panels
 
 	static const float ICON_SIZE_MAX = 256.0f;
 	static const float ICON_SIZE_MIN = 100.0f;
+
+	static std::string sLogsBuffer;
+	static std::vector<LogDesc> sLogs;
+	int sLogSeverityFilter = LOG_SEVERITY_INFO | LOG_SEVERITY_WARNING | LOG_SEVERITY_ERROR;
 
 	static const const char* TYPES_STR[] =
 	{
@@ -804,9 +792,26 @@ namespace panels
 
 		ImGui::Spacing();
 		ImGui::SetNextItemWidth(200);
-		ImGui::SliderFloat("Item size", &gEditorSettings.mContentBrowserIconSize, ICON_SIZE_MIN, ICON_SIZE_MAX);
+		ImGui::SliderFloat("Zoom", &gEditorSettings.mContentBrowserIconSize, ICON_SIZE_MIN, ICON_SIZE_MAX);
+		ImGui::SameLine();
+		if (ImGui::Button("Import"))
+		{
+			ExtensionFilters exts;
+
+			for (const auto& import : AssetImporter::GetSupportedImports())
+				exts.push_back(import.extensions);
+
+			std::string fileToImport = FileDialog::OpenFileDialog("Select asset to import", exts);
+
+			if(!fileToImport.empty())
+			{
+				AssetImporter::TryImportAsset(fileToImport);
+			}
+		}
 		ImGui::Spacing();
 		ImGui::Spacing();
+
+		ImGui::BeginChild("Asset list");
 
 		if (ImGui::BeginPopupContextWindow("Asset manager", ImGuiPopupFlags_MouseButtonRight))
 		{
@@ -976,6 +981,8 @@ namespace panels
 			ImGui::NextColumn();
 		}
 
+		ImGui::EndChild();
+
 		ImGui::End();
 	}
 
@@ -1004,12 +1011,14 @@ namespace panels
 
 		ImGui::Spacing();
 		ImGui::SetNextItemWidth(200);
-		ImGui::SliderFloat("Item size", &gEditorSettings.mContentBrowserIconSize, ICON_SIZE_MIN, ICON_SIZE_MAX);
+		ImGui::SliderFloat("Zoom", &gEditorSettings.mContentBrowserIconSize, ICON_SIZE_MIN, ICON_SIZE_MAX);
 		ImGui::Checkbox("Show engine classes", &gEditorSettings.mClassBrowserShowEngineClasses);
 		ImGui::SameLine();
 		ImGui::Checkbox("Show game classes", &gEditorSettings.mClassBrowserShowGameClasses);
 		ImGui::Spacing();
 		ImGui::Spacing();
+
+		ImGui::BeginChild("Class list");
 
 		ImGui::Columns(columns, nullptr, false);
 
@@ -1042,6 +1051,8 @@ namespace panels
 			ImGui::PopID();
 			ImGui::NextColumn();
 		}
+
+		ImGui::EndChild();
 
 		ImGui::End();
 	}
@@ -1713,6 +1724,69 @@ namespace panels
 		ImGui::PopStyleVar(2);
 		ImGui::PopStyleColor();
 	}
+
+	void Console()
+	{
+		ImGui::Begin("Console");
+
+		if (ImGui::Button("Clear"))
+		{
+			sLogsBuffer.clear();
+			sLogs.clear();
+		}
+
+		ImGui::SameLine();
+		ImGui::CheckboxFlags("Info", &sLogSeverityFilter, LOG_SEVERITY_INFO);
+		ImGui::SameLine();
+		ImGui::CheckboxFlags("Warning", &sLogSeverityFilter, LOG_SEVERITY_WARNING);
+		ImGui::SameLine();
+		ImGui::CheckboxFlags("Error", &sLogSeverityFilter, LOG_SEVERITY_ERROR);
+
+		ImGui::Spacing();
+		ImGui::Spacing();
+
+		ImGui::BeginChild("Logs");
+		char* consoleCursor = (char*)sLogsBuffer.c_str();
+		for (LogDesc logDesc : sLogs)
+		{
+			if (logDesc.severity & sLogSeverityFilter)
+			{
+				ImGui::Spacing();
+
+				ImVec4 col = { 0.5f, 0.0f, 0.5f, 1.0f };
+				switch (logDesc.severity)
+				{
+					case LOG_SEVERITY_INFO:
+						col = { 1.0f, 1.0f, 1.0f, 1.0f };
+						break;
+
+					case LOG_SEVERITY_WARNING:
+						col = { 1.0f, 1.0f, 0.0f, 1.0f };
+						break;
+
+					case LOG_SEVERITY_ERROR:
+						col = { 1.0f, 0.0f, 0.0f, 1.0f };
+						break;
+				}
+
+				ImGui::PushStyleColor(ImGuiCol_Text, col);
+				ImGui::Text(consoleCursor);
+				ImGui::PopStyleColor();
+
+				ImGui::Spacing();
+				ImGui::Separator();
+			}
+
+			consoleCursor += logDesc.length;
+		}
+
+		if (ImGui::GetScrollY() >= ImGui::GetScrollMaxY())
+			ImGui::SetScrollHereY(1.0f);
+
+		ImGui::EndChild();
+
+		ImGui::End();
+	}
 }
 
 void editor::Init()
@@ -1959,6 +2033,7 @@ void editor::Render()
 		ImGui::EndMenuBar();
 	}
 
+	panels::Console();
 	panels::Classes();
 	panels::Assets();
 	panels::GameViewport();
@@ -1981,6 +2056,23 @@ void editor::Shutdown()
 	windows::Shutdown();
 	res::Unload();
 	delete sGameViewportFrameBuffer;
+}
+
+void editor::ConsoleLog(ELogSeverity severity, const char* msg)
+{
+	size_t msgLen = strlen(msg) + 1;
+
+	if (panels::sLogsBuffer.size() >= 1024 * 1024) // clear console after 1mb of logs
+	{
+		panels::sLogs.clear();
+		panels::sLogsBuffer.clear();
+	}
+
+	LogDesc& desc = panels::sLogs.emplace_back();
+	desc.length = msgLen;
+	desc.severity = severity;
+
+	panels::sLogsBuffer.append(msg, msgLen);
 }
 
 Scene* editor::GetEditScene()

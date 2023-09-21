@@ -5,7 +5,7 @@
 #include "classes/class.h"
 #include "gameframework/blueprint.h"
 #include "gameframework/actor.h"
-#include "gameframework/actorcomponent.h"
+#include "gameframework/actor_component.h"
 
 bool editorGui::AssetRef(const char* label, EAssetType type, void* data, bool allowNull, GroovyClass* classFilter)
 {

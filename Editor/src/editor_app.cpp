@@ -17,6 +17,11 @@ ImGuiRenderer* gGroovyGuiRenderer = nullptr;
 
 extern CORE_API Shader* DEFAULT_SHADER;
 
+void Application::PreInit()
+{
+	SetGroovyLogger(editor::ConsoleLog);
+}
+
 void Application::Init()
 {
 	EditorWndProcCallback = ImGui_ImplWin32_WndProcHandler;
@@ -61,9 +66,4 @@ void Application::Shutdown()
 	delete gGroovyGuiRenderer;
 
 	ImGui::DestroyContext();
-}
-
-void Application::Travel(Scene* scene)
-{
-	SysMessageBox::Show_Warning("Can't travel in the editor", "Traveling in the editor isn't currently supported");
 }

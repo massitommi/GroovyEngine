@@ -1,7 +1,7 @@
 #include "actor_serializer.h"
 #include "classes/object_serializer.h"
 #include "classes/class_db.h"
-#include "actorcomponent.h"
+#include "actor_component.h"
 #include "blueprint.h"
 
 void ActorSerializer::CreateActorPack(Actor* actor, ActorPack& outPack)
@@ -98,6 +98,7 @@ void ActorSerializer::DeserializeActorPack(BufferView& fileData, ActorPack& outP
 	
 	if (!actorClass || !GroovyClass_IsA(actorClass, Actor::StaticClass()))
 	{
+		GROOVY_LOG_WARN("ActorSerializer::DeserializeActorPack actor class '%s' not found in class DB, skipping deserialization, please sanitize this asset", actorClassName.c_str());
 		fileData.advance(actorFileSize);
 		return;
 	}
@@ -114,6 +115,7 @@ void ActorSerializer::DeserializeActorPack(BufferView& fileData, ActorPack& outP
 
 		if (!componentClass || !GroovyClass_IsA(componentClass, ActorComponent::StaticClass()))
 		{
+			GROOVY_LOG_WARN("ActorSerializer::DeserializeActorPack component class '%s' not found in class DB, skipping deserialization, please sanitize this asset", componentClassName.c_str());
 			fileData.advance(componentSubfileSize);
 			continue;
 		}

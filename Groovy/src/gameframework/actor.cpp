@@ -1,5 +1,5 @@
 #include "actor.h"
-#include "actorcomponent.h"
+#include "actor_component.h"
 #include "blueprint.h"
 #include "runtime/object_allocator.h"
 
@@ -158,7 +158,7 @@ ActorComponent* Actor::AddComponent(GroovyClass* componentClass, const std::stri
 	checkf(name.length() && std::count(name.begin(), name.end(), ' ') < name.length(), "Invalid component name");
 
 	ActorComponent*& dbRecord = mComponentsDB[name];
-	checkf(dbRecord == nullptr, "Component with name %s already exists!", name.c_str());
+	checkf(dbRecord == nullptr, "Component with same name already exists!");
 
 	ActorComponent* newComponent = ObjectAllocator::Instantiate<ActorComponent>(componentClass);
 
