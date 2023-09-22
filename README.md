@@ -16,7 +16,6 @@ I wanted to recreate that system and so I did.
 # How to build
 The engine is structured to support multiple platforms but currently only Windows is implemented.
 To build the Visual Studio 2022 solution just run "GenWinProjects.bat", open the .sln file, and build!
-Note: Make sure you build the right project with the right configuration (dont' build Sandbox with Editor_ configurations).
 
 # How to run
 The engine in order to run needs a project and the game code (If you build for shipping everything is statically linked, game code included; needs some setup).
