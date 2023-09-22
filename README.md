@@ -65,6 +65,7 @@ GAME_API CLASS_LIST_BEGIN(GAME_CLASSES_LIST)
 }
 CLASS_LIST_END() }
 ```
+Take a look at the DemoProject for examples.
 
 # Prerequisites
 - DirectX stuff
