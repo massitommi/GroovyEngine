@@ -12,7 +12,7 @@
 #include "imgui_renderer/imgui_renderer.h"
 
 #include "platform/platform.h"
-#include "project/project.h"
+#include "engine/project.h"
 #include "assets/assets.h"
 #include "asset_importer.h"
 
@@ -40,7 +40,7 @@
 
 #include "math/math.h"
 
-#include "utils/string/string_utils.h"
+#include "utils/string_utils.h"
 
 void EditorSettings::Load()
 {

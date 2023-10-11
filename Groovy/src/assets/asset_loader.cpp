@@ -1,7 +1,7 @@
 #include "asset_loader.h"
 #include "platform/filesystem.h"
 #include "asset_manager.h"
-#include "project/project.h"
+#include "engine/project.h"
 
 #include "renderer/api/texture.h"
 #include "renderer/api/shader.h"

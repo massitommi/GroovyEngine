@@ -1,6 +1,6 @@
 #include "demo_rotating_component.h"
 #include "gameframework/actor.h"
-#include "utils/string/string_utils.h"
+#include "utils/string_utils.h"
 
 GROOVY_CLASS_IMPL(DemoRotatingComponent)
 	GROOVY_REFLECT(mRotation)

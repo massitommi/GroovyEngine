@@ -1,7 +1,7 @@
 #pragma once
 
 #include "core/core.h"
-#include "project/project.h"
+#include "engine/project.h"
 #include "classes/class_db.h"
 
 extern CORE_API bool gEngineShouldRun;

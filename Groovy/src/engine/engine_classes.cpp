@@ -1,6 +1,6 @@
 #include "classes/class.h"
 
-#include "project/project.h"
+#include "engine/project.h"
 
 #include "renderer/material.h"
 #include "renderer/mesh.h"

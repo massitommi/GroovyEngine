@@ -10,12 +10,12 @@
 
 #include "assets/asset_manager.h"
 
-#include "project/project.h"
+#include "engine/project.h"
 
 #include "renderer/mesh.h"
 #include "classes/object_serializer.h"
 
-#include "utils/string/string_utils.h"
+#include "utils/string_utils.h"
 
 #define DEFAULT_IMAGE_IMPORT_CHANNELS 4
 

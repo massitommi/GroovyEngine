@@ -1,6 +1,6 @@
 #include "class_db.h"
 #include "runtime/object_allocator.h"
-#include "utils/reflection/reflection_utils.h"
+#include "utils/reflection_utils.h"
 
 ClassDB::ClassDB()
 {

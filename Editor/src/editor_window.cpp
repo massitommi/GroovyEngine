@@ -5,7 +5,7 @@
 #include "platform/messagebox.h"
 #include "classes/object_serializer.h"
 #include "assets/assets.h"
-#include "project/project.h"
+#include "engine/project.h"
 #include "classes/class.h"
 #include "classes/class_db.h"
 #include "renderer/mesh.h"

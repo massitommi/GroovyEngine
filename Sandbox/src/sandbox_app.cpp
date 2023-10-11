@@ -1,7 +1,7 @@
 #include "engine/application.h"
 #include "engine/engine.h"
 #include "gameframework/scene.h"
-#include "project/project.h"
+#include "engine/project.h"
 #include "assets/asset_manager.h"
 #include "platform/messagebox.h"
 #include "renderer/scene_renderer.h"

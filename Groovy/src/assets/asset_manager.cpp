@@ -1,6 +1,6 @@
 #include "asset_manager.h"
 #include "platform/filesystem.h"
-#include "project/project.h"
+#include "engine/project.h"
 #include "asset_loader.h"
 #include <random>
 #include "renderer/api/renderer_api.h"
@@ -11,7 +11,7 @@
 #include "gameframework/blueprint.h"
 #include "gameframework/scene.h"
 #include "audio/audio_clip.h"
-#include "utils/string/string_utils.h"
+#include "utils/string_utils.h"
 #include "audio/audio_clip.h"
 
 static std::map<AssetUUID, AssetHandle> sAssetRegistry;

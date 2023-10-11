@@ -1,7 +1,7 @@
 #include "assert.h"
 #include "core.h"
 #include "platform/messagebox.h"
-#include "utils/string/string_utils.h"
+#include "utils/string_utils.h"
 
 constexpr const char* ASSERT_ERROR_MESSAGE =
 "Assertion failed!\n\n"
