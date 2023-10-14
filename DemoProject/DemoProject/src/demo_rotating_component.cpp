@@ -21,6 +21,6 @@ void DemoRotatingComponent::Tick(float deltaTime)
 	Super::Tick(deltaTime);
 
 	Vec3 rot = GetOwner()->GetRotation();
-	rot += mRotation;
+	rot += mRotation * deltaTime;
 	GetOwner()->SetRotation(rot);
 }
