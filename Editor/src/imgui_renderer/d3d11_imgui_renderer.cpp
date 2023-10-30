@@ -16,7 +16,7 @@ static uint32 imguiBlendMask;
 void D3D11_ImGuiRenderer::Init()
 {
 	ImGui_ImplWin32_Init(gWindow->GetNativeHandle());
-	ImGui_ImplDX11_Init(d3dUtils::gDevice, d3dUtils::gContext);
+	ImGui_ImplDX11_Init(d3d11Utils::gDevice, d3d11Utils::gContext);
 }
 
 void D3D11_ImGuiRenderer::Shutdown()
@@ -41,9 +41,9 @@ void D3D11_ImGuiRenderer::SetGroovyRenderState()
 	ImGui::GetWindowDrawList()->AddCallback(
 		[](const ImDrawList* imdrawlist, const ImDrawCmd* cmd)
 		{
-			d3dUtils::gContext->OMGetBlendState(&imguiBlendState, imguiBlendFactor, &imguiBlendMask);
+			d3d11Utils::gContext->OMGetBlendState(&imguiBlendState, imguiBlendFactor, &imguiBlendMask);
 			imguiBlendState->Release();
-			d3dUtils::gContext->OMSetBlendState(0, 0, 0xffffffff);
+			d3d11Utils::gContext->OMSetBlendState(0, 0, 0xffffffff);
 
 		}, nullptr);
 }
@@ -53,7 +53,7 @@ void D3D11_ImGuiRenderer::SetImguiRenderState()
 	ImGui::GetWindowDrawList()->AddCallback(
 		[](const ImDrawList* imdrawlist, const ImDrawCmd* cmd)
 		{
-			d3dUtils::gContext->OMSetBlendState(imguiBlendState, imguiBlendFactor, imguiBlendMask);
+			d3d11Utils::gContext->OMSetBlendState(imguiBlendState, imguiBlendFactor, imguiBlendMask);
 
 		}, nullptr);
 }

@@ -35,7 +35,7 @@ D3D11RendererAPI::D3D11RendererAPI(RendererAPISpec spec, Window* wnd)
         d3dcheckslow(D3D11CreateDeviceAndSwapChain
         (
             nullptr, D3D_DRIVER_TYPE_HARDWARE, 0, SWAPCHAIN_FLAG_DEBUG, 0, 0,
-            D3D11_SDK_VERSION, &swapchainDesc, &d3dUtils::gSwapChain, &d3dUtils::gDevice, 0, &d3dUtils::gContext
+            D3D11_SDK_VERSION, &swapchainDesc, &d3d11Utils::gSwapChain, &d3d11Utils::gDevice, 0, &d3d11Utils::gContext
         ));
     }
 
@@ -49,7 +49,7 @@ D3D11RendererAPI::D3D11RendererAPI(RendererAPISpec spec, Window* wnd)
         viewport.MinDepth = 0.0f;
         viewport.MaxDepth = 1.0f;
 
-        d3dUtils::gContext->RSSetViewports(1, &viewport);
+        d3d11Utils::gContext->RSSetViewports(1, &viewport);
     }
 
     // sampler
@@ -65,32 +65,32 @@ D3D11RendererAPI::D3D11RendererAPI(RendererAPISpec spec, Window* wnd)
 
         ID3D11SamplerState* sampler;
 
-        d3dcheckslow(d3dUtils::gDevice->CreateSamplerState(&samplerDesc, &sampler));
+        d3dcheckslow(d3d11Utils::gDevice->CreateSamplerState(&samplerDesc, &sampler));
 
-        d3dUtils::gContext->PSSetSamplers(0, 1, &sampler);
+        d3d11Utils::gContext->PSSetSamplers(0, 1, &sampler);
         
         sampler->Release();
     }
 
     // primitive topology
     {
-        d3dUtils::gContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+        d3d11Utils::gContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
     }
 }
 
 void D3D11RendererAPI::DrawIndexed(uint32 vertexOffset, uint32 indexOffset, uint32 indexCount)
 {
-    d3dUtils::gContext->DrawIndexed(indexCount, indexOffset, vertexOffset);
+    d3d11Utils::gContext->DrawIndexed(indexCount, indexOffset, vertexOffset);
 }
 
 void D3D11RendererAPI::Present()
 {
-    d3dUtils::gSwapChain->Present(mSpec.vsync, 0);
+    d3d11Utils::gSwapChain->Present(mSpec.vsync, 0);
 }
 
 void D3D11RendererAPI::SetFullscreen(bool fullscreen)
 {
-    d3dcheckslow(d3dUtils::gSwapChain->SetFullscreenState(fullscreen, nullptr));
+    d3dcheckslow(d3d11Utils::gSwapChain->SetFullscreenState(fullscreen, nullptr));
 }
 
 void D3D11RendererAPI::SetVSync(uint32 syncInterval)
@@ -130,8 +130,25 @@ void D3D11RendererAPI::SetRasterizerState(RasterizerState newState)
             checkslowf(0, "ERasterizerCullMode enum value not implemented");
     }
 
-    ID3D11RasterizerState* newRasterizerState = d3dUtils::CreateRasterizerState(nativeFillMode, nativeCullMode);
-    d3dUtils::gContext->RSSetState(newRasterizerState);
+    D3D11_RASTERIZER_DESC desc = {};
+
+    // custom stuff
+    desc.CullMode = nativeCullMode;
+    desc.FillMode = nativeFillMode;
+    desc.MultisampleEnable = false;
+    desc.AntialiasedLineEnable = false;
+
+    // default stuff
+    desc.FrontCounterClockwise = false;
+    desc.DepthBias = 0;
+    desc.SlopeScaledDepthBias = 0.0f;
+    desc.DepthBiasClamp = 0.0f;
+    desc.DepthClipEnable = true;
+    desc.ScissorEnable = false;
+
+    ID3D11RasterizerState* newRasterizerState = nullptr;
+    d3dcheckslow(d3d11Utils::gDevice->CreateRasterizerState(&desc, &newRasterizerState));
+    d3d11Utils::gContext->RSSetState(newRasterizerState);
     newRasterizerState->Release();
 
     mRasterizerState = newState;
@@ -141,12 +158,12 @@ D3D11RendererAPI::~D3D11RendererAPI()
 {
 #if 0
     ID3D11Debug* boh;
-    d3dUtils::gDevice->QueryInterface(__uuidof(ID3D11Debug), reinterpret_cast<void**>(&boh));
+    d3d11Utils::gDevice->QueryInterface(__uuidof(ID3D11Debug), reinterpret_cast<void**>(&boh));
     boh->ReportLiveDeviceObjects(D3D11_RLDO_DETAIL);
 #endif
-    d3dUtils::gSwapChain->Release();
-    d3dUtils::gContext->Release();
-    d3dUtils::gDevice->Release();
+    d3d11Utils::gSwapChain->Release();
+    d3d11Utils::gContext->Release();
+    d3d11Utils::gDevice->Release();
 }
 
 #endif

@@ -3,6 +3,7 @@
 #include "d3d11_shader.h"
 #include "d3d11_utils.h"
 
+#define SHADER_ENTRYPOINT "main"
 #define VERTEX_SHADER_TARGET_VER "vs_5_0"
 #define PIXEL_SHADER_TARGET_VER "ps_5_0"
 
@@ -69,7 +70,7 @@ static DXGI_FORMAT GetNativeVarType(const D3D11_SIGNATURE_PARAMETER_DESC& inputD
 	return DXGI_FORMAT_R32_FLOAT;
 }
 
-std::vector<ConstBufferDesc> GetBuffersDesc(ID3D11ShaderReflection* reflector, const D3D11_SHADER_DESC& desc)
+static std::vector<ConstBufferDesc> GetBuffersDesc(ID3D11ShaderReflection* reflector, const D3D11_SHADER_DESC& desc)
 {
 	std::vector<ConstBufferDesc> res;
 	res.resize(desc.ConstantBuffers);
@@ -107,7 +108,7 @@ std::vector<ConstBufferDesc> GetBuffersDesc(ID3D11ShaderReflection* reflector, c
 	return res;
 }
 
-std::vector<ShaderResTexture> GetTextures(ID3D11ShaderReflection* reflector, const D3D11_SHADER_DESC& desc)
+static std::vector<ShaderResTexture> GetTextures(ID3D11ShaderReflection* reflector, const D3D11_SHADER_DESC& desc)
 {
 	std::vector<ShaderResTexture> res;
 	D3D11_SHADER_INPUT_BIND_DESC resDesc;
@@ -124,15 +125,27 @@ std::vector<ShaderResTexture> GetTextures(ID3D11ShaderReflection* reflector, con
 	return res;
 }
 
+static ID3DBlob* CompileShader(const char* target, const void* src, size_t srcSize)
+{
+	ID3DBlob* bytecode;
+	ID3DBlob* error;
+	d3dcheckslowf(D3DCompile(src, srcSize, nullptr, nullptr, nullptr, SHADER_ENTRYPOINT, target, 0, 0, &bytecode, &error), (const char*)error);
+
+	if (error)
+		error->Release();
+
+	return bytecode;
+}
+
 D3D11Shader::D3D11Shader(const void* vertexSrc, size_t vertexSize, const void* pixelSrc, size_t pixelSize)
 	: mUUID(0)
 {
 	// compile and create the shaders
-	ID3DBlob* vertexBytecode = d3dUtils::CompileShader(VERTEX_SHADER_TARGET_VER, vertexSrc, vertexSize);
-	ID3DBlob* pixelBytecode = d3dUtils::CompileShader(PIXEL_SHADER_TARGET_VER, pixelSrc, pixelSize);
+	ID3DBlob* vertexBytecode = CompileShader(VERTEX_SHADER_TARGET_VER, vertexSrc, vertexSize);
+	ID3DBlob* pixelBytecode = CompileShader(PIXEL_SHADER_TARGET_VER, pixelSrc, pixelSize);
 
-	mVertex = d3dUtils::CreateVertexShader(vertexBytecode);
-	mPixel = d3dUtils::CreatePixelShader(pixelBytecode);
+	d3dcheckslow(d3d11Utils::gDevice->CreateVertexShader(vertexBytecode->GetBufferPointer(), vertexBytecode->GetBufferSize(), nullptr, &mVertex));
+	d3dcheckslow(d3d11Utils::gDevice->CreatePixelShader(pixelBytecode->GetBufferPointer(), pixelBytecode->GetBufferSize(), nullptr, &mPixel));
 
 	// startup reflecion
 	ID3D11ShaderReflection* vertexReflector = nullptr;
@@ -151,13 +164,17 @@ D3D11Shader::D3D11Shader(const void* vertexSrc, size_t vertexSize, const void* p
 
 	// pixel const buffers data
 	mPixelConstBuffers.resize(mPixelConstBuffersDesc.size());
+
+	D3D11_BUFFER_DESC constBufferDesc = {};
+	constBufferDesc.ByteWidth = 0;
+	constBufferDesc.Usage = D3D11_USAGE_DYNAMIC;
+	constBufferDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+	constBufferDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+
 	for (uint32 i = 0; i < mPixelConstBuffers.size(); i++)
 	{
-		mPixelConstBuffers[i] = d3dUtils::CreateBuffer
-		(
-			D3D11_BIND_CONSTANT_BUFFER, D3D11_CPU_ACCESS_WRITE, D3D11_USAGE_DYNAMIC,
-			mPixelConstBuffersDesc[i].size, nullptr
-		);
+		constBufferDesc.ByteWidth = mPixelConstBuffersDesc[i].size;
+		d3dcheckslow(d3d11Utils::gDevice->CreateBuffer(&constBufferDesc, nullptr, &mPixelConstBuffers[i]));
 	}
 
 	// vertex input layout
@@ -178,13 +195,12 @@ D3D11Shader::D3D11Shader(const void* vertexSrc, size_t vertexSize, const void* p
 		layout[i].InstanceDataStepRate = 0;
 	}
 
-	mInputLayout = d3dUtils::CreateInputLayout(vertexBytecode, layout.data(), layout.size());
-
+	d3dcheckslow(d3d11Utils::gDevice->CreateInputLayout(layout.data(), layout.size(), vertexBytecode->GetBufferPointer(), vertexBytecode->GetBufferSize(), &mInputLayout));
 
 	// textures
 	mResTextures = GetTextures(pixelReflector, pixelDesc);
 
-
+	// cleanup
 	vertexReflector->Release();
 	pixelReflector->Release();
 	vertexBytecode->Release();
@@ -203,10 +219,10 @@ D3D11Shader::~D3D11Shader()
 
 void D3D11Shader::Bind()
 {
-	d3dUtils::gContext->VSSetShader(mVertex, nullptr, 0);
-	d3dUtils::gContext->PSSetShader(mPixel, nullptr, 0);
-	d3dUtils::gContext->IASetInputLayout(mInputLayout);
-	d3dUtils::gContext->PSSetConstantBuffers(0, mPixelConstBuffers.size(), mPixelConstBuffers.data());
+	d3d11Utils::gContext->VSSetShader(mVertex, nullptr, 0);
+	d3d11Utils::gContext->PSSetShader(mPixel, nullptr, 0);
+	d3d11Utils::gContext->IASetInputLayout(mInputLayout);
+	d3d11Utils::gContext->PSSetConstantBuffers(0, mPixelConstBuffers.size(), mPixelConstBuffers.data());
 }
 
 uint32 D3D11Shader::GetVertexConstBufferIndex(const std::string& bufferName)
@@ -238,8 +254,8 @@ void D3D11Shader::OverwritePixelConstBuffer(uint32 index, void* data)
 	check(index < mPixelConstBuffers.size());
 
 	D3D11_MAPPED_SUBRESOURCE mappedRes;
-	d3dverify(d3dUtils::gContext->Map(mPixelConstBuffers[index], 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedRes));
+	d3dverify(d3d11Utils::gContext->Map(mPixelConstBuffers[index], 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedRes));
 	memcpy(mappedRes.pData, data, mPixelConstBuffersDesc[index].size);
-	d3dUtils::gContext->Unmap(mPixelConstBuffers[index], 0);
+	d3d11Utils::gContext->Unmap(mPixelConstBuffers[index], 0);
 }
 #endif
