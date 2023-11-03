@@ -89,8 +89,8 @@ bool AssetImporter::GetRawTexture(const std::string& compressedFile, Buffer& out
         GROOVY_LOG_ERR("Unable to stbi_load_from_memory, error: %s", stbi_failure_reason());
         return false;
     }
-    outBuffer.resize(imgWidth * imgHeight * imgChannels);
-    memcpy(outBuffer.data(), imgData, imgWidth * imgHeight * imgChannels);
+    outBuffer.resize(imgWidth * imgHeight * DEFAULT_IMAGE_IMPORT_CHANNELS);
+    memcpy(outBuffer.data(), imgData, imgWidth * imgHeight * DEFAULT_IMAGE_IMPORT_CHANNELS);
     outSpec.format = COLOR_FORMAT_R8G8B8A8_UNORM;
     outSpec.width = imgWidth;
     outSpec.height = imgHeight;
