@@ -13,25 +13,27 @@
 #include "gameframework/actors/mesh_actor.h"
 #include "gameframework/actors/spectator.h"
 
-CORE_API
-CLASS_LIST_BEGIN(ENGINE_CLASSES)
+
+#define CLASS_LIST				CORE_API std::vector<GroovyClass*>
+#define ADD_CLASS(Class)		&GROOVY_CLASS_NAME(Class)
+
+CLASS_LIST ENGINE_CLASSES
 {
-	CLASS_LIST_ADD(GroovyObject),
-	
-	CLASS_LIST_ADD(GroovyProject),
+	ADD_CLASS(GroovyObject),
 
-	CLASS_LIST_ADD(MaterialAssetFile),
-	CLASS_LIST_ADD(MeshAssetFile),
+	ADD_CLASS(GroovyProject),
 
-	CLASS_LIST_ADD(Actor),
-	CLASS_LIST_ADD(ActorComponent),
-	CLASS_LIST_ADD(SceneComponent),
+	ADD_CLASS(MaterialAssetFile),
+	ADD_CLASS(MeshAssetFile),
 
-	CLASS_LIST_ADD(MeshComponent),
-	CLASS_LIST_ADD(CameraComponent),
-	CLASS_LIST_ADD(AudioComponent),
+	ADD_CLASS(Actor),
+	ADD_CLASS(ActorComponent),
+	ADD_CLASS(SceneComponent),
 
-	CLASS_LIST_ADD(MeshActor),
-	CLASS_LIST_ADD(Spectator)
-}
-CLASS_LIST_END()
+	ADD_CLASS(MeshComponent),
+	ADD_CLASS(CameraComponent),
+	ADD_CLASS(AudioComponent),
+
+	ADD_CLASS(MeshActor),
+	ADD_CLASS(Spectator)
+};

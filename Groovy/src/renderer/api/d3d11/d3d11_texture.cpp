@@ -5,12 +5,11 @@
 
 static DXGI_FORMAT GetNativeFormat(EColorFormat format)
 {
-
 	switch (format)
 	{
 		case COLOR_FORMAT_R8G8B8A8_UNORM:	return DXGI_FORMAT_R8G8B8A8_UNORM;
 	}
-	checkf(0, "Unknown EColorFormat value: %u", (int)format);
+	checkf(0, "Unknown EColorFormat value");
 	return DXGI_FORMAT::DXGI_FORMAT_UNKNOWN;
 }
 

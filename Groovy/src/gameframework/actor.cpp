@@ -155,7 +155,7 @@ ActorComponent* Actor::AddComponent(GroovyClass* componentClass, const std::stri
 {
 	checkf(componentClass, "Component class is NULL");
 	checkf(GroovyClass_IsA(componentClass, ActorComponent::StaticClass()), "Component class is not an ActorComponent");
-	checkf(name.length() && std::count(name.begin(), name.end(), ' ') < name.length(), "Invalid component name");
+	checkf(name.length() && (size_t)std::count(name.begin(), name.end(), ' ') < name.length(), "Invalid component name");
 
 	ActorComponent*& dbRecord = mComponentsDB[name];
 	checkf(dbRecord == nullptr, "Component with same name already exists!");

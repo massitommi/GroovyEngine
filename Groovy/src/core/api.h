@@ -9,9 +9,6 @@
 	#else
 		#define CORE_API DLL_IMPORT
 	#endif
-
-	#define GAME_API DLL_EXPORT
 #else
 	#define CORE_API
-	#define GAME_API
 #endif

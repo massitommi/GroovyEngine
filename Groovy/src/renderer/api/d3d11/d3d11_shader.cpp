@@ -173,7 +173,7 @@ D3D11Shader::D3D11Shader(const void* vertexSrc, size_t vertexSize, const void* p
 
 	for (uint32 i = 0; i < mPixelConstBuffers.size(); i++)
 	{
-		constBufferDesc.ByteWidth = mPixelConstBuffersDesc[i].size;
+		constBufferDesc.ByteWidth = (UINT)mPixelConstBuffersDesc[i].size;
 		d3dcheckslow(d3d11Utils::gDevice->CreateBuffer(&constBufferDesc, nullptr, &mPixelConstBuffers[i]));
 	}
 
@@ -195,7 +195,7 @@ D3D11Shader::D3D11Shader(const void* vertexSrc, size_t vertexSize, const void* p
 		layout[i].InstanceDataStepRate = 0;
 	}
 
-	d3dcheckslow(d3d11Utils::gDevice->CreateInputLayout(layout.data(), layout.size(), vertexBytecode->GetBufferPointer(), vertexBytecode->GetBufferSize(), &mInputLayout));
+	d3dcheckslow(d3d11Utils::gDevice->CreateInputLayout(layout.data(), (UINT)layout.size(), vertexBytecode->GetBufferPointer(), vertexBytecode->GetBufferSize(), &mInputLayout));
 
 	// textures
 	mResTextures = GetTextures(pixelReflector, pixelDesc);
@@ -222,7 +222,7 @@ void D3D11Shader::Bind()
 	d3d11Utils::gContext->VSSetShader(mVertex, nullptr, 0);
 	d3d11Utils::gContext->PSSetShader(mPixel, nullptr, 0);
 	d3d11Utils::gContext->IASetInputLayout(mInputLayout);
-	d3d11Utils::gContext->PSSetConstantBuffers(0, mPixelConstBuffers.size(), mPixelConstBuffers.data());
+	d3d11Utils::gContext->PSSetConstantBuffers(0, (UINT)mPixelConstBuffers.size(), mPixelConstBuffers.data());
 }
 
 uint32 D3D11Shader::GetVertexConstBufferIndex(const std::string& bufferName)

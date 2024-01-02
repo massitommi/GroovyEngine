@@ -33,13 +33,13 @@ D3D11FrameBuffer::~D3D11FrameBuffer()
 
 void D3D11FrameBuffer::Bind()
 {
-	d3d11Utils::gContext->OMSetRenderTargets(mRenderTargets.size(), &mRenderTargets[0], mDepthBufferView);
+	d3d11Utils::gContext->OMSetRenderTargets((UINT)mRenderTargets.size(), &mRenderTargets[0], mDepthBufferView);
 
 	D3D11_VIEWPORT viewport = {};
 	viewport.TopLeftX = 0;
 	viewport.TopLeftY = 0;
-	viewport.Width = mSpec.width;
-	viewport.Height = mSpec.height;
+	viewport.Width = (FLOAT)mSpec.width;
+	viewport.Height = (FLOAT)mSpec.height;
 	viewport.MinDepth = 0.0f;
 	viewport.MaxDepth = 1.0f;
 

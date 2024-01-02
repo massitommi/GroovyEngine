@@ -139,7 +139,7 @@ bool reflectionUtils::PropertyIsEqual(GroovyObject* obj1, GroovyObject* obj2, co
 
 			default:
 				checkslowf(0, "Property comparison for this type not implemented");
-				break;
+				return false;
 		}
 	}
 }

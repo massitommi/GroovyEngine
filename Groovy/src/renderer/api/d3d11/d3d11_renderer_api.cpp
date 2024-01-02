@@ -44,8 +44,8 @@ D3D11RendererAPI::D3D11RendererAPI(RendererAPISpec spec, Window* wnd)
         D3D11_VIEWPORT viewport = {};
         viewport.TopLeftX = 0;
         viewport.TopLeftY = 0;
-        viewport.Width = wndProps.width;
-        viewport.Height = wndProps.height;
+        viewport.Width = (FLOAT)wndProps.width;
+        viewport.Height = (FLOAT)wndProps.height;
         viewport.MinDepth = 0.0f;
         viewport.MaxDepth = 1.0f;
 

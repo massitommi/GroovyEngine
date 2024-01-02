@@ -16,6 +16,6 @@ namespace math
 
 	inline constexpr float DegToRad(float degrees)
 	{
-		return degrees * PI / 180.0;
+		return (float)(degrees * PI / 180.0);
 	}
 }

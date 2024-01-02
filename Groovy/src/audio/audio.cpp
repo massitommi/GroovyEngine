@@ -28,7 +28,7 @@ AudioClipHandle Audio::CreateClip(BufferView& file)
 	FMOD_SOUND* res = nullptr;
 	FMOD_CREATESOUNDEXINFO desc = {};
 	desc.cbsize = sizeof(FMOD_CREATESOUNDEXINFO);
-	desc.length = file.remaining();
+	desc.length = (unsigned int)file.remaining();
 	FMOD_ASSERT(FMOD_System_CreateSound
 	(
 		sFMODSystem, (const char*)file.read_to_end(),

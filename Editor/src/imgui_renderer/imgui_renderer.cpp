@@ -7,5 +7,6 @@ ImGuiRenderer* ImGuiRenderer::Create()
 	{
 		case RENDERER_API_D3D11: return new D3D11_ImGuiRenderer();
 	}
-	checkslow(0, "No rendering api for editor WTF?");
+	checkslowf(0, "No rendering api for editor WTF?");
+	return nullptr;
 }

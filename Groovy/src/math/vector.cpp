@@ -9,9 +9,9 @@ Vec3 math::GetForwardVector(Vec3 rotation)
 
     Vec3 forward;
     
-    forward.x = cos(rotation.x) * sin(rotation.y);
-    forward.y = -sin(rotation.x);
-    forward.z = cos(rotation.x) * cos(rotation.y);
+    forward.x = (float)(cos(rotation.x) * sin(rotation.y));
+    forward.y = (float)-sin(rotation.x);
+    forward.z = (float)(cos(rotation.x) * cos(rotation.y));
     
     return forward;
 }
@@ -22,9 +22,9 @@ Vec3 math::GetRightVector(Vec3 rotation)
 
     Vec3 right;
 
-    right.x = cos(rotation.y);
+    right.x = (float)cos(rotation.y);
     right.y = 0.0f;
-    right.z = -sin(rotation.y);
+    right.z = (float)-sin(rotation.y);
 
     return right;
 }
@@ -38,7 +38,7 @@ Vec3 math::GetUpVector(Vec3 rotation)
 
 float math::Magnitude(Vec3 v)
 {
-    return sqrt(v.x * v.x + v.y * v.y + v.z * v.z);
+    return (float)sqrt(v.x * v.x + v.y * v.y + v.z * v.z);
 }
 
 Vec3 math::Normalize(Vec3 v)

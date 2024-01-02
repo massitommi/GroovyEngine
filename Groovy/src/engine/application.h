@@ -2,7 +2,7 @@
 #include "core/core.h"
 
 // to be defined in Editor or Sandbox
-class CORE_API Application
+class Application
 {
 public:
 	static void PreInit();

@@ -63,7 +63,7 @@ EFileOpenResult FileSystem::ReadFileBinary(const std::string& path, void* outBuf
 	}
 
 	DWORD fileSize = ::GetFileSize(handle, 0);
-	DWORD bytesToRead = bufferSize < fileSize ? bufferSize : fileSize;
+	DWORD bytesToRead = (DWORD)(bufferSize < fileSize ? bufferSize : fileSize);
 	DWORD bytesRead = 0;
 
 	if (bytesToRead)
@@ -115,7 +115,7 @@ EFileOpenResult FileSystem::WriteFileBinary(const std::string& path, const void*
 		return FILE_OPEN_RESULT_UNKNOWN_ERROR;
 	}
 
-	WriteFile(handle, data, sizeBytes, nullptr, nullptr);
+	WriteFile(handle, data, (DWORD)sizeBytes, nullptr, nullptr);
 	CloseHandle(handle);
 
 	return FILE_OPEN_RESULT_OK;
@@ -131,10 +131,10 @@ EFileOpenResult FileSystem::OverwriteFileBinary(const std::string& path, const v
 	}
 
 	OVERLAPPED overlap = {};
-	overlap.Offset = offset;
+	overlap.Offset = (DWORD)offset;
 	overlap.OffsetHigh = offset >> 32;
 
-	WriteFile(handle, data, sizeBytes, nullptr, &overlap);
+	WriteFile(handle, data, (DWORD)sizeBytes, nullptr, &overlap);
 	CloseHandle(handle);
 
 	return FILE_OPEN_RESULT_OK;

@@ -7,7 +7,7 @@ D3D11VertexBuffer::D3D11VertexBuffer(size_t size, void* data, uint32 stride)
 	: mSize(size), mStride(stride)
 {
 	D3D11_BUFFER_DESC desc = {};
-	desc.ByteWidth = size;
+	desc.ByteWidth = (UINT)size;
 	desc.Usage = D3D11_USAGE_DEFAULT;
 	desc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
 	desc.CPUAccessFlags = 0;
@@ -41,7 +41,7 @@ D3D11IndexBuffer::D3D11IndexBuffer(size_t size, void* data)
 	: mSize(size)
 {
 	D3D11_BUFFER_DESC desc = {};
-	desc.ByteWidth = size;
+	desc.ByteWidth = (UINT)size;
 	desc.Usage = D3D11_USAGE_DEFAULT;
 	desc.BindFlags = D3D11_BIND_INDEX_BUFFER;
 	desc.CPUAccessFlags = 0;
@@ -73,7 +73,7 @@ D3D11ConstBuffer::D3D11ConstBuffer(size_t size, void* data)
 	: mSize(size)
 {
 	D3D11_BUFFER_DESC desc = {};
-	desc.ByteWidth = size;
+	desc.ByteWidth = (UINT)size;
 	desc.Usage = D3D11_USAGE_DYNAMIC;
 	desc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
 	desc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;

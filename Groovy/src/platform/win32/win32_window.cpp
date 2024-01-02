@@ -58,14 +58,14 @@ static LRESULT CALLBACK GroovyWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARA
 		case WM_KEYDOWN:
 		case WM_SYSKEYDOWN:
 		{
-			Input::OnKeyDown(wParam);
+			Input::OnKeyDown((byte)wParam);
 		}
 		break;
 
 		case WM_KEYUP:
 		case WM_SYSKEYUP:
 		{
-			Input::OnKeyUp(wParam);
+			Input::OnKeyUp((byte)wParam);
 		}
 		break;
 
@@ -216,11 +216,11 @@ void Window::SetTitle(const std::string& newTitle)
 void Window::SetFullscreen(bool fullscreen)
 {
 	RendererAPI::Get().SetFullscreen(fullscreen);
-	switch (RendererAPI::GetAPI())
-	{
-		// custom stuff
-		// case opengl: trigger wm_size etc...
-	}
+	//switch (RendererAPI::GetAPI())
+	//{
+	//	// custom stuff
+	//	// case opengl: trigger wm_size etc...
+	//}
 	mProps.fullscreen = fullscreen;
 }
 

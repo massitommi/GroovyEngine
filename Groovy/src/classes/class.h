@@ -242,10 +242,6 @@ void Class::GetClassProperties(std::vector<GroovyProperty>& outProps) {
 
 #define GROOVY_CLASS_END() }
 
-#define CLASS_LIST_BEGIN(ListName)				std::vector<GroovyClass*> ListName = 
-#define CLASS_LIST_ADD(Class)					&GROOVY_CLASS_NAME(Class)
-#define CLASS_LIST_END()						;
-
 struct PropertyDesc
 {
 	const GroovyProperty* classProp;
