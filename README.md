@@ -8,6 +8,7 @@ Game engine with editor.
 
 # Missing stuff
 - Physics
+- UI
 
 # How to build
 The engine is structured to support multiple platforms but currently only Windows is implemented.
