@@ -169,7 +169,7 @@ void Material::Deserialize(BufferView fileData)
 	for (MaterialResource& res : mResources)
 	{
 		auto it = std::find(asset.shaderResNames.begin(), asset.shaderResNames.end(), res.name);
-		uint32 resIndex = it - asset.shaderResNames.begin();
+		uint32 resIndex = (uint32)(it - asset.shaderResNames.begin());
 
 		if (resIndex < asset.shaderResNames.size())
 		{

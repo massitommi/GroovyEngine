@@ -140,7 +140,7 @@ EFileOpenResult FileSystem::OverwriteFileBinary(const std::string& path, const v
 	return FILE_OPEN_RESULT_OK;
 }
 
-#undef DeleteFile()
+#undef DeleteFile
 
 EFileOpenResult FileSystem::DeleteFile(const std::string& path)
 {

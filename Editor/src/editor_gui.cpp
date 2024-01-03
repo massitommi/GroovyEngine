@@ -326,14 +326,14 @@ bool editorGui::Property(const GroovyProperty& prop, void* propData)
 		ImGui::PushStyleColor(ImGuiCol_HeaderHovered, { 1.0f, 1.0f, 1.0f, 0.1f });
 		if (ImGui::CollapsingHeader(prop.name.c_str()))
 		{
-			uint32 propSize = GroovyProperty_GetSize(prop.type);
+			uint32 propSize = (uint32)GroovyProperty_GetSize(prop.type);
 			if (prop.flags & PROPERTY_FLAG_IS_DYNAMIC_ARRAY)
 			{
 				bool cantResize = prop.flags & PROPERTY_FLAG_EDITOR_NO_RESIZE;
 
 				DynamicArrayPtr arrayPtr = GroovyProperty_GetDynamicArrayPtr(prop.type);
 				void* dataData = arrayPtr.data(propData);
-				uint32 dataArrayCount = arrayPtr.size(propData);
+				uint32 dataArrayCount = (uint32)arrayPtr.size(propData);
 
 				struct DynamicArrayPostRenderAction
 				{

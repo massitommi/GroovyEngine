@@ -120,5 +120,5 @@ void Audio::StopEverything()
 
 uint32 Audio::GetClipsCount()
 {
-	return sClips.size();
+	return (uint32)sClips.size();
 }

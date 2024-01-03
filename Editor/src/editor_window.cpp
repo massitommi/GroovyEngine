@@ -22,7 +22,7 @@ extern ImGuiRenderer* gGroovyGuiRenderer;
 
 void EditorWindow::RenderWindow()
 {
-	ImGui::Begin(mTitle.c_str(), &mOpen, mFlags | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings);
+	ImGui::Begin(mTitle.c_str(), &mOpen, (ImGuiWindowFlags)(mFlags | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings));
 	RenderContent();
 	ImGui::End();
 
@@ -361,7 +361,7 @@ void ActorBlueprintEditorWindow::RenderContent()
 				mTmpCompName = "My new component";
 				mCanRenameOrAddComp = 
 					!mTmpCompName.empty() &&
-					std::count(mTmpCompName.begin(), mTmpCompName.end(), ' ') < mTmpCompName.length() &&
+					(size_t)std::count(mTmpCompName.begin(), mTmpCompName.end(), ' ') < mTmpCompName.length() &&
 					!mLiveActor->GetComponent(mTmpCompName);
 				ImGui::OpenPopup("Add component");
 			}
@@ -403,7 +403,7 @@ void ActorBlueprintEditorWindow::RenderContent()
 				{
 					mCanRenameOrAddComp =
 						!mTmpCompName.empty() &&
-						std::count(mTmpCompName.begin(), mTmpCompName.end(), ' ') < mTmpCompName.length() &&
+						(size_t)std::count(mTmpCompName.begin(), mTmpCompName.end(), ' ') < mTmpCompName.length() &&
 						!mLiveActor->GetComponent(mTmpCompName);
 				}
 
@@ -470,7 +470,7 @@ void ActorBlueprintEditorWindow::RenderContent()
 					mTmpCompName = mPendingRename->GetName();
 					mCanRenameOrAddComp =
 						!mTmpCompName.empty() &&
-						std::count(mTmpCompName.begin(), mTmpCompName.end(), ' ') < mTmpCompName.length() &&
+						(size_t)std::count(mTmpCompName.begin(), mTmpCompName.end(), ' ') < mTmpCompName.length() &&
 						!mLiveActor->GetComponent(mTmpCompName);
 					mShowRenamePopup = false;
 				}
@@ -503,7 +503,7 @@ void ActorBlueprintEditorWindow::RenderContent()
 					{
 						mCanRenameOrAddComp =
 							!mTmpCompName.empty() &&
-							std::count(mTmpCompName.begin(), mTmpCompName.end(), ' ') < mTmpCompName.length() &&
+							(size_t)std::count(mTmpCompName.begin(), mTmpCompName.end(), ' ') < mTmpCompName.length() &&
 							!mLiveActor->GetComponent(mTmpCompName);
 					}
 

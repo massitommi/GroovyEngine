@@ -67,7 +67,7 @@ void ActorSerializer::SerializeActorPack(const ActorPack& pack, DynamicBuffer& f
 	ObjectSerializer::SerializePropertyPack(pack.actorProperties, fileData);
 
 	// actor components
-	fileData.push<uint32>(pack.actorComponents.size());
+	fileData.push<uint32>((uint32)pack.actorComponents.size());
 	for (const ComponentPack& comp : pack.actorComponents)
 	{
 		fileData.push<std::string>(comp.componentClass->name);

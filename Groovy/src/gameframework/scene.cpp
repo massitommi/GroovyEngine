@@ -37,7 +37,7 @@ void Scene::Save()
 
 void Scene::Serialize(DynamicBuffer& fileData) const
 {
-	fileData.push<uint32>(mActors.size());
+	fileData.push<uint32>((uint32)mActors.size());
 	for (Actor* actor : mActors)
 	{
 		fileData.push<std::string>(actor->mName);
@@ -250,7 +250,7 @@ uint32 Scene::Editor_OnBlueprintUpdated(ActorBlueprint* bp, Actor* oldTemplate, 
 		}
 	}
 
-	return bpInstances.size();
+	return (uint32)bpInstances.size();
 }
 
 #endif
@@ -293,7 +293,7 @@ void Scene::Tick(float deltaTime)
 
 #else
 
-	uint32 tickQueueCount = mActorTickQueue.size();
+	uint32 tickQueueCount = (uint32)mActorTickQueue.size();
 	for (uint32 i = 0; i < tickQueueCount; i++)
 	{
 		mActorTickQueue[i]->Tick(deltaTime);

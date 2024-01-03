@@ -13,7 +13,7 @@ namespace utils
 		if (prop.flags & PROPERTY_FLAG_IS_DYNAMIC_ARRAY)
 		{
 			DynamicArrayPtr dap = GroovyProperty_GetDynamicArrayPtr(prop.type);
-			objPropArrayCount = dap.size(objProp);
+			objPropArrayCount = (uint32)dap.size(objProp);
 			objProp = dap.data(objProp);
 		}
 
@@ -180,7 +180,7 @@ void ObjectSerializer::CreatePropertyPack(GroovyObject* obj, GroovyObject* cdo, 
 
 void ObjectSerializer::SerializePropertyPack(const PropertyPack& pack, DynamicBuffer& fileData)
 {
-	fileData.push<uint32>(pack.desc.size());									// property count
+	fileData.push<uint32>((uint32)pack.desc.size());									// property count
 	size_t bufferOffset = 0;
 	for (const auto& desc : pack.desc)
 	{

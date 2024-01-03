@@ -710,7 +710,7 @@ namespace panels
 	static std::vector<LogDesc> sLogs;
 	int sLogSeverityFilter = LOG_SEVERITY_INFO | LOG_SEVERITY_WARNING | LOG_SEVERITY_ERROR;
 
-	static const const char* TYPES_STR[] =
+	static const char* const TYPES_STR[] =
 	{
 		"TEXTURE",
 		"SHADER",
@@ -785,7 +785,7 @@ namespace panels
 
 		float contentWidth = ImGui::GetContentRegionAvail().x;
 		float contentHeight = ImGui::GetContentRegionAvail().y;
-		int columns = contentWidth / gEditorSettings.mContentBrowserIconSize;
+		int columns = (int)(contentWidth / gEditorSettings.mContentBrowserIconSize);
 		columns = columns < 1 ? 1 : columns;
 
 		// end stolen ui code
@@ -1004,7 +1004,7 @@ namespace panels
 
 		float contentWidth = ImGui::GetContentRegionAvail().x;
 		float contentHeight = ImGui::GetContentRegionAvail().y;
-		int columns = contentWidth / gEditorSettings.mContentBrowserIconSize;
+		int columns = (int)(contentWidth / gEditorSettings.mContentBrowserIconSize);
 		columns = columns < 1 ? 1 : columns;
 
 		// end stolen ui code
@@ -1026,7 +1026,7 @@ namespace panels
 		{
 			GroovyClass* gClass = classes[i];
 
-			ImGui::PushID(i);
+			ImGui::PushID((int)i);
 
 			ImGui::BeginGroup();
 
@@ -1521,7 +1521,7 @@ namespace panels
 			bool okSize = wndSize.x > 0 && wndSize.y > 0;
 			if (differentSize && okSize)
 			{
-				sGameViewportFrameBuffer->Resize(wndSize.x, wndSize.y);
+				sGameViewportFrameBuffer->Resize((uint32)wndSize.x, (uint32)wndSize.y);
 			}
 			// clear frame buffer
 			sGameViewportFrameBuffer->ClearDepthAttachment();
@@ -1662,7 +1662,7 @@ namespace panels
 				if (newSceneState == EDITOR_SCENE_STATE_PLAY)
 				{
 					Play();
-					gWindow->SetCursorPos(wndSize.x / 2, wndSize.y / 2);
+					gWindow->SetCursorPos((uint32)(wndSize.x / 2.0f), (uint32)(wndSize.y / 2.0f));
 					gWindow->EnableCursor(false);
 				}
 				else if (newSceneState == EDITOR_SCENE_STATE_EDIT)
@@ -1690,7 +1690,7 @@ namespace panels
 				{
 					if (ImGui::IsKeyPressed(ImGuiKey_MouseLeft) && ImGui::IsWindowHovered())
 					{
-						gWindow->SetCursorPos(wndSize.x / 2, wndSize.y / 2);
+						gWindow->SetCursorPos((uint32)(wndSize.x / 2.0f), (uint32)(wndSize.y / 2.0f));
 						gWindow->EnableCursor(false);
 						Input::Editor_BlockInput(false);
 					}
@@ -2069,7 +2069,7 @@ void editor::ConsoleLog(ELogSeverity severity, const char* msg)
 	}
 
 	LogDesc& desc = panels::sLogs.emplace_back();
-	desc.length = msgLen;
+	desc.length = (uint32)msgLen;
 	desc.severity = severity;
 
 	panels::sLogsBuffer.append(msg, msgLen);

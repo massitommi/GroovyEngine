@@ -83,7 +83,7 @@ bool AssetImporter::GetRawTexture(const std::string& compressedFile, Buffer& out
 
     // let stbi do the job
     int imgWidth, imgHeight, imgChannels;
-    stbi_uc* imgData = stbi_load_from_memory(imgCompressed.data(), imgCompressed.size(), &imgWidth, &imgHeight, &imgChannels, DEFAULT_IMAGE_IMPORT_CHANNELS);
+    stbi_uc* imgData = stbi_load_from_memory(imgCompressed.data(), (int)imgCompressed.size(), &imgWidth, &imgHeight, &imgChannels, DEFAULT_IMAGE_IMPORT_CHANNELS);
     if (!imgData)
     {
         GROOVY_LOG_ERR("Unable to stbi_load_from_memory, error: %s", stbi_failure_reason());
@@ -155,7 +155,7 @@ bool AssetImporter::ImportTexture(const std::string& originalFile, const std::st
     // let stbi do the job
     int imgWidth, imgHeight, imgChannels;
     imgWidth = imgHeight = imgChannels = 0;
-    stbi_uc* imgData = stbi_load_from_memory(imgCompressed.data(), imgCompressed.size(), &imgWidth, &imgHeight, &imgChannels, DEFAULT_IMAGE_IMPORT_CHANNELS);
+    stbi_uc* imgData = stbi_load_from_memory(imgCompressed.data(), (int)imgCompressed.size(), &imgWidth, &imgHeight, &imgChannels, DEFAULT_IMAGE_IMPORT_CHANNELS);
     if (!imgData)
     {
         GROOVY_LOG_ERR("Unable to stbi_load_from_memory, error: %s", stbi_failure_reason());

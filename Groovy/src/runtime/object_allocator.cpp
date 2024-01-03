@@ -27,5 +27,5 @@ void ObjectAllocator::Destroy(GroovyObject* instance)
 
 uint32 ObjectAllocator::Debug_GetLiveObjectsCount()
 {
-	return sObjects.size();
+	return (uint32)sObjects.size();
 }

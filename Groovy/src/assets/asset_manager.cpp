@@ -17,6 +17,8 @@
 static std::map<AssetUUID, AssetHandle> sAssetRegistry;
 static std::vector<AssetHandle> sAssets;
 
+static constexpr uint32 DEFAULT_ASSETS_COUNT = 4;
+
 // random stuff
 static std::random_device sRandomDevice;
 static std::mt19937_64 sRandomEngine(sRandomDevice());
@@ -295,6 +297,8 @@ void AssetManager::Init()
 
 		sAssets.push_back(tmpHandle);
 		sAssetRegistry[tmpHandle.uuid] = tmpHandle;
+
+		checkslowf((uint32)sAssetRegistry.size() == DEFAULT_ASSETS_COUNT, "Default assets count mismatch!");
 	}
 
 	Buffer registryFile;
@@ -336,7 +340,7 @@ void AssetManager::Init()
 	}
 
 	// load assets
-	for(uint32 i = 4; i < sAssets.size(); i++)
+	for(uint32 i = DEFAULT_ASSETS_COUNT; i < sAssets.size(); i++)
 		if (sAssets[i].type != ASSET_TYPE_SCENE && !sAssets[i].instance->IsLoaded())
 			sAssets[i].instance->Load();
 }
@@ -362,9 +366,9 @@ void AssetManager::SaveRegistry()
 {
 	DynamicBuffer registryFile;
 
-	registryFile.push<uint32>(sAssets.size() - 4);
+	registryFile.push<uint32>((uint32)sAssets.size() - DEFAULT_ASSETS_COUNT);
 
-	for (uint32 i = 4; i < sAssets.size(); i++)
+	for (uint32 i = DEFAULT_ASSETS_COUNT; i < sAssets.size(); i++)
 	{
 		registryFile.push(sAssets[i].name);
 		registryFile.push(sAssets[i].uuid);

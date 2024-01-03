@@ -36,7 +36,7 @@ void reflectionUtils::CopyProperty(GroovyObject* dst, const GroovyObject* src, c
 	{
 		DynamicArrayPtr dap = GroovyProperty_GetDynamicArrayPtr(prop->type);
 		// resize
-		uint32 srcNum = dap.size(srcProp);
+		uint32 srcNum = (uint32)dap.size(srcProp);
 		propArrayCount = srcNum;
 		dap.resize(dstProp, srcNum);
 		// update ptrs
@@ -92,8 +92,8 @@ bool reflectionUtils::PropertyIsEqual(GroovyObject* obj1, GroovyObject* obj2, co
 	if (prop->flags & PROPERTY_FLAG_IS_DYNAMIC_ARRAY)
 	{
 		DynamicArrayPtr dap = GroovyProperty_GetDynamicArrayPtr(prop->type);
-		objProp1ArrayCount = dap.size(objProp1);
-		objProp2ArrayCount = dap.size(objProp2);
+		objProp1ArrayCount = (uint32)dap.size(objProp1);
+		objProp2ArrayCount = (uint32)dap.size(objProp2);
 		objProp1 = dap.data(objProp1);
 		objProp2 = dap.data(objProp2);
 
@@ -162,7 +162,7 @@ void reflectionUtils::ReplaceValueTypeProperty(GroovyObject* obj, EPropertyType 
 			if (prop.flags & PROPERTY_FLAG_IS_DYNAMIC_ARRAY)
 			{
 				DynamicArrayPtr dap = GroovyProperty_GetDynamicArrayPtr(type);
-				propArrayCount = dap.size(propData);
+				propArrayCount = (uint32)dap.size(propData);
 				propData = (byte*)dap.data(propData);
 			}
 
