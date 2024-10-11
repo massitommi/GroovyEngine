@@ -7,6 +7,11 @@
         "Shipping"
     }
 
+    flags
+	{
+		"MultiProcessorCompile"
+	}
+
     outputdir = "%{cfg.buildcfg}-%{cfg.system}-%{cfg.architecture}"
     targetdir ("%{wks.location}/bin/" .. outputdir .. "/%{prj.name}")
     objdir ("%{wks.location}/bin-int/" .. outputdir .. "/%{prj.name}")
