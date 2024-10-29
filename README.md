@@ -1,5 +1,6 @@
 # GroovyEngine
 Game engine with editor.
+![](https://github.com/massitommi/GroovyEngine/blob/master/groovy.gif)
 
 # Cool Stuff
 - Native C++ scripting, reflection and serialization system. (Inspired by Unreal)
@@ -13,7 +14,7 @@ Game engine with editor.
 # How to build
 The engine is structured to support multiple platforms but currently only Windows is implemented.
 To build the Visual Studio 2022 solution just run "GenWinProjects.bat".
-Launching the engine from your IDE will load the DemoProject.
+Launching the engine from your IDE will load the DemoProject (if you want to see demo game-code running, you should also build this after the engine, .bat is inside /DemoProject). 
 You can create new projects with the ProjectCreator tool, then launch the engine with the bat files.
 
 # How to create your own Groovy class (Actor, ActorComponent, etc...)
