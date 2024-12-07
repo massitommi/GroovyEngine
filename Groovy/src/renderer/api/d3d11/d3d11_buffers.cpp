@@ -3,7 +3,7 @@
 #include "d3d11_buffers.h"
 #include "d3d11_utils.h"
 
-D3D11VertexBuffer::D3D11VertexBuffer(size_t size, void* data, uint32 stride)
+D3D11VertexBuffer::D3D11VertexBuffer(size_t size, const void* data, uint32 stride)
 	: mSize(size), mStride(stride)
 {
 	D3D11_BUFFER_DESC desc = {};
@@ -37,7 +37,7 @@ void D3D11VertexBuffer::Bind()
 	d3d11Utils::gContext->IASetVertexBuffers(0, 1, &mBuffer, &strides, &offsets);
 }
 
-D3D11IndexBuffer::D3D11IndexBuffer(size_t size, void* data)
+D3D11IndexBuffer::D3D11IndexBuffer(size_t size, const void* data)
 	: mSize(size)
 {
 	D3D11_BUFFER_DESC desc = {};
@@ -69,7 +69,7 @@ void D3D11IndexBuffer::Bind()
 	d3d11Utils::gContext->IASetIndexBuffer(mBuffer, DXGI_FORMAT_R32_UINT, 0);
 }
 
-D3D11ConstBuffer::D3D11ConstBuffer(size_t size, void* data)
+D3D11ConstBuffer::D3D11ConstBuffer(size_t size, const void* data)
 	: mSize(size)
 {
 	D3D11_BUFFER_DESC desc = {};

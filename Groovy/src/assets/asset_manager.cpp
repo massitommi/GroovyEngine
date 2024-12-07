@@ -104,138 +104,9 @@ void AssetManager::Init()
 		}
 		// default cube (mesh)
 		{
-			MeshVertex cubeVertexBuffer[] =
-			{
-				// front face
-				{
-					{ -0.5f, -0.5f, -0.5f, 1.0f },
-					{ 1.0f, 1.0f, 1.0f, 1.0f },
-					{ 0.0f, 1.0f }
-				},
-				{
-					{ -0.5f, +0.5f, -0.5f, 1.0f },
-					{ 1.0f, 1.0f, 1.0f, 1.0f },
-					{ 0.0f, 0.0f }
-				},
-				{
-					{ +0.5f, +0.5f, -0.5f, 1.0f },
-					{ 1.0f, 1.0f, 1.0f, 1.0f },
-					{ 1.0f, 0.0f }
-				},
-				{
-					{ +0.5f, -0.5f, -0.5f, 1.0f },
-					{ 1.0f, 1.0f, 1.0f, 1.0f },
-					{ 1.0f, 1.0f }
-				},
-				// right face
-				{
-					{ +0.5f, -0.5f, -0.5f, 1.0f },
-					{ 1.0f, 1.0f, 1.0f, 1.0f },
-					{ 0.0f, 1.0f }
-				},
-				{
-					{ +0.5f, +0.5f, -0.5f, 1.0f },
-					{ 1.0f, 1.0f, 1.0f, 1.0f },
-					{ 0.0f, 0.0f }
-				},
-				{
-					{ +0.5f, +0.5f, +0.5f, 1.0f },
-					{ 1.0f, 1.0f, 1.0f, 1.0f },
-					{ 1.0f, 0.0f }
-				},
-				{
-					{ +0.5f, -0.5f, +0.5f, 1.0f },
-					{ 1.0f, 1.0f, 1.0f, 1.0f },
-					{ 1.0f, 1.0f }
-				},
-				// left face
-				{
-					{ -0.5f, -0.5f, +0.5f, 1.0f },
-					{ 1.0f, 1.0f, 1.0f, 1.0f },
-					{ 0.0f, 1.0f }
-				},
-				{
-					{ -0.5f, +0.5f, +0.5f, 1.0f },
-					{ 1.0f, 1.0f, 1.0f, 1.0f },
-					{ 0.0f, 0.0f }
-				},
-				{
-					{ -0.5f, +0.5f, -0.5f, 1.0f },
-					{ 1.0f, 1.0f, 1.0f, 1.0f },
-					{ 1.0f, 0.0f }
-				},
-				{
-					{ -0.5f, -0.5f, -0.5f, 1.0f },
-					{ 1.0f, 1.0f, 1.0f, 1.0f },
-					{ 1.0f, 1.0f }
-				},
-				// top face
-				{
-					{ -0.5f, +0.5f, -0.5f, 1.0f },
-					{ 1.0f, 1.0f, 1.0f, 1.0f },
-					{ 0.0f, 1.0f }
-				},
-				{
-					{ -0.5f, +0.5f, +0.5f, 1.0f },
-					{ 1.0f, 1.0f, 1.0f, 1.0f },
-					{ 0.0f, 0.0f }
-				},
-				{
-					{ +0.5f, +0.5f, +0.5f, 1.0f },
-					{ 1.0f, 1.0f, 1.0f, 1.0f },
-					{ 1.0f, 0.0f }
-				},
-				{
-					{ +0.5f, +0.5f, -0.5f, 1.0f },
-					{ 1.0f, 1.0f, 1.0f, 1.0f },
-					{ 1.0f, 1.0f }
-				},
-				// bottom face
-				{
-					{ -0.5f, -0.5f, +0.5f, 1.0f },
-					{ 1.0f, 1.0f, 1.0f, 1.0f },
-					{ 0.0f, 1.0f }
-				},
-				{
-					{ -0.5f, -0.5f, -0.5f, 1.0f },
-					{ 1.0f, 1.0f, 1.0f, 1.0f },
-					{ 0.0f, 0.0f }
-				},
-				{
-					{ +0.5f, -0.5f, -0.5f, 1.0f },
-					{ 1.0f, 1.0f, 1.0f, 1.0f },
-					{ 1.0f, 0.0f }
-				},
-				{
-					{ +0.5f, -0.5f, +0.5f, 1.0f },
-					{ 1.0f, 1.0f, 1.0f, 1.0f },
-					{ 1.0f, 1.0f }
-				},
-				// back face
-				{
-					{ +0.5f, -0.5f, +0.5f, 1.0f },
-					{ 1.0f, 1.0f, 1.0f, 1.0f },
-					{ 0.0f, 1.0f }
-				},
-				{
-					{ +0.5f, +0.5f, +0.5f, 1.0f },
-					{ 1.0f, 1.0f, 1.0f, 1.0f },
-					{ 0.0f, 0.0f }
-				},
-				{
-					{ -0.5f, +0.5f, +0.5f, 1.0f },
-					{ 1.0f, 1.0f, 1.0f, 1.0f },
-					{ 1.0f, 0.0f }
-				},
-				{
-					{ -0.5f, -0.5f, +0.5f, 1.0f },
-					{ 1.0f, 1.0f, 1.0f, 1.0f },
-					{ 1.0f, 1.0f }
-				}
-			};
+			extern MeshVertex DEFAULT_CUBE_DATA[24]; // assets_embed.cpp
 
 			MeshIndex cubeIndexBuffer[6 * 6];
-
 			for (uint32 i = 0; i < 6; i++)
 			{
 				cubeIndexBuffer[i * 6 + 0] = 0 + 4 * i;
@@ -246,12 +117,12 @@ void AssetManager::Init()
 				cubeIndexBuffer[i * 6 + 5] = 0 + 4 * i;
 			}
 
-			VertexBuffer* vBuffer = VertexBuffer::Create(sizeof(cubeVertexBuffer), cubeVertexBuffer, sizeof(MeshVertex));
+			VertexBuffer* vBuffer = VertexBuffer::Create(sizeof(DEFAULT_CUBE_DATA), DEFAULT_CUBE_DATA, sizeof(MeshVertex));
 			IndexBuffer* iBuffer = IndexBuffer::Create(sizeof(cubeIndexBuffer), cubeIndexBuffer);
 			std::vector<SubmeshData> submeshes;
 			submeshes.push_back
 			({
-				sizeof(cubeVertexBuffer) / sizeof(MeshVertex),
+				sizeof(DEFAULT_CUBE_DATA) / sizeof(MeshVertex),
 				sizeof(cubeIndexBuffer) / sizeof(MeshIndex)
 			});
 			std::vector<Material*> mats;

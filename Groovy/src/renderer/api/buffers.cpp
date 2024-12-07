@@ -3,7 +3,7 @@
 
 #include "d3d11/d3d11_buffers.h"
 
-VertexBuffer* VertexBuffer::Create(size_t size, void* data, uint32 stride)
+VertexBuffer* VertexBuffer::Create(size_t size, const void* data, uint32 stride)
 {
     switch (RendererAPI::GetAPI())
     {
@@ -15,7 +15,7 @@ VertexBuffer* VertexBuffer::Create(size_t size, void* data, uint32 stride)
     return nullptr;
 }
 
-IndexBuffer* IndexBuffer::Create(size_t size, void* data)
+IndexBuffer* IndexBuffer::Create(size_t size, const void* data)
 {
     switch (RendererAPI::GetAPI())
     {
@@ -27,7 +27,7 @@ IndexBuffer* IndexBuffer::Create(size_t size, void* data)
     return nullptr;
 }
 
-ConstBuffer* ConstBuffer::Create(size_t size, void* data)
+ConstBuffer* ConstBuffer::Create(size_t size, const void* data)
 {
     switch (RendererAPI::GetAPI())
     {

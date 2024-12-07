@@ -10,7 +10,7 @@ public:
 	virtual void Bind() = 0;
 	virtual size_t GetSize() const = 0;
 
-	static VertexBuffer* Create(size_t size, void* data, uint32 stride);
+	static VertexBuffer* Create(size_t size, const void* data, uint32 stride);
 };
 
 class CORE_API IndexBuffer
@@ -21,7 +21,7 @@ public:
 	virtual void Bind() = 0;
 	virtual size_t GetSize() const = 0;
 
-	static IndexBuffer* Create(size_t size, void* data);
+	static IndexBuffer* Create(size_t size, const void* data);
 };
 
 class CORE_API ConstBuffer
@@ -35,5 +35,5 @@ public:
 	virtual void BindForVertexShader(uint32 slot) = 0;
 	virtual void BindForPixelShader(uint32 slot) = 0;
 
-	static ConstBuffer* Create(size_t size, void* data);
+	static ConstBuffer* Create(size_t size, const void* data);
 };
