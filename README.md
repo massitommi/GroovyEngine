@@ -14,8 +14,8 @@ Game engine with editor.
 # How to build
 The engine is structured to support multiple platforms but currently only Windows is implemented.
 To build the Visual Studio 2022 solution just run "GenWinProjects.bat".
-Launching the engine from your IDE will load the DemoProject (if you want to see demo game-code running, you should also build that after the engine, .bat is inside /DemoProject). 
-You can create new projects with the ProjectCreator tool, then launch the engine with the bat files.
+Launching the engine from your IDE will load the DemoProject (if you want to see demo game-code running, you should also build that). 
+You can create new projects with the ProjectCreator tool, then launch the engine with the bat files or change the debug args to launch from Visual Studio.
 
 # How to create your own Groovy class (Actor, ActorComponent, etc...)
 
