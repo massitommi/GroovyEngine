@@ -1,27 +1,25 @@
-include "premake_config.lua"
-
-workspace (PROJECT_NAME)
-	include (ENGINE_LOCATION .. "/premake_core.lua")
-
-	project (PROJECT_NAME)
-    location (PROJECT_NAME)
+project "DemoProject"
     kind "SharedLib"
     language "C++"
     cppdialect "C++17"
 
+    outputdir = "%{cfg.buildcfg}-%{cfg.system}-%{cfg.architecture}"
+    targetdir ("%{prj.location}/bin/" .. outputdir .. "/%{prj.name}")
+    objdir ("%{prj.location}/bin-int/" .. outputdir .. "/%{prj.name}")
+
     files
     {
-        (PROJECT_NAME .. "/src/**.cpp"),
-		(PROJECT_NAME .. "/src/**.h"),
+        "src/**.h",
+        "src/**.cpp"
     }
 
-	includedirs
-	{
-		(PROJECT_NAME .. "/src"),
-		(ENGINE_LOCATION .. "/Groovy/src")
-	}
+    includedirs
+    {
+        "src",
+        "%{wks.location}/Groovy/src"
+    }
 
-	links
-	{
-		(ENGINE_LOCATION .. "/bin/" .. outputdir .. "/Groovy/Groovy")
-	}
+    links
+    {
+        "Groovy"
+    }
